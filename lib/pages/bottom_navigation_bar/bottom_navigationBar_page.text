@@ -1,0 +1,300 @@
+import 'package:crm_flutter/pages/Allocations/allocations_page.dart';
+import 'package:crm_flutter/pages/Call/Call_Logs.dart';
+import 'package:flutter/material.dart';
+import 'package:crm_flutter/pages/CalendarPage.dart';
+import 'package:crm_flutter/pages/MainPage.dart';
+import 'package:crm_flutter/pages/NotificationsPage.dart';
+import 'package:crm_flutter/pages/SearchPage.dart';
+import 'package:crm_flutter/pages/profile_menu/ProfileMenuPage.dart';
+import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
+
+class BottomNavigationBarPage extends StatefulWidget {
+  const BottomNavigationBarPage({super.key});
+
+  @override
+  State<BottomNavigationBarPage> createState() =>
+      _BottomNavigationBarPageState();
+}
+
+class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: PersistentTabView(
+        tabs: _buildTabs(),
+        navBarBuilder: (navBarConfig) => Style11BottomNavBar(
+          navBarConfig: navBarConfig,
+          navBarDecoration: NavBarDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 12,
+                spreadRadius: 0,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          // padding: const NavBarPadding.symmetric(vertical: 8, horizontal: 16),
+          // itemAnimationProperties: const ItemAnimationProperties(
+          //   duration: Duration(milliseconds: 200),
+          //   curve: Curves.easeInOut,
+          // ),
+        ),
+        backgroundColor: Colors.white,
+        handleAndroidBackButtonPress: true,
+        resizeToAvoidBottomInset: true,
+        stateManagement: true,
+
+        // hideNavigationBarWhenKeyboardShows: true,
+        // popAllScreensOnTapOfSelectedTab: true,
+        // popActionScreens: PopActionScreensType.all,
+        // confineInSafeArea: true,
+        // decoration: NavBarDecoration(borderRadius: BorderRadius.circular(0)),
+      ),
+    );
+  }
+
+  List<PersistentTabConfig> _buildTabs() {
+    return [
+      _buildTab(
+        screen: const MainPage(),
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home,
+        label: "Home",
+      ),
+      _buildTab(
+        screen: AllocationPage(),
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_today,
+        label: "Calendar",
+      ),
+      _buildTab(
+        screen: const SearchPage(),
+        icon: Icons.search_outlined,
+        activeIcon: Icons.search,
+        label: "Search",
+      ),
+      _buildTab(
+        screen: CallLogs(),
+        icon: Icons.wifi_calling_3_outlined,
+        activeIcon: Icons.wifi_calling_3_sharp,
+        label: "Alerts",
+        // badge: _buildNotificationBadge(),
+      ),
+      _buildTab(
+        screen: const ProfileMenuPage(),
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: "Profile",
+      ),
+    ];
+  }
+
+  PersistentTabConfig _buildTab({
+    required Widget screen,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    Widget? badge,
+  }) {
+    return PersistentTabConfig(
+      screen: screen,
+      item: ItemConfig(
+        icon: _buildTabIcon(icon, activeIcon, badge),
+        title: label,
+        // activeColorPrimary: _getPrimaryColor(context),
+        // inactiveColorPrimary: Colors.grey.shade600,
+        textStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          height: 1.2,
+        ),
+
+        // activeTextStyle: const TextStyle(
+        //   fontSize: 12,
+        //   fontWeight: FontWeight.w600,
+        //   height: 1.2,
+        // ),
+      ),
+    );
+  }
+
+  Widget _buildTabIcon(IconData icon, IconData activeIcon, Widget? badge) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Animated icon container
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.transparent,
+          ),
+          child: Icon(icon, size: 24),
+        ),
+        // Active state indicator
+        Positioned(
+          bottom: -2,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 2,
+            width: 4,
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+        ),
+        // Badge
+        if (badge != null) Positioned(top: -2, right: -2, child: badge),
+      ],
+    );
+  }
+
+  Widget _buildNotificationBadge() {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: Colors.red,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      constraints: const BoxConstraints(minWidth: 12, minHeight: 12),
+      child: const Text(
+        '3',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+          height: 1,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  // Helper method to get primary color (you can replace with your theme)
+  Color _getPrimaryColor(BuildContext context) {
+    return Theme.of(context).primaryColor ?? const Color(0xFF2563EB);
+  }
+}
+
+// Optional: Custom tab animation for better visual feedback
+class AnimatedTabIcon extends StatefulWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final bool isActive;
+  final Color activeColor;
+  final Color inactiveColor;
+  final Widget? badge;
+
+  const AnimatedTabIcon({
+    super.key,
+    required this.icon,
+    required this.activeIcon,
+    required this.isActive,
+    required this.activeColor,
+    required this.inactiveColor,
+    this.badge,
+  });
+
+  @override
+  State<AnimatedTabIcon> createState() => _AnimatedTabIconState();
+}
+
+class _AnimatedTabIconState extends State<AnimatedTabIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<Color?> _colorAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _colorAnimation = ColorTween(
+      begin: widget.inactiveColor,
+      end: widget.activeColor,
+    ).animate(_controller);
+
+    if (widget.isActive) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(AnimatedTabIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.isActive
+                  ? widget.activeColor.withOpacity(0.1)
+                  : Colors.transparent,
+            ),
+            child: Icon(
+              widget.isActive ? widget.activeIcon : widget.icon,
+              size: 24,
+              color: _colorAnimation.value,
+            ),
+          ),
+          // Active indicator
+          Positioned(
+            bottom: -4,
+            left: 0,
+            right: 0,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: 2,
+              width: widget.isActive ? 20 : 0,
+              decoration: BoxDecoration(
+                color: widget.isActive
+                    ? widget.activeColor
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+          ),
+          // Badge
+          if (widget.badge != null)
+            Positioned(top: -2, right: -2, child: widget.badge!),
+        ],
+      ),
+    );
+  }
+}
