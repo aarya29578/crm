@@ -68,8 +68,8 @@ class WSData {
 
   WSData.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];
-    compaignName = json['campaignId'] != null
-        ? CompaignName.fromJson(json['campaignId'])
+    compaignName = json['campaign'] != null
+        ? CompaignName.fromJson(json['campaign'])
         : null;
     // tenantId = json['tenantId'] != null
     //     ? TenantId.fromJson(json['tenantId'])
@@ -95,7 +95,7 @@ class WSData {
     data['_id'] = sId;
 
     if (compaignName != null) {
-      data['campaignId'] = compaignName?.toJson();
+      data['campaign'] = compaignName?.toJson();
     }
     if (createdBy != null) {
       data['created_by'] = createdBy?.toJson();

@@ -263,10 +263,10 @@ class Data {
     remarks = json['remarks']?.toString();
 
     /// 🔥 SAFE campaignId handling (IMPORTANT)
-    if (json['campaignId'] is Map) {
-      compaignName = CompaignName.fromJson(json['campaignId']);
-    } else if (json['campaignId'] is String) {
-      compaignName = CompaignName(sId: json['campaignId']);
+    if (json['campaign'] is Map) {
+      compaignName = CompaignName.fromJson(json['campaign']);
+    } else if (json['campaign'] is String) {
+      compaignName = CompaignName(sId: json['campaign']);
     } else {
       compaignName = null;
     }
@@ -330,7 +330,7 @@ class Data {
       'address': address,
       'pincode': pincode,
       'remarks': remarks,
-      'campaignId': compaignName?.toJson(),
+      'compaignName': compaignName?.toJson(),
       'assignedTo': assignedTo?.toJson(),
       'priority': priority,
       'age': age,

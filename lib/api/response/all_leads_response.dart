@@ -505,8 +505,8 @@ class Data {
     address = json['address'] ?? '';
     pincode = json['pincode'];
     remarks = json['remarks'] ?? '';
-    compaignName = json['campaignId'] != null
-        ? CompaignName.fromJson(json['campaignId'])
+    compaignName = json['campaign'] != null
+        ? CompaignName.fromJson(json['campaign'])
         : null;
     assignedTo = json['assignedTo'] != null
         ? AssignedTo.fromJson(json['assignedTo'])
@@ -582,7 +582,7 @@ class Data {
     data['pincode'] = pincode;
     data['remarks'] = remarks;
     if (compaignName != null) {
-      data['campaignId'] = compaignName?.toJson();
+      data['campaign'] = compaignName?.toJson();
     }
     if (assignedTo != null) {
       data['assignedTo'] = assignedTo?.toJson();

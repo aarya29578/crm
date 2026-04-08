@@ -143,8 +143,8 @@ class LeadDetails {
     email = json['email'];
     pincode = json['pincode'];
     remarks = json['remarks'];
-    compaignName = json['campaignId'] != null
-        ? CompaignName.fromJson(json['campaignId'])
+    compaignName = json['campaign'] != null
+        ? CompaignName.fromJson(json['campaign'])
         : null;
     assignedTo = json['assignedTo'] != null
         ? new LeadSourceId.fromJson(json['assignedTo'])
@@ -191,7 +191,7 @@ class LeadDetails {
     data['pincode'] = this.pincode;
     data['remarks'] = this.remarks;
     if (compaignName != null) {
-      data['campaignId'] = compaignName?.toJson();
+      data['campaign'] = compaignName?.toJson();
     }
     if (this.assignedTo != null) {
       data['assignedTo'] = this.assignedTo!.toJson();
