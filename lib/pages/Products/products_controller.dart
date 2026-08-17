@@ -15,7 +15,7 @@ class ProductsController extends GetxController {
         allProductsRes.value = response;
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -31,7 +31,7 @@ class ProductsController extends GetxController {
         await getAllProducts(); // Refresh the list
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -46,7 +46,7 @@ class ProductsController extends GetxController {
         await getAllProducts(); // Refresh the list
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -57,7 +57,7 @@ class ProductsController extends GetxController {
         await getAllProducts();
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

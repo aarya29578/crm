@@ -4,7 +4,6 @@ import 'package:crm_flutter/pages/Settings/Roles/role_page.dart';
 import 'package:crm_flutter/pages/Settings/Sources/source_page.dart';
 import 'package:crm_flutter/pages/Settings/Types/type_page.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
-import 'package:crm_flutter/widgets/IconTileRowCard.dart';
 import 'package:get/get.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -149,7 +148,7 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ],
                 ),
-
+                                        
                 const SizedBox(height: 16),
 
                 // Other Settings Section

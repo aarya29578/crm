@@ -1,13 +1,13 @@
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/all_lead_details_response.dart';
-import 'package:crm_flutter/api/response/all_leads_response.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class Leaddetailscontroller extends GetxController {
+class Leaddetailscontroller
+ extends GetxController {
   RxBool addressEnabled = false.obs;
   Rx<AllLeadDetailResponse> allLeadDetailRes = AllLeadDetailResponse().obs;
   Rx<PageState> pageState = PageState.loading.obs;
@@ -93,7 +93,7 @@ class Leaddetailscontroller extends GetxController {
       final response = await DioApi().createCallHistory(data);
       print(response);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

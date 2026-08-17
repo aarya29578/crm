@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:crm_flutter/pages/Quotes/components/TextFields.dart';
-import 'package:crm_flutter/pages/Settings/Sources/source_controller.dart';
 import 'package:crm_flutter/pages/Settings/Types/type_controller.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 class AddTypePage extends StatefulWidget {
   const AddTypePage({super.key});

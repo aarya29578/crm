@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'package:crm_flutter/api/response/all_campaigns_response.dart';
 import 'package:crm_flutter/api/response/all_follow_up_response.dart';
 import 'package:crm_flutter/api/response/all_missed_followups_response.dart';
+import 'package:crm_flutter/api/response/all_templates_response.dart';
 import 'package:crm_flutter/api/response/call_log_response.dart';
 import 'package:crm_flutter/api/response/dashboard_res.dart';
 import 'package:crm_flutter/api/response/get_whatsappSms_response.dart';
 import 'package:crm_flutter/api/response/substatus_lead_stage_response.dart';
+import 'package:crm_flutter/api/response/template_response.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:crm_flutter/api/dio_util.dart';
@@ -22,6 +25,7 @@ import 'package:crm_flutter/api/response/all_sources_response.dart';
 import 'package:crm_flutter/api/response/all_types_response.dart';
 import 'package:crm_flutter/api/response/getLeadByStage.dart';
 import 'package:crm_flutter/constants.dart';
+import 'package:crm_flutter/api/response/location_response.dart';
 
 class DioApi {
   Future register(data) async {
@@ -31,36 +35,40 @@ class DioApi {
         return response.data;
       }
     } catch (e) {
-      return e;
+      return (e.toString());
     }
   }
 
   Future login(data) async {
     try {
       final response = await DioUtil.dio.post("$link/auth/login", data: data);
-      if (response.statusCode == 200) {
-        return response.data;
-      }
-    } catch (e) {
-      return e;
+      // if (response.statusCode == 200) {
+      return response.data;
+      // }
+    } on DioException {
+      rethrow;
     }
   }
 
   Future logout() async {
     try {
       final response = await DioUtil.dio.post("$link/auth/logout");
-      if (response.statusCode == 200) {
-        return response.data;
-      }
-    } catch (e) {
-      return e;
+      return response.data;
+    } on DioException {
+      rethrow;
     }
   }
 
-  Future<AllLeadStageResponse> getAllLeadStage() async {
-    ///1 not getting data************************ it was LAN issue
+  Future<AllLeadStageResponse> getAllLeadStage({String? campaignId}) async {
     try {
-      final response = await DioUtil.dio.get("$link/leadstage/all");
+      Map<String, dynamic> queryParams = {};
+      if (campaignId != null && campaignId.isNotEmpty) {
+        queryParams['campaign'] = campaignId;
+      }
+      final response = await DioUtil.dio.get(
+        "$link/leadstage/all",
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
       if (response.statusCode == 200) {
         return AllLeadStageResponse.fromJson(response.data);
       } else {
@@ -68,6 +76,119 @@ class DioApi {
       }
     } catch (e) {
       throw Exception('An error occurred while fetching lead stages: $e');
+    }
+  }
+
+  Future<AllCampaignsResponse> getAllCampaigns() async {
+    try {
+      final response = await DioUtil.dio.get("$link/campaign/all");
+      if (response.statusCode == 200) {
+        return AllCampaignsResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed to load campaigns: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('An error occurred while fetching campaigns: $e');
+    }
+  }
+
+  Future<AllTemplatesResponse> getAllTemplates() async {
+    try {
+      final response = await DioUtil.dio.get("$link/templates/all");
+
+      if (response.statusCode == 200) {
+        return AllTemplatesResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed to load templates: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('An error occurred while fetching templates: $e');
+    }
+  }
+
+  Future<void> createTemplate(Map<String, dynamic> data) async {
+    try {
+      final response = await DioUtil.dio.post("$link/templates", data: data);
+
+      if (response.statusCode != 201) {
+        throw Exception('Failed to create template: ${response.statusCode}');
+      }
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      throw Exception('An error occurred while creating template: $e');
+    }
+  }
+
+  Future<TemplateResponse> getTemplate(String id) async {
+    try {
+      final response = await DioUtil.dio.get("$link/templates/$id");
+
+      if (response.statusCode == 200) {
+        return TemplateResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed to load template: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('An error occurred while fetching template: $e');
+    }
+  }
+
+  Future<void> updateTemplate(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await DioUtil.dio.patch(
+        "$link/templates/$id",
+        data: data,
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update template: ${response.statusCode}');
+      }
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      throw Exception('An error occurred while updating template: $e');
+    }
+  }
+
+  Future<void> deleteTemplate(String id) async {
+    try {
+      final response = await DioUtil.dio.delete("$link/templates/$id");
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to delete template: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('An error occurred while deleting template: $e');
+    }
+  }
+
+  Future recordTemplateUsage({
+    required String leadId,
+    required String templateId,
+    required String channel,
+  }) async {
+    try {
+      final response = await DioUtil.dio.post(
+        "$link/templates/usage",
+        data: {
+          "lead_id": leadId,
+          "template_id": templateId,
+          "channel": channel,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.data;
+      } else {
+        throw Exception(
+          "Failed to record template usage: ${response.statusCode}",
+        );
+      }
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      throw Exception("An error occurred while recording template usage: $e");
     }
   }
 
@@ -101,6 +222,23 @@ class DioApi {
       }
     } catch (e) {
       throw Exception('An error occurred while fetching lead stages: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getLeadStageById(String id) async {
+    try {
+      final response = await DioUtil.dio.get("$link/leadstage/$id");
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception(
+          'Failed to load lead stage details: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception(
+        'An error occurred while fetching lead stage details: $e',
+      );
     }
   }
 
@@ -161,6 +299,7 @@ class DioApi {
   //     throw Exception("Upload error: $e");
   //   }
   // }
+
   Future patchAllLeadDetails(
     String leadId,
     List<String> filePaths,
@@ -192,6 +331,22 @@ class DioApi {
       }
     } catch (e) {
       throw Exception("Upload error: $e");
+    }
+  }
+
+  Future patchLead(String leadId, Map<String, dynamic> data) async {
+    try {
+      final response = await DioUtil.dio.patch(
+        "$link/lead/$leadId",
+        data: data,
+      );
+      if (response.statusCode == 200) {
+        return response.data;
+      } else {
+        throw Exception("Failed to update lead");
+      }
+    } catch (e) {
+      throw Exception("Update lead error: $e");
     }
   }
 
@@ -229,9 +384,15 @@ class DioApi {
     }
   }
 
-  Future<AllCallHistoryResponse> getAllCallsHistory(leadId) async {
+  Future<AllCallHistoryResponse> getAllCallsHistory(
+    leadId, {
+    Map<String, dynamic>? queryParams,
+  }) async {
     try {
-      final response = await DioUtil.dio.get("$link/call/$leadId");
+      final String url = (leadId == null || leadId.toString().isEmpty)
+          ? "$link/call"
+          : "$link/call/$leadId";
+      final response = await DioUtil.dio.get(url, queryParameters: queryParams);
       if (response.statusCode == 200) {
         return AllCallHistoryResponse.fromJson(response.data);
       } else {
@@ -296,7 +457,7 @@ class DioApi {
 
   Future<AllSourceResponse> getAllSources() async {
     try {
-      final response = await DioUtil.dio.get("$link/lead-source/all");
+      final response = await DioUtil.dio.get("$link/leadsource/all");
       if (response.statusCode == 200) {
         return AllSourceResponse.fromJson(response.data);
       } else {
@@ -451,9 +612,6 @@ class DioApi {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      print("+++++++++++++++++++++++++++++++++++++++++++++++");
-      print(response.data);
-      print("+++++++++++++++++++++++++++++++++++++++++++++++");
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
       } else {
@@ -472,14 +630,6 @@ class DioApi {
         "$link/call/dial",
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
-      );
-      print(
-        "++++++++++++++++++ create call history start +++++++++++++++++++++++++++++",
-      );
-      print(response.data);
-
-      print(
-        "++++++++++++++++++ create call history end +++++++++++++++++++++++++++++",
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
@@ -526,9 +676,6 @@ class DioApi {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      print("+++++++++++++++++++++++++++++++++++++++++++++++");
-      print(response.data);
-      print("+++++++++++++++++++++++++++++++++++++++++++++++");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
@@ -547,10 +694,6 @@ class DioApi {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      print("+++++++++++++++Product++++++++++++++++++++++++++++++++");
-      print(response.data);
-      print("+++++++++++++++++++++++++++++++++++++++++++++++");
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
       } else {
@@ -727,11 +870,28 @@ class DioApi {
     }
   }
 
+  Future<AllLeadsResponse> searchLeads(String query) async {
+    try {
+      final response = await DioUtil.dio.get(
+        "$link/lead/all",
+        queryParameters: {'search': query},
+      );
+      if (response.statusCode == 200) {
+        return AllLeadsResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed to search leads: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('An error occurred while searching leads: $e');
+    }
+  }
+
   Future<AllLeadsResponse> getAllLeads({
-    //2 not getting data*********************************************
     int page = 1,
     DateTime? startDate,
     DateTime? endDate,
+    List<String>? statusIds,
+    String? campaignId,
   }) async {
     try {
       // Build query parameters
@@ -759,6 +919,14 @@ class DioApi {
           999,
         );
         queryParams['endDate'] = endDateTime.toUtc().toIso8601String();
+      }
+
+      if (statusIds != null && statusIds.isNotEmpty) {
+        queryParams['lead_stage_id'] = statusIds.join(',');
+      }
+
+      if (campaignId != null && campaignId.isNotEmpty) {
+        queryParams['campaign'] = campaignId;
       }
 
       final response = await DioUtil.dio.get(
@@ -776,12 +944,12 @@ class DioApi {
     }
   }
 
-  //
   Future<DashboardDataRes> getDashboard({
-    //3 not getting data*********************************************
     String? userId,
     DateTime? startDate,
     DateTime? endDate,
+    List<String>? statusIds,
+    String? campaignId,
   }) async {
     try {
       // Build query parameters
@@ -810,8 +978,14 @@ class DioApi {
         );
         queryParams['endDate'] = endDateTime.toUtc().toIso8601String();
       }
-      //previous - $link/dashboard/all",
-      //now - $link/dashboard/call-duration/userId",
+
+      if (statusIds != null && statusIds.isNotEmpty) {
+        queryParams['leadStageId'] = statusIds.join(',');
+      }
+
+      if (campaignId != null && campaignId.isNotEmpty) {
+        queryParams['campaign'] = campaignId;
+      }
 
       final response = await DioUtil.dio.get(
         "$link/dashboard/call-duration/$userId",
@@ -853,7 +1027,6 @@ class DioApi {
     }
   }
 
-  //
   Future<CallLogsResponse> getAllCallApi() async {
     try {
       final response = await DioUtil.dio.get("$link/call");
@@ -904,11 +1077,42 @@ class DioApi {
     }
   }
 
-  Future<AllMissedFupsRes> getMissedFUps({String? currentDateTime}) async {
+  Future<AllMissedFupsRes> getMissedFUps({
+    String? currentDateTime,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     try {
+      Map<String, dynamic> queryParams = {};
+      if (currentDateTime != null) queryParams['currentTime'] = currentDateTime;
+
+      if (startDate != null) {
+        final startDateTime = DateTime(
+          startDate.year,
+          startDate.month,
+          startDate.day,
+        );
+        queryParams['followUpStartDate'] = startDateTime
+            .toUtc()
+            .toIso8601String();
+      }
+
+      if (endDate != null) {
+        final endDateTime = DateTime(
+          endDate.year,
+          endDate.month,
+          endDate.day,
+          23,
+          59,
+          59,
+          999,
+        );
+        queryParams['followUpEndDate'] = endDateTime.toUtc().toIso8601String();
+      }
+
       final res = await DioUtil.dio.get(
         '$link/lead/followup/missed',
-        queryParameters: {'currentTime': currentDateTime},
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
 
       if (res.statusCode == 200) {
@@ -945,6 +1149,210 @@ class DioApi {
       }
     } catch (err) {
       throw Exception('An error occurred getwhatsSms: $err');
+    }
+  }
+
+  Future createLead(
+    Map<String, dynamic> data, {
+    List<String>? documentFiles,
+  }) async {
+    try {
+      final formData = FormData();
+
+      // ============================
+      // Add Lead Fields
+      // ============================
+
+      data.forEach((key, value) {
+        if (value == null) return;
+
+        // Nested objects
+        if (key == "name" || key == "location") {
+          formData.fields.add(MapEntry(key, jsonEncode(value)));
+        } else {
+          formData.fields.add(MapEntry(key, value.toString()));
+        }
+      });
+
+      // ============================
+      // Add Documents
+      // ============================
+
+      if (documentFiles != null && documentFiles.isNotEmpty) {
+        for (final filePath in documentFiles) {
+          formData.files.add(
+            MapEntry(
+              "documents",
+              await MultipartFile.fromFile(
+                filePath,
+                filename: filePath.split('/').last,
+              ),
+            ),
+          );
+        }
+      }
+
+      print("======================================");
+      print("CREATE LEAD REQUEST");
+      print("======================================");
+
+      print("Fields:");
+      for (final field in formData.fields) {
+        print("${field.key}: ${field.value}");
+      }
+
+      print("Documents: ${formData.files.length}");
+
+      for (final file in formData.files) {
+        print("Document: ${file.value.filename}");
+      }
+
+      print("======================================");
+
+      final response = await DioUtil.dio.post(
+        "$link/lead",
+        data: formData,
+        options: Options(contentType: "multipart/form-data"),
+      );
+
+      print("======================================");
+      print("CREATE LEAD RESPONSE");
+      print("======================================");
+      print(response.data);
+      print("======================================");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.data;
+      } else {
+        throw Exception("Failed to create lead: ${response.statusCode}");
+      }
+    } on DioException catch (e) {
+      print("======================================");
+      print("CREATE LEAD ERROR");
+      print("======================================");
+      print("Status: ${e.response?.statusCode}");
+      print("Response: ${e.response?.data}");
+      print("======================================");
+
+      rethrow;
+    } catch (e) {
+      throw Exception("An error occurred while creating lead: $e");
+    }
+  }
+
+  Future<AllLeadsResponse> getAllFollowUps({
+    int page = 1,
+    int limit = 50,
+    String search = "",
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      Map<String, dynamic> queryParams = {
+        'search': search,
+        'page': page,
+        'limit': limit,
+      };
+
+      if (startDate != null) {
+        final startDateTime = DateTime(
+          startDate.year,
+          startDate.month,
+          startDate.day,
+        );
+        queryParams['followUpStartDate'] = startDateTime
+            .toUtc()
+            .toIso8601String();
+      }
+
+      if (endDate != null) {
+        final endDateTime = DateTime(
+          endDate.year,
+          endDate.month,
+          endDate.day,
+          23,
+          59,
+          59,
+          999,
+        );
+        queryParams['followUpEndDate'] = endDateTime.toUtc().toIso8601String();
+      }
+
+      final response = await DioUtil.dio.get(
+        "$link/lead/followup/all",
+        queryParameters: queryParams,
+      );
+      if (response.statusCode == 200) {
+        return AllLeadsResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed to load all followups: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('An error occurred while fetching all followups: $e');
+    }
+  }
+
+  Future<LocationResponse> getCountries() async {
+    try {
+      final response = await DioUtil.dio.get("$link/location/countries");
+
+      print("STATUS : ${response.statusCode}");
+      print("BODY : ${response.data}");
+
+      return LocationResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      print("ERROR STATUS : ${e.response?.statusCode}");
+      print("ERROR BODY : ${e.response?.data}");
+      rethrow;
+    }
+  }
+
+  Future<LocationResponse> getStates(String countryId) async {
+    try {
+      final response = await DioUtil.dio.get(
+        "$link/location/states/$countryId",
+      );
+
+      print("STATE STATUS : ${response.statusCode}");
+      print("STATE BODY : ${response.data}");
+
+      return LocationResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      print("STATE ERROR : ${e.response?.data}");
+      rethrow;
+    }
+  }
+
+  Future<LocationResponse> getCities(String stateId) async {
+    try {
+      final response = await DioUtil.dio.get("$link/location/cities/$stateId");
+
+      print("CITY STATUS : ${response.statusCode}");
+      print("CITY BODY : ${response.data}");
+
+      return LocationResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      print("CITY ERROR : ${e.response?.data}");
+      rethrow;
+    }
+  }
+
+  Future<Response> getAllUsers({
+    String search = "",
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      final response = await DioUtil.dio.get(
+        "$link/createuser/all",
+        queryParameters: {"search": search, "page": page, "limit": limit},
+      );
+
+      return response;
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      throw Exception("Failed to load users: $e");
     }
   }
 }

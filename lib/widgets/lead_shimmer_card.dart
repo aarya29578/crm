@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 class ClaimedLeadCardShimmer extends StatelessWidget {
+  const ClaimedLeadCardShimmer({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Column(

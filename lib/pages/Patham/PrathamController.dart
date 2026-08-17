@@ -7,7 +7,7 @@ class PrathamController extends GetxController {
       final response = await DioApi().createCallHistory(data);
       print(response);
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

@@ -1,14 +1,8 @@
 import 'package:crm_flutter/models/enums.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_flutter/pages/follow_up/FollowUpDetailPage.dart';
-import 'package:crm_flutter/pages/activity/ActivityPage.dart';
 import 'package:crm_flutter/pages/home/HomeController.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
-import 'package:crm_flutter/widgets/CategoryChangePopup.dart';
-import 'package:crm_flutter/widgets/StatusChangePopup.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:get/get.dart';
 
@@ -219,8 +213,8 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                             Expanded(
                               child: _buildInfoCard(
                                 title: "Priority",
-                                value: leadDetails?.priority ?? "no priority",
-                                color: _getPriorityColor(leadDetails?.priority),
+                                value: leadDetails.priority ?? "no priority",
+                                color: _getPriorityColor(leadDetails.priority),
                                 // onTap: () => showCategoryChangePopup(context),
                               ),
                             ),

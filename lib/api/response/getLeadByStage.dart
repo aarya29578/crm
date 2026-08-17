@@ -8,24 +8,24 @@ class GetLeadbyStageRes {
   GetLeadbyStageRes.fromJson(Map<String, dynamic> json) {
     success = json['success'];
     leadStageDetails = json['lead_stage_details'] != null
-        ? new LeadStageDetails.fromJson(json['lead_stage_details'])
+        ? LeadStageDetails.fromJson(json['lead_stage_details'])
         : null;
     if (json['lead_details'] != null) {
       leadDetails = <LeadDetails>[];
       json['lead_details'].forEach((v) {
-        leadDetails!.add(new LeadDetails.fromJson(v));
+        leadDetails!.add(LeadDetails.fromJson(v));
       });
     }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['success'] = this.success;
-    if (this.leadStageDetails != null) {
-      data['lead_stage_details'] = this.leadStageDetails!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['success'] = success;
+    if (leadStageDetails != null) {
+      data['lead_stage_details'] = leadStageDetails!.toJson();
     }
-    if (this.leadDetails != null) {
-      data['lead_details'] = this.leadDetails!.map((v) => v.toJson()).toList();
+    if (leadDetails != null) {
+      data['lead_details'] = leadDetails!.map((v) => v.toJson()).toList();
     }
     return data;
   }
@@ -61,14 +61,14 @@ class LeadStageDetails {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['code'] = this.code;
-    data['name'] = this.name;
-    data['is_user_defined'] = this.isUserDefined;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['code'] = code;
+    data['name'] = name;
+    data['is_user_defined'] = isUserDefined;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
     return data;
   }
 }
@@ -98,6 +98,8 @@ class LeadDetails {
   int? iV;
   LeadSourceId? leadStageId;
   List<Null>? documents;
+  String? followUpDate; // Add this line
+  List<dynamic>? stageFieldValues; // Add this line
 
   LeadDetails({
     this.location,
@@ -124,21 +126,23 @@ class LeadDetails {
     this.iV,
     this.leadStageId,
     this.documents,
+    this.followUpDate, // Add this line
+    this.stageFieldValues, // Add this line
   });
 
   LeadDetails.fromJson(Map<String, dynamic> json) {
     location = json['location'] != null
-        ? new Location.fromJson(json['location'])
+        ? Location.fromJson(json['location'])
         : null;
     sId = json['_id'];
     status = json['status'];
     userId = json['user_id'] != null
-        ? new UserId.fromJson(json['user_id'])
+        ? UserId.fromJson(json['user_id'])
         : null;
     leadSourceId = json['lead_source_id'] != null
-        ? new LeadSourceId.fromJson(json['lead_source_id'])
+        ? LeadSourceId.fromJson(json['lead_source_id'])
         : null;
-    name = json['name'] != null ? new Name.fromJson(json['name']) : null;
+    name = json['name'] != null ? Name.fromJson(json['name']) : null;
     phone = json['phone'];
     email = json['email'];
     pincode = json['pincode'];
@@ -147,7 +151,7 @@ class LeadDetails {
         ? CompaignName.fromJson(json['campaign'])
         : null;
     assignedTo = json['assignedTo'] != null
-        ? new LeadSourceId.fromJson(json['assignedTo'])
+        ? LeadSourceId.fromJson(json['assignedTo'])
         : null;
     priority = json['priority'];
     age = json['age'];
@@ -160,58 +164,59 @@ class LeadDetails {
     updatedAt = json['updatedAt'];
     iV = json['__v'];
     leadStageId = json['lead_stage_id'] != null
-        ? new LeadSourceId.fromJson(json['lead_stage_id'])
+        ? LeadSourceId.fromJson(json['lead_stage_id'])
         : null;
     if (json['documents'] != null) {
       documents = <Null>[];
-      // json['documents'].forEach((v) {
-      //   documents!.add(new Null.fromJson(v));
       // });
     }
+    followUpDate = json['followUpDate']; // Add this line
+    stageFieldValues = json['stageFieldValues']; // Add this line
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.location != null) {
-      data['location'] = this.location!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    if (location != null) {
+      data['location'] = location!.toJson();
     }
-    data['_id'] = this.sId;
-    data['status'] = this.status;
-    if (this.userId != null) {
-      data['user_id'] = this.userId!.toJson();
+    data['_id'] = sId;
+    data['status'] = status;
+    if (userId != null) {
+      data['user_id'] = userId!.toJson();
     }
-    if (this.leadSourceId != null) {
-      data['lead_source_id'] = this.leadSourceId!.toJson();
+    if (leadSourceId != null) {
+      data['lead_source_id'] = leadSourceId!.toJson();
     }
-    if (this.name != null) {
-      data['name'] = this.name!.toJson();
+    if (name != null) {
+      data['name'] = name!.toJson();
     }
-    data['phone'] = this.phone;
-    data['email'] = this.email;
-    data['pincode'] = this.pincode;
-    data['remarks'] = this.remarks;
+    data['phone'] = phone;
+    data['email'] = email;
+    data['pincode'] = pincode;
+    data['remarks'] = remarks;
     if (compaignName != null) {
       data['campaign'] = compaignName?.toJson();
     }
-    if (this.assignedTo != null) {
-      data['assignedTo'] = this.assignedTo!.toJson();
+    if (assignedTo != null) {
+      data['assignedTo'] = assignedTo!.toJson();
     }
-    data['priority'] = this.priority;
-    data['age'] = this.age;
-    data['gender'] = this.gender;
-    data['company_name'] = this.companyName;
-    data['designation'] = this.designation;
-    data['website'] = this.website;
-    data['tenantId'] = this.tenantId;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
-    if (this.leadStageId != null) {
-      data['lead_stage_id'] = this.leadStageId!.toJson();
+    data['priority'] = priority;
+    data['age'] = age;
+    data['gender'] = gender;
+    data['company_name'] = companyName;
+    data['designation'] = designation;
+    data['website'] = website;
+    data['tenantId'] = tenantId;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
+    if (leadStageId != null) {
+      data['lead_stage_id'] = leadStageId!.toJson();
     }
-    // if (this.documents != null) {
     //   data['documents'] = this.documents!.map((v) => v.toJson()).toList();
     // }
+    data['followUpDate'] = followUpDate; // Add this line
+    data['stageFieldValues'] = stageFieldValues; // Add this line
     return data;
   }
 }
@@ -249,10 +254,10 @@ class Location {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['country'] = this.country;
-    data['state'] = this.state;
-    data['city'] = this.city;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['country'] = country;
+    data['state'] = state;
+    data['city'] = city;
     return data;
   }
 }
@@ -271,10 +276,10 @@ class UserId {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    data['email'] = this.email;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    data['email'] = email;
     return data;
   }
 }
@@ -291,9 +296,9 @@ class LeadSourceId {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
     return data;
   }
 }
@@ -312,10 +317,10 @@ class Name {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['first'] = this.first;
-    data['middle'] = this.middle;
-    data['last'] = this.last;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['first'] = first;
+    data['middle'] = middle;
+    data['last'] = last;
     return data;
   }
 }

@@ -21,17 +21,17 @@ class AllPersonResponse {
     if (json['data'] != null) {
       data = <Data>[];
       json['data'].forEach((v) {
-        data!.add(new Data.fromJson(v));
+        data!.add(Data.fromJson(v));
       });
     }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['success'] = this.success;
-    data['results'] = this.results;
-    data['totalPages'] = this.totalPages;
-    data['currentPage'] = this.currentPage;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['success'] = success;
+    data['results'] = results;
+    data['totalPages'] = totalPages;
+    data['currentPage'] = currentPage;
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
     }
@@ -79,24 +79,24 @@ class Data {
     iV = json['__v'];
     organization =
         json['organization'] != null
-            ? new Organization.fromJson(json['organization'])
+            ? Organization.fromJson(json['organization'])
             : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    data['emails'] = this.emails;
-    data['contact_numbers'] = this.contactNumbers;
-    data['job_title'] = this.jobTitle;
-    data['organization_id'] = this.organizationId;
-    data['user_id'] = this.userId;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
-    if (this.organization != null) {
-      data['organization'] = this.organization!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    data['emails'] = emails;
+    data['contact_numbers'] = contactNumbers;
+    data['job_title'] = jobTitle;
+    data['organization_id'] = organizationId;
+    data['user_id'] = userId;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
+    if (organization != null) {
+      data['organization'] = organization!.toJson();
     }
     return data;
   }
@@ -125,7 +125,7 @@ class Organization {
     sId = json['_id'];
     name = json['name'];
     address =
-        json['address'] != null ? new Address.fromJson(json['address']) : null;
+        json['address'] != null ? Address.fromJson(json['address']) : null;
     userId = json['user_id'];
     createdAt = json['createdAt'];
     updatedAt = json['updatedAt'];
@@ -133,16 +133,16 @@ class Organization {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    if (this.address != null) {
-      data['address'] = this.address!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    if (address != null) {
+      data['address'] = address!.toJson();
     }
-    data['user_id'] = this.userId;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
+    data['user_id'] = userId;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
     return data;
   }
 }
@@ -163,11 +163,11 @@ class Address {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['street'] = this.street;
-    data['city'] = this.city;
-    data['state'] = this.state;
-    data['zip'] = this.zip;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['street'] = street;
+    data['city'] = city;
+    data['state'] = state;
+    data['zip'] = zip;
     return data;
   }
 }

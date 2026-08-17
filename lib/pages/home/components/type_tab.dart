@@ -1,7 +1,6 @@
 import 'package:crm_flutter/pages/home/HomeController.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 Widget buildTab(String text, int index) {
   final HomeController homeController = Get.put(HomeController());
@@ -166,7 +165,7 @@ class CustomerRangeRow extends StatelessWidget {
 
           // Progress bar
           Expanded(
-            child: Container(
+            child: SizedBox(
               height: 20,
               child: Stack(
                 children: [

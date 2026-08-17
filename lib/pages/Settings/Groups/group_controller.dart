@@ -13,7 +13,7 @@ class GroupController extends GetxController {
         allGroupRes.value = response;
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -28,7 +28,7 @@ class GroupController extends GetxController {
         await getAllGroups();
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -42,7 +42,7 @@ class GroupController extends GetxController {
         await getAllGroups(); // Refresh the list
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -53,7 +53,7 @@ class GroupController extends GetxController {
         await getAllGroups();
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

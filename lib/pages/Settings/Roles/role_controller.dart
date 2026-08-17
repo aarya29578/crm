@@ -14,7 +14,7 @@ class RoleController extends GetxController {
         allRoleRes.value = response;
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

@@ -11,7 +11,6 @@ import 'package:crm_flutter/api/dio_util.dart';
 import 'package:crm_flutter/pages/SplashPage.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

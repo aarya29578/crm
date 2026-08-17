@@ -1,6 +1,6 @@
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Allocations/components/custom_chip.dart';
-import 'package:crm_flutter/pages/lead_details/LeadDetailsPage.dart';
+import 'package:crm_flutter/pages/home/components/campaign_multiselect_dialog.dart';
 import 'package:crm_flutter/utils/timeago.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_flutter/models/enums.dart';
@@ -23,26 +23,12 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final HomeController homeController = Get.put(HomeController());
-  final Claimedcontroller ccontroller = Get.put(Claimedcontroller());
-  int _selectedIndex = 0;
+  final Claimedcontroller controller = Get.put(Claimedcontroller());
 
   @override
   void initState() {
     super.initState();
-    homeController.getAllLeadStage().then((_) {
-      // Load initial leads if not on Home tab
-      if (_selectedIndex > 0) {
-        _loadLeadsForSelectedTab();
-      }
-    });
-  }
-
-  void _loadLeadsForSelectedTab() {
-    final stages = homeController.allLeadStageRes.value.data ?? [];
-    if (_selectedIndex - 1 < stages.length) {
-      final stageId = stages[_selectedIndex - 1].sId ?? '';
-      ccontroller.getLeadbyStage(stageId);
-    }
+    homeController.getAllLeadStage();
   }
 
   final userName = LocalStorage.sharedPreferences?.getString('user_name');
@@ -52,7 +38,7 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColorConstants.MainPurpleBackground.withValues(
-        alpha: 0.5,
+        alpha: 0.06,
       ),
       appBar: AppBar(
         title: Column(
@@ -62,19 +48,35 @@ class _MainPageState extends State<MainPage> {
               children: [
                 Text('Welcome'),
                 SizedBox(width: 7),
-                Text(
-                  (userName == null || userName!.isEmpty)
-                      ? "User!"
-                      : "$userName!",
+                Flexible(
+                  child: Text(
+                    (userName == null || userName!.isEmpty)
+                        ? "User!"
+                        : "$userName!",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
-            Text(
-              (campaign == null || campaign!.isEmpty)
-                  ? "→ no campaign name!"
-                  : "→ $campaign",
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w400),
-            ),
+            Obx(() {
+              final selected = homeController.selectedCampaigns;
+              String displayString;
+              if (selected.isEmpty) {
+                displayString = "→ All Campaigns";
+              } else {
+                displayString = "→ ${selected.map((c) => c.name).join(', ')}";
+              }
+              return Text(
+                displayString,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              );
+            }),
           ],
         ),
         titleTextStyle: TextStyle(
@@ -83,53 +85,156 @@ class _MainPageState extends State<MainPage> {
           fontWeight: FontWeight.w700,
         ),
         backgroundColor: ColorConstants.MainPurpleBackground,
-        // toolbarHeight: 20,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () async {
+              try {
+                await homeController.getAllLeadStage();
+                await homeController.getAllLeads();
+
+                if (homeController.mainSelectedIndices.contains(0)) {
+                  await homeController.selectTimeRange(
+                    homeController.selectedTimeRange.value,
+                    context,
+                  );
+                } else {
+                  homeController.loadLeadsForSelectedTab(controller);
+                }
+              } catch (e) {
+                Get.snackbar(
+                  "Error",
+                  "Failed to refresh: $e",
+                  snackPosition: SnackPosition.TOP,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                );
+              }
+            },
+          ),
+          Obx(() {
+            final count = homeController.selectedCampaigns.length;
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.filter_list, color: Colors.white),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const CampaignMultiSelectDialog(),
+                    );
+                  },
+                ),
+                if (count > 0)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          }),
+        ],
       ),
       body: Container(
-        color: Colors.white,
+        color: Colors.transparent,
         child: Column(
           children: [
             // Tab selector
-            FutureBuilder(
-              future: homeController.getAllLeadStage(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const SizedBox(
-                    height: 50,
-                    child: Center(child: Text('Error loading stages')),
-                  );
-                }
-
-                final stages = homeController.allLeadStageRes.value.data ?? [];
-
-                return SizedBox(
+            Obx(() {
+              if (homeController.countLoading.value == PageState.loading) {
+                return const SizedBox(
                   height: 50,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: stages.length + 1,
-                    itemBuilder: (context, index) {
-                      final isHomeTab = index == 0;
-                      final isSelected = _selectedIndex == index;
-
-                      return buildCustomChip(
-                        text: isHomeTab
-                            ? 'Home'
-                            : stages[index - 1].name ?? 'Unknown',
-                        isSelected: _selectedIndex == index,
-                        onTap: () {
-                          setState(() {
-                            _selectedIndex = index;
-                            if (index > 0) _loadLeadsForSelectedTab();
-                          });
-                        },
-                      );
-                    },
+                  child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 );
-              },
-            ),
+              }
 
+              final stages = homeController.allLeadStageRes.value.data ?? [];
+
+              if (stages.isEmpty) {
+                return const SizedBox(
+                  height: 50,
+                  child: Center(child: Text('No stages found')),
+                );
+              }
+
+              // Register observable changes
+              final currentSelections = homeController.mainSelectedIndices
+                  .toList();
+
+              return SizedBox(
+                height: 50,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: stages.length + 1,
+                  itemBuilder: (context, index) {
+                    final isHomeTab = index == 0;
+                    final isSelected = currentSelections.contains(index);
+
+                    return buildCustomChip(
+                      text: isHomeTab
+                          ? 'Home'
+                          : stages[index - 1].name ?? 'Unknown',
+                      isSelected: isSelected,
+                      onTap: () {
+                        if (index == 0) {
+                          // Select only Home
+                          homeController.mainSelectedIndices
+                            ..clear()
+                            ..add(0);
+                        } else {
+                          // Remove Home selection
+                          homeController.mainSelectedIndices.remove(0);
+
+                          if (homeController.mainSelectedIndices.contains(
+                            index,
+                          )) {
+                            homeController.mainSelectedIndices.remove(index);
+
+                            // If no stage selected, go back to Home
+                            if (homeController.mainSelectedIndices.isEmpty) {
+                              homeController.mainSelectedIndices.add(0);
+                            }
+                          } else {
+                            homeController.mainSelectedIndices.add(index);
+                          }
+                        }
+
+                        if (!homeController.mainSelectedIndices.contains(0)) {
+                          homeController.loadLeadsForSelectedTab(controller);
+                        }
+                      },
+                    );
+                  },
+                ),
+              );
+            }),
+            const SizedBox(
+              height: 12,
+            ), // Gap between status chips and date filter
             // Content area
             Expanded(child: _buildContent()),
           ],
@@ -139,17 +244,26 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildContent() {
-    if (_selectedIndex == 0) {
-      return HomePage();
-    }
-
-    final stages = homeController.allLeadStageRes.value.data ?? [];
-    if (_selectedIndex - 1 >= stages.length) {
-      return const Center(child: Text('Invalid selection'));
-    }
-
     return Obx(() {
-      if (ccontroller.stateload.value == PageState.loading) {
+      if (homeController.mainSelectedIndices.contains(0)) {
+        return HomePage();
+      }
+
+      final stages = homeController.allLeadStageRes.value.data ?? [];
+      // Validation check for invalid selection
+      bool hasValidSelection = false;
+      for (int index in homeController.mainSelectedIndices) {
+        if (index > 0 && index - 1 < stages.length) {
+          hasValidSelection = true;
+          break;
+        }
+      }
+
+      if (!hasValidSelection) {
+        return const Center(child: Text('Invalid selection'));
+      }
+
+      if (controller.stateload.value == PageState.loading) {
         return Column(
           children: List.generate(
             3, // Number of shimmer cards to show
@@ -158,53 +272,85 @@ class _MainPageState extends State<MainPage> {
         );
       }
 
-      if (ccontroller.getLeadByStageRes.value.leadDetails?.isEmpty ?? true) {
-        return const Center(child: Text('No Leads'));
+      if (controller.getLeadByStageRes.value.leadDetails?.isEmpty ?? true) {
+        return RefreshIndicator(
+          onRefresh: () async {
+            try {
+              await homeController.getAllLeadStage();
+              homeController.loadLeadsForSelectedTab(controller);
+            } catch (e) {
+              // print("Error refreshing stage: $e");
+            }
+          },
+          child: const SingleChildScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: 200,
+              child: Center(child: Text('No Leads')),
+            ),
+          ),
+        );
       }
 
-      return SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              color: Colors.grey.shade200,
-              padding: const EdgeInsets.only(left: 20, top: 10, bottom: 10),
-              child: Text(
-                "${ccontroller.getLeadByStageRes.value.leadDetails?.length ?? 0} Leads",
-                style: greyHeading,
+      return RefreshIndicator(
+        onRefresh: () async {
+          try {
+            await homeController.getAllLeadStage();
+            homeController.loadLeadsForSelectedTab(controller);
+          } catch (e) {
+            // print("Error refreshing stage: $e");
+          }
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                color: Colors.grey.shade200,
+                padding: const EdgeInsets.only(left: 20, top: 10, bottom: 10),
+                child: Text(
+                  "${controller.getLeadByStageRes.value.leadDetails?.length ?? 0} Leads",
+                  style: greyHeading,
+                ),
               ),
-            ),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount:
-                  ccontroller.getLeadByStageRes.value.leadDetails?.length ?? 0,
-              itemBuilder: (context, index) {
-                final data =
-                    ccontroller.getLeadByStageRes.value.leadDetails![index];
-                return GestureDetector(
-                  onTap: () {
-                    String LeadId = data.sId!;
-                    print("*********************************** " + LeadId);
-                    Get.to(LeadDetailsBottomNavigationBarPage(LeadID: LeadId));
-                    // Get.to(LeadDetailsPage(leadId: LeadId));
-                  },
-                  child: ClaimedLeadCard(
-                    context,
-                    timeAgo(data.createdAt ?? ""),
-                    "${data.name?.first} ${data.name?.last}",
-                    data.phone ?? 'no number found',
-                    data.leadSourceId?.name ?? "no name",
-                    data.assignedTo?.name ?? "not assigned",
-                    data.compaignName?.name ?? "no Campaign found!",
-                    data.sId,
-                    data.email ?? "no email",
-                  ),
-                );
-              },
-            ),
-          ],
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount:
+                    controller.getLeadByStageRes.value.leadDetails?.length ??
+                    0,
+                itemBuilder: (context, index) {
+                  final data =
+                      controller.getLeadByStageRes.value.leadDetails![index];
+                  return GestureDetector(
+                    onTap: () {
+                      String LeadId = data.sId!;
+                      // print("*********************************** $LeadId");
+                      Get.to(
+                        LeadDetailsBottomNavigationBarPage(LeadID: LeadId),
+                      );
+                      // Get.to(LeadDetailsPage(leadId: LeadId));
+                    },
+                    child: ClaimedLeadCard(
+                      context,
+                      timeAgo(data.createdAt ?? ""),
+                      "${data.name?.first} ${data.name?.last}",
+                      data.phone ?? 'no number found',
+                      data.leadSourceId?.name ?? "no name",
+                      data.assignedTo?.name ?? "not assigned",
+                      data.compaignName?.name ?? "no Campaign found!",
+                      data.sId,
+                      data.email ?? "no email",
+                      data.followUpDate,
+                      data.stageFieldValues,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       );
     });

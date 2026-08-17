@@ -1,5 +1,4 @@
 import 'package:crm_flutter/api/dio_api.dart';
-import 'package:crm_flutter/api/dio_util.dart';
 import 'package:crm_flutter/api/response/all_quotes_response.dart';
 import 'package:get/get.dart';
 
@@ -23,7 +22,7 @@ class QuotesController extends GetxController {
         allQuotesRes.value = response;
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 

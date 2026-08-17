@@ -3,7 +3,6 @@ import 'package:crm_flutter/api/response/all_types_response.dart';
 import 'package:crm_flutter/pages/Settings/Types/type_controller.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 import 'package:crm_flutter/pages/Settings/Types/add_type_page.dart';
 import 'package:intl/intl.dart';

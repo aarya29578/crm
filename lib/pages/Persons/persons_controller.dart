@@ -35,7 +35,7 @@ class PersonsController extends GetxController {
         allOrganizationRes.value = response;
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 

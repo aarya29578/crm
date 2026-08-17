@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:crm_flutter/pages/Settings/Roles/role_controller.dart';
-import 'package:crm_flutter/pages/Settings/Types/add_type_page.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 class RolePage extends StatefulWidget {
   const RolePage({super.key});

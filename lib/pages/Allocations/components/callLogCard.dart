@@ -6,14 +6,14 @@ import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/Allocations/WhatsappSMS/whatsapp_sms_controller.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
-import 'package:crm_flutter/widgets/poppups/poppups.dart';
+import 'package:crm_flutter/pages/home/HomeController.dart';
+import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
 import 'package:dio/dio.dart';
 import 'package:external_path/external_path.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:velocity_x/velocity_x.dart';
 
@@ -32,11 +32,15 @@ class CallLogCard extends StatelessWidget {
   final DateTime? followUp;
   final String time;
   final int? phone;
+  final String? source;
+  final String? subSource;
   // final bool isMissedCall;
   final VoidCallback? onCallBack;
+  final List<dynamic>? stageFieldValues;
+  final VoidCallback? onTap;
 
   CallLogCard({
-    Key? key,
+    super.key,
     this.context,
     this.isMissedFUps = false,
     this.timelineData,
@@ -50,18 +54,31 @@ class CallLogCard extends StatelessWidget {
     this.decline,
     this.followUp,
     this.time = "no time found",
+    this.onTap,
     this.phone,
+    this.source,
+    this.subSource,
     // this.isMissedCall = false,
     this.onCallBack,
-  }) : super(key: key);
+    this.stageFieldValues,
+  });
 
   final Leaddetailscontroller leadDetailsController = Get.put(
     Leaddetailscontroller(),
   );
+
+  final HomeController homeController = Get.put(HomeController());
+
   final WhatsappSmsController _whatsappSmsController =
       Get.find<WhatsappSmsController>();
+
+  final AllocationController allocationController =
+      Get.find<AllocationController>();
+
   RxList<PlatformFile> selectedFiles = <PlatformFile>[].obs;
   RxList<String> removedFiles = <String>[].obs;
+  final RxBool isSavingField = false.obs;
+  final RxList<Timeline> updatedTimeline = <Timeline>[].obs;
 
   void openBottomSheet(
     BuildContext context,
@@ -70,7 +87,85 @@ class CallLogCard extends StatelessWidget {
   ) async {
     selectedFiles.clear();
     removedFiles.clear();
+
+    // Use the class-level timeline
+    updatedTimeline.assignAll(data ?? []);
+
+    await homeController.getAllLeadStage();
     await leadDetailsController.getAllLeadDetails(context, leadID);
+
+    final leadData = leadDetailsController.allLeadDetailRes.value.data;
+    final currentStageId = leadData?.leadStageId?.sId;
+    final stages = homeController.allLeadStageRes.value.data ?? [];
+    final selectedStageObj =
+        stages.where((e) => e.sId == currentStageId).isNotEmpty
+        ? stages.firstWhere((e) => e.sId == currentStageId)
+        : null;
+
+    if (selectedStageObj?.hasSubStatus == true) {
+      await homeController.getFailedSubLStage(selectedStageId: currentStageId);
+    }
+
+    final RxList<dynamic> stageFields = <dynamic>[].obs;
+    final RxBool isLoadingFields = false.obs;
+    final RxMap<String, DateTime> dynamicDates = <String, DateTime>{}.obs;
+    final RxMap<String, TextEditingController> textControllers =
+        <String, TextEditingController>{}.obs;
+
+    Future<void> fetchStageFields(String stageId) async {
+      isLoadingFields.value = true;
+      stageFields.clear();
+
+      try {
+        final res = await DioApi().getLeadStageById(stageId);
+        if (res['success'] == true) {
+          final List<dynamic> fields = res['data']['fields'] ?? [];
+          stageFields.assignAll(fields);
+
+          // Pre-fill
+          final leadData = leadDetailsController.allLeadDetailRes.value.data;
+          if (leadData != null) {
+            for (var field in fields) {
+              final fieldId = field['_id'];
+              final fieldType = field['fieldType'];
+
+              if (fieldType == 'datetime') {
+                if (leadData.followUpDate != null &&
+                    leadData.followUpDate!.isNotEmpty) {
+                  try {
+                    dynamicDates[fieldId] = DateTime.parse(
+                      leadData.followUpDate!,
+                    ).toLocal();
+                  } catch (e) {
+                    print("Error parsing followUpDate: $e");
+                  }
+                }
+              } else if (fieldType == 'text') {
+                final savedValue = leadData.stageFieldValues?.firstWhere(
+                  (f) => f['fieldId'] == fieldId,
+                  orElse: () => null,
+                );
+                if (savedValue != null) {
+                  textControllers[fieldId] = TextEditingController(
+                    text: savedValue['value']?.toString() ?? '',
+                  );
+                } else {
+                  textControllers[fieldId] = TextEditingController();
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        print("Error fetching stage fields: $e");
+      } finally {
+        isLoadingFields.value = false;
+      }
+    }
+
+    if (currentStageId != null) {
+      await fetchStageFields(currentStageId);
+    }
 
     // RxList documents = <dynamic>[].obs;
     RxList<Document> documents = <Document>[].obs;
@@ -204,6 +299,735 @@ class CallLogCard extends StatelessWidget {
                           ),
 
                         const SizedBox(height: 14),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Obx(() {
+                            final leadData = leadDetailsController
+                                .allLeadDetailRes
+                                .value
+                                .data;
+                            final currentRating = leadData?.priority;
+                            final List<String> ratingOptions = [
+                              "Hot",
+                              "Warm",
+                              "Cold",
+                              "Very Hot",
+                              "Dead",
+                            ];
+
+                            return DropdownButtonFormField<String>(
+                              initialValue:
+                                  (currentRating != null &&
+                                      ratingOptions.contains(currentRating))
+                                  ? currentRating
+                                  : null,
+                              decoration: InputDecoration(
+                                labelText: "Lead Rating",
+                                prefixIcon: const Icon(
+                                  Icons.star_outline,
+                                  color: Colors.blue,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Colors.blue,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: isDark
+                                    ? Colors.grey[900]
+                                    : Colors.grey.shade50,
+                              ),
+                              items: [
+                                const DropdownMenuItem<String>(
+                                  value: null,
+                                  child: Text("None"),
+                                ),
+                                ...ratingOptions.map((rating) {
+                                  return DropdownMenuItem<String>(
+                                    value: rating,
+                                    child: Text(rating),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) async {
+                                if (leadId != null) {
+                                  try {
+                                    await DioApi().patchLead(leadId!, {
+                                      "priority": value,
+                                    });
+                                    // Refresh details
+                                    await leadDetailsController
+                                        .getAllLeadDetails(context, leadId!);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "Rating updated successfully",
+                                        ),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          "Failed to update rating: $e",
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                            );
+                          }),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Obx(() {
+                            final stages =
+                                homeController.allLeadStageRes.value.data ?? [];
+                            final leadData = leadDetailsController
+                                .allLeadDetailRes
+                                .value
+                                .data;
+                            final currentStageId = leadData?.leadStageId?.sId;
+                            final currentSubStatusId =
+                                leadData?.subStatusId?.sId;
+
+                            final selectedStageObj =
+                                stages
+                                    .where((e) => e.sId == currentStageId)
+                                    .isNotEmpty
+                                ? stages.firstWhere(
+                                    (e) => e.sId == currentStageId,
+                                  )
+                                : null;
+                            final hasSubStatus =
+                                selectedStageObj?.hasSubStatus == true;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                DropdownButtonFormField<String>(
+                                  initialValue:
+                                      stages.any((s) => s.sId == currentStageId)
+                                      ? currentStageId
+                                      : null,
+                                  decoration: InputDecoration(
+                                    labelText: "Lead Status",
+                                    prefixIcon: const Icon(
+                                      Icons.layers_outlined,
+                                      color: Colors.blue,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Colors.blue,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    fillColor: isDark
+                                        ? Colors.grey[900]
+                                        : Colors.grey.shade50,
+                                  ),
+                                  items: stages.map((stage) {
+                                    return DropdownMenuItem<String>(
+                                      value: stage.sId,
+                                      child: Text(
+                                        stage.name ?? '',
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? Colors.white
+                                              : Colors.black87,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (value) async {
+                                    if (value != null && leadId != null) {
+                                      try {
+                                        final targetStageObj = stages
+                                            .firstWhere((e) => e.sId == value);
+                                        final newHasSubStatus =
+                                            targetStageObj.hasSubStatus == true;
+
+                                        await DioApi().patchLead(leadId!, {
+                                          "lead_stage_id": value,
+                                          "sub_status_id": null,
+                                        });
+
+                                        if (newHasSubStatus) {
+                                          await homeController
+                                              .getFailedSubLStage(
+                                                selectedStageId: value,
+                                              );
+                                        }
+
+                                        // Fetch new stage fields
+                                        await fetchStageFields(value);
+
+                                        // Refresh details
+                                        await leadDetailsController
+                                            .getAllLeadDetails(
+                                              context,
+                                              leadId!,
+                                            );
+                                        if (Get.isRegistered<
+                                          AllocationController
+                                        >()) {
+                                          final allocationController =
+                                              Get.find<AllocationController>();
+                                          allocationController.selectTimeRange(
+                                            allocationController
+                                                .selectedTimeRange
+                                                .value,
+                                            context,
+                                          );
+                                        }
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              "Status updated successfully",
+                                            ),
+                                          ),
+                                        );
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              "Failed to update status: $e",
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+
+                                if (hasSubStatus) ...[
+                                  const SizedBox(height: 20),
+                                  if (homeController.subStageLoading.value ==
+                                      PageState.loading)
+                                    const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                  else ...[
+                                    (() {
+                                      final subStatuses =
+                                          homeController
+                                              .allSubLStageRes
+                                              .value
+                                              .data ??
+                                          [];
+
+                                      if (subStatuses.isEmpty) {
+                                        return const Text(
+                                          "No Sub Status Available",
+                                        );
+                                      }
+
+                                      return DropdownButtonFormField<String>(
+                                        initialValue:
+                                            subStatuses.any(
+                                              (sub) =>
+                                                  sub.id == currentSubStatusId,
+                                            )
+                                            ? currentSubStatusId
+                                            : null,
+                                        decoration: InputDecoration(
+                                          labelText: "Select Sub Status",
+                                          prefixIcon: const Icon(
+                                            Icons
+                                                .subdirectory_arrow_right_rounded,
+                                            color: Colors.blue,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: Colors.grey.shade300,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: const BorderSide(
+                                              color: Colors.blue,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          filled: true,
+                                          fillColor: isDark
+                                              ? Colors.grey[900]
+                                              : Colors.grey.shade50,
+                                        ),
+                                        items: subStatuses.map((sub) {
+                                          return DropdownMenuItem<String>(
+                                            value: sub.id,
+                                            child: Text(
+                                              sub.name ?? '',
+                                              style: TextStyle(
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : Colors.black87,
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (val) async {
+                                          if (val != null && leadId != null) {
+                                            try {
+                                              await DioApi().patchLead(
+                                                leadId!,
+                                                {"sub_status_id": val},
+                                              );
+                                              // Refresh details
+                                              await leadDetailsController
+                                                  .getAllLeadDetails(
+                                                    context,
+                                                    leadId!,
+                                                  );
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    "Sub Status updated successfully",
+                                                  ),
+                                                ),
+                                              );
+                                            } catch (e) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    "Failed to update sub status: $e",
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                      );
+                                    })(),
+                                  ],
+                                ],
+
+                                // Dynamic Fields Section
+                                if (isLoadingFields.value)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 20),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                else if (stageFields.isNotEmpty) ...[
+                                  ...stageFields.map((field) {
+                                    final fieldId = field['_id'];
+                                    final fieldType = field['fieldType'];
+                                    final fieldName =
+                                        field['name'] ??
+                                        (fieldType == 'datetime'
+                                            ? 'Date & Time'
+                                            : 'Field');
+
+                                    if (fieldType == 'datetime') {
+                                      final dateValue = dynamicDates[fieldId];
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 20),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "$fieldName *",
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : Colors.black87,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            InkWell(
+                                              onTap: () async {
+                                                final now = DateTime.now();
+                                                final date =
+                                                    await showDatePicker(
+                                                      context: context,
+                                                      initialDate:
+                                                          dateValue ?? now,
+                                                      firstDate: DateTime(2000),
+                                                      lastDate: DateTime(2100),
+                                                    );
+                                                if (date == null) return;
+
+                                                final time =
+                                                    await showTimePicker(
+                                                      context: context,
+                                                      initialTime:
+                                                          TimeOfDay.fromDateTime(
+                                                            dateValue ??
+                                                                DateTime.now(),
+                                                          ),
+                                                    );
+                                                if (time == null) return;
+
+                                                final combined = DateTime(
+                                                  date.year,
+                                                  date.month,
+                                                  date.day,
+                                                  time.hour,
+                                                  time.minute,
+                                                );
+                                                if (combined.isBefore(
+                                                  DateTime.now(),
+                                                )) {
+                                                  Get.snackbar(
+                                                    "Error",
+                                                    "Cannot select a past date or time",
+                                                    snackPosition:
+                                                        SnackPosition.TOP,
+                                                    backgroundColor: Colors.red,
+                                                    colorText: Colors.white,
+                                                  );
+                                                  return;
+                                                }
+                                                dynamicDates[fieldId] =
+                                                    combined;
+
+                                                // Save to backend immediately
+                                                try {
+                                                  await DioApi()
+                                                      .patchLead(leadId!, {
+                                                        "followUpDate": combined
+                                                            .toIso8601String(),
+                                                      });
+                                                  await leadDetailsController
+                                                      .getAllLeadDetails(
+                                                        context,
+                                                        leadId!,
+                                                      );
+                                                  Get.snackbar(
+                                                    "Success",
+                                                    "Date updated successfully",
+                                                    snackPosition:
+                                                        SnackPosition.TOP,
+                                                    backgroundColor:
+                                                        Colors.green,
+                                                    colorText: Colors.white,
+                                                  );
+                                                } catch (e) {
+                                                  Get.snackbar(
+                                                    "Error",
+                                                    "Failed to update date: $e",
+                                                    snackPosition:
+                                                        SnackPosition.TOP,
+                                                    backgroundColor: Colors.red,
+                                                    colorText: Colors.white,
+                                                  );
+                                                }
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 16,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(
+                                                    color: Colors.grey.shade300,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  color: isDark
+                                                      ? Colors.grey[900]
+                                                      : Colors.grey.shade50,
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(
+                                                      Icons
+                                                          .calendar_month_outlined,
+                                                      color: Colors.blue,
+                                                      size: 22,
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Text(
+                                                        dateValue == null
+                                                            ? "Select $fieldName"
+                                                            : DateFormat(
+                                                                'dd MMM yyyy • hh:mm a',
+                                                              ).format(
+                                                                dateValue,
+                                                              ),
+                                                        style: TextStyle(
+                                                          fontSize: 15,
+                                                          color:
+                                                              dateValue == null
+                                                              ? (isDark
+                                                                    ? Colors
+                                                                          .grey[400]
+                                                                    : Colors
+                                                                          .grey
+                                                                          .shade600)
+                                                              : (isDark
+                                                                    ? Colors
+                                                                          .white
+                                                                    : Colors
+                                                                          .black87),
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const Icon(
+                                                      Icons
+                                                          .arrow_forward_ios_rounded,
+                                                      size: 14,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    } else if (fieldType == 'text') {
+                                      if (!textControllers.containsKey(
+                                        fieldId,
+                                      )) {
+                                        textControllers[fieldId] =
+                                            TextEditingController();
+                                      }
+                                      final controller =
+                                          textControllers[fieldId]!;
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 20),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              fieldName,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                                color: isDark
+                                                    ? Colors.white70
+                                                    : Colors.black87,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: TextFormField(
+                                                    controller: controller,
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          "Enter $fieldName",
+                                                      prefixIcon: const Icon(
+                                                        Icons.edit_note_rounded,
+                                                        color: Colors.blue,
+                                                      ),
+                                                      border: OutlineInputBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                      ),
+                                                      enabledBorder:
+                                                          OutlineInputBorder(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  12,
+                                                                ),
+                                                            borderSide:
+                                                                BorderSide(
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade300,
+                                                                ),
+                                                          ),
+                                                      focusedBorder:
+                                                          OutlineInputBorder(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  12,
+                                                                ),
+                                                            borderSide:
+                                                                const BorderSide(
+                                                                  color: Colors
+                                                                      .blue,
+                                                                  width: 2,
+                                                                ),
+                                                          ),
+                                                      filled: true,
+                                                      fillColor: isDark
+                                                          ? Colors.grey[900]
+                                                          : Colors.grey.shade50,
+                                                      contentPadding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 16,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Obx(
+                                                  () => IconButton(
+                                                    icon: isSavingField.value
+                                                        ? const SizedBox(
+                                                            width: 18,
+                                                            height: 18,
+                                                            child:
+                                                                CircularProgressIndicator(
+                                                                  strokeWidth:
+                                                                      2,
+                                                                ),
+                                                          )
+                                                        : const Icon(
+                                                            Icons.save_rounded,
+                                                            color: Colors.blue,
+                                                          ),
+                                                    onPressed:
+                                                        isSavingField.value
+                                                        ? null // disabled while a save is already in progress
+                                                        : () async {
+                                                            isSavingField
+                                                                    .value =
+                                                                true;
+                                                            try {
+                                                              final textFields =
+                                                                  <
+                                                                    Map<
+                                                                      String,
+                                                                      dynamic
+                                                                    >
+                                                                  >[];
+                                                              for (var f
+                                                                  in stageFields) {
+                                                                final fId =
+                                                                    f['_id'];
+                                                                final fType =
+                                                                    f['fieldType'];
+                                                                if (fType ==
+                                                                    'text') {
+                                                                  final c =
+                                                                      textControllers[fId];
+                                                                  if (c !=
+                                                                          null &&
+                                                                      c
+                                                                          .text
+                                                                          .isNotEmpty) {
+                                                                    textFields.add({
+                                                                      "fieldId":
+                                                                          fId,
+                                                                      "fieldType":
+                                                                          "text",
+                                                                      "value": c
+                                                                          .text,
+                                                                    });
+                                                                  }
+                                                                }
+                                                              }
+                                                              await DioApi().patchLead(
+                                                                leadId!,
+                                                                {
+                                                                  "stageFieldValues":
+                                                                      textFields,
+                                                                },
+                                                              );
+                                                              await leadDetailsController
+                                                                  .getAllLeadDetails(
+                                                                    context,
+                                                                    leadId!,
+                                                                  );
+                                                              ScaffoldMessenger.of(
+                                                                context,
+                                                              ).showSnackBar(
+                                                                const SnackBar(
+                                                                  content: Text(
+                                                                    "Field saved successfully",
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            } catch (e) {
+                                                              ScaffoldMessenger.of(
+                                                                context,
+                                                              ).showSnackBar(
+                                                                SnackBar(
+                                                                  content: Text(
+                                                                    "Failed to save field: $e",
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            } finally {
+                                                              isSavingField
+                                                                      .value =
+                                                                  false; // always reset, success or fail
+                                                            }
+                                                          },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                    return const SizedBox();
+                                  }),
+                                ],
+                              ],
+                            );
+                          }),
+                        ),
+
+                        const SizedBox(height: 20),
 
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -666,177 +1490,232 @@ class CallLogCard extends StatelessWidget {
                             },
                           );
                         }),
+
                         // ],
                         const SizedBox(height: 14),
 
-                        if (data == null || data.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: Center(
-                              child: Text(
-                                "No details found!",
-                                style: TextStyle(fontSize: 14),
+                        // Source / Campaign / Subsource / Status details box
+                        // Shown regardless of whether timeline data exists
+                        if ((source != null && source!.isNotEmpty) ||
+                            (campaign != null && campaign!.isNotEmpty) ||
+                            (subSource != null && subSource!.isNotEmpty) ||
+                            tag.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.grey[850]
+                                    : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (source != null && source!.isNotEmpty)
+                                    _buildDetailRow('Source:', source!),
+                                  if (source != null &&
+                                      source!.isNotEmpty &&
+                                      ((campaign != null &&
+                                              campaign!.isNotEmpty) ||
+                                          (subSource != null &&
+                                              subSource!.isNotEmpty) ||
+                                          tag.isNotEmpty))
+                                    const SizedBox(height: 8),
+                                  if (campaign != null && campaign!.isNotEmpty)
+                                    _buildDetailRow('Campaign:', campaign!),
+                                  if (campaign != null &&
+                                      campaign!.isNotEmpty &&
+                                      ((subSource != null &&
+                                              subSource!.isNotEmpty) ||
+                                          tag.isNotEmpty))
+                                    const SizedBox(height: 8),
+                                  if (subSource != null &&
+                                      subSource!.isNotEmpty)
+                                    _buildDetailRow('Subsource:', subSource!),
+                                  if (subSource != null &&
+                                      subSource!.isNotEmpty &&
+                                      tag.isNotEmpty)
+                                    const SizedBox(height: 8),
+                                  if (tag.isNotEmpty)
+                                    _buildDetailRow('Status:', tag),
+                                ],
                               ),
                             ),
                           ),
 
-                        if (data != null && data.isNotEmpty) ...[
-                          Text(
-                            "Timeline",
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            textAlign: TextAlign.start,
-                          ),
-                          const SizedBox(height: 15),
-
-                          /// Timeline list
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            controller: scrollController,
-                            itemCount: data.length ?? 0,
-                            itemBuilder: (context, index) {
-                              final item = data[index];
-                              // final isLast = index == (data?.length ?? 1 - 1);
-                              final isLast = index == ((data.length ?? 0) - 1);
-
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
+                        Obx(() {
+                          if (updatedTimeline.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 40),
+                              child: Center(
+                                child: Text(
+                                  "No details found!",
+                                  style: TextStyle(fontSize: 14),
                                 ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    /// LEFT TIMELINE INDICATOR
-                                    Column(
-                                      children: [
-                                        /// Circle icon
-                                        Container(
-                                          width: 30,
-                                          height: 30,
-                                          decoration: BoxDecoration(
-                                            color: index == 0
-                                                ? Colors.blue.shade50
-                                                : Colors.grey.shade50,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: index == 0
-                                                  ? Colors.blue
-                                                  : Colors.grey,
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            index == 0
-                                                ? Icons.circle
-                                                : Icons.check,
-                                            size: 16,
-                                            color: index == 0
-                                                ? Colors.blue
-                                                : Colors.grey,
-                                          ),
-                                        ),
+                              ),
+                            );
+                          }
 
-                                        /// Vertical line
-                                        if (!isLast)
-                                          Container(
-                                            width: 2,
-                                            height: 170,
-                                            color: Colors.blue.shade100,
-                                          ),
-                                      ],
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Timeline",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+
+                              const SizedBox(height: 15),
+
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: updatedTimeline.length,
+                                itemBuilder: (context, index) {
+                                  final item = updatedTimeline[index];
+
+                                  final isLast =
+                                      index == updatedTimeline.length - 1;
+
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
                                     ),
-
-                                    const SizedBox(width: 12),
-
-                                    /// RIGHT CONTENT
-                                    Expanded(
-                                      child: Container(
-                                        margin: const EdgeInsets.only(
-                                          bottom: 16,
-                                        ),
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: isDark
-                                              ? Colors.grey[850]
-                                              : Colors.grey.shade100,
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Column(
                                           children: [
-                                            /// Stage
-                                            Text(
-                                              item?.stage ?? '',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-
-                                            const SizedBox(height: 2),
-
-                                            /// Date
-                                            Text(
-                                              formatTimelineDate(
-                                                item?.date ?? '',
-                                              ),
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-
-                                            const SizedBox(height: 8),
-
-                                            const Text(
-                                              "Agent: ",
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-
-                                            /// Note
-                                            Text(
-                                              item?.agent ?? '',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 3),
-                                            if (item.note != null &&
-                                                item.note!.isNotEmpty)
-                                              const Text(
-                                                "Notes: ",
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                  fontSize: 14,
+                                            Container(
+                                              width: 30,
+                                              height: 30,
+                                              decoration: BoxDecoration(
+                                                color: index == 0
+                                                    ? Colors.blue.shade50
+                                                    : Colors.grey.shade50,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: index == 0
+                                                      ? Colors.blue
+                                                      : Colors.grey,
+                                                  width: 2,
                                                 ),
                                               ),
-
-                                            /// Note
-                                            Text(
-                                              item.note ?? '',
-                                              style: const TextStyle(
-                                                fontSize: 13,
+                                              child: Icon(
+                                                index == 0
+                                                    ? Icons.circle
+                                                    : Icons.check,
+                                                size: 16,
+                                                color: index == 0
+                                                    ? Colors.blue
+                                                    : Colors.grey,
                                               ),
                                             ),
+
+                                            if (!isLast)
+                                              Container(
+                                                width: 2,
+                                                height: 170,
+                                                color: Colors.blue.shade100,
+                                              ),
                                           ],
                                         ),
-                                      ),
+
+                                        const SizedBox(width: 12),
+
+                                        Expanded(
+                                          child: Container(
+                                            margin: const EdgeInsets.only(
+                                              bottom: 16,
+                                            ),
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? Colors.grey[850]
+                                                  : Colors.grey.shade100,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  item.stage ?? '',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+
+                                                const SizedBox(height: 2),
+
+                                                Text(
+                                                  formatTimelineDate(
+                                                    item.date ?? '',
+                                                  ),
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+
+                                                const SizedBox(height: 8),
+
+                                                const Text(
+                                                  "Agent: ",
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+
+                                                Text(
+                                                  item.agent ?? '',
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+
+                                                if (item.note != null &&
+                                                    item.note!.isNotEmpty) ...[
+                                                  const SizedBox(height: 3),
+
+                                                  const Text(
+                                                    "Notes: ",
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+
+                                                  Text(
+                                                    item.note ?? '',
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                                  );
+                                },
+                              ),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -885,64 +1764,263 @@ class CallLogCard extends StatelessWidget {
     return DateFormat('dd MMM yyyy, hh:mm a').format(dateTime);
   }
 
+  String _processTemplate(String body) {
+    String message = body;
+    final agentName =
+        LocalStorage.sharedPreferences!.getString('user_name') ?? "User";
+
+    message = message.replaceAll(
+      RegExp(
+        r'[\{\[\<]+\s*(?:customer_name|customer name|name|lead_name|customer)\s*[\}\]\>]+',
+        caseSensitive: false,
+      ),
+      name,
+    );
+    message = message.replaceAll(
+      RegExp(
+        r'[\{\[\<]+\s*(?:agent_name|agent name|agent)\s*[\}\]\>]+',
+        caseSensitive: false,
+      ),
+      agentName,
+    );
+    return message;
+  }
+
   void onWhatsApp(BuildContext context) {
     print("WhatsApp clicked");
 
-    /// reset before opening
     _whatsappSmsController.currentPage = 1;
     _whatsappSmsController.wsData.clear();
     _whatsappSmsController.isMoreDataAvailable.value = true;
 
-    /// OPEN DIALOG FIRST
-    alertDialog(
-      () async {
-        if (_whatsappSmsController.wsData.isEmpty ||
-            _whatsappSmsController.wsData.first.body == null) {
-          Get.snackbar(
-            "Error",
-            "No message template found",
-            snackPosition: SnackPosition.BOTTOM,
-          );
-          return;
-        }
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.message, color: Colors.green.shade700, size: 24),
+                const SizedBox(width: 10),
+                Text(
+                  'WhatsApp Templates',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          contentPadding: const EdgeInsets.only(top: 10, bottom: 0),
+          content: Obx(() {
+            if (_whatsappSmsController.isLoading.value == PageState.loading &&
+                _whatsappSmsController.wsData.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(30.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.green,
+                    ),
+                    SizedBox(height: 15),
+                    Text("Loading templates..."),
+                  ],
+                ),
+              );
+            }
 
-        final template = _whatsappSmsController.wsData.first.body ?? '';
-        final customerName = _whatsappSmsController.wsData.first.name ?? '';
+            if (_whatsappSmsController.wsData.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(30.0),
+                child: Text(
+                  "No templates available",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
+              );
+            }
 
-        final message = template
-            .replaceAll("{{customer_name}}", name)
-            .replaceAll(
-              "{{agent_name}}",
-              LocalStorage.sharedPreferences!.getString('user_name') ?? "User",
+            return Container(
+              width: double.maxFinite,
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.5,
+              ),
+              child: Scrollbar(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  itemCount: _whatsappSmsController.wsData.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final templateData = _whatsappSmsController.wsData[index];
+                    final templateBody = templateData.body ?? '';
+                    final templateName =
+                        templateData.name ?? 'Template ${index + 1}';
+
+                    final processedMessage = _processTemplate(templateBody);
+
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () async {
+                        try {
+                          if (leadId == null || leadId!.isEmpty) {
+                            Get.snackbar(
+                              "Error",
+                              "Lead ID is not available",
+                              snackPosition: SnackPosition.TOP,
+                            );
+                            return;
+                          }
+
+                          final templateId = templateData.sId;
+
+                          if (templateId == null || templateId.isEmpty) {
+                            Get.snackbar(
+                              "Error",
+                              "Template ID is not available",
+                              snackPosition: SnackPosition.TOP,
+                            );
+                            return;
+                          }
+
+                          // Record template usage
+                          final response = await DioApi().recordTemplateUsage(
+                            leadId: leadId!,
+                            templateId: templateId,
+                            channel: "whatsapp",
+                          );
+
+                          print(
+                            "========== TEMPLATE USAGE RESPONSE ==========",
+                          );
+                          print(response);
+                          print(
+                            "=============================================",
+                          );
+
+                          // Refresh allocation data and wait for it to finish
+                          await allocationController.refreshData();
+
+                          // Find the updated lead
+                          final updatedLead = allocationController.leads
+                              .firstWhereOrNull((lead) => lead.sId == leadId);
+
+                          // Update the timeline shown in the bottom sheet
+                          if (updatedLead != null) {
+                            updatedTimeline.assignAll(
+                              updatedLead.timeline ?? [],
+                            );
+
+                            print("========== UPDATED TIMELINE ==========");
+                            print("Timeline count: ${updatedTimeline.length}");
+                            print("======================================");
+                          } else {
+                            print("Updated lead not found");
+                          }
+
+                          // Close template dialog
+                          Navigator.pop(dialogContext);
+
+                          // Open WhatsApp only once
+                          await openWhatsApp(
+                            phone.toString(),
+                            processedMessage,
+                          );
+                        } catch (e) {
+                          print("Template usage error: $e");
+
+                          Get.snackbar(
+                            "Error",
+                            "Failed to record template usage: $e",
+                            snackPosition: SnackPosition.TOP,
+                          );
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    templateName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    processedMessage,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.send,
+                                color: Colors.green.shade600,
+                                size: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             );
-
-        await openWhatsApp(phone.toString(), message);
+          }),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 5,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.grey.shade800),
+              ),
+            ),
+          ],
+        );
       },
-      context,
-      _whatsappSmsController,
-      whichSource: 'WhatsApp',
-      content: Obx(() {
-        if (_whatsappSmsController.isLoading.value == PageState.loading) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(strokeWidth: 2, color: Colors.black54),
-              SizedBox(height: 10),
-              Text("Loading..."),
-            ],
-          );
-        }
-
-        /// Show proper message if empty
-        if (_whatsappSmsController.wsData.isEmpty) {
-          return Text(
-            "No templates available",
-            style: TextStyle(color: Colors.red),
-          );
-        }
-
-        return Text('Do you want to open WhatsApp?');
-      }),
     );
 
     /// CALL API AFTER DIALOG OPENS
@@ -985,55 +2063,231 @@ class CallLogCard extends StatelessWidget {
     _whatsappSmsController.wsData.clear();
     _whatsappSmsController.isMoreDataAvailable.value = true;
 
-    alertDialog(
-      () async {
-        if (_whatsappSmsController.wsData.isEmpty ||
-            _whatsappSmsController.wsData.first.body == null) {
-          Get.snackbar(
-            "Error",
-            "No message template found",
-            snackPosition: SnackPosition.BOTTOM,
-          );
-          return;
-        }
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.sms, color: Colors.blue.shade700, size: 24),
+                const SizedBox(width: 10),
+                Text(
+                  'SMS Templates',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          contentPadding: const EdgeInsets.only(top: 10, bottom: 0),
+          content: Obx(() {
+            if (_whatsappSmsController.isLoading.value == PageState.loading &&
+                _whatsappSmsController.wsData.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(30.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.blue,
+                    ),
+                    SizedBox(height: 15),
+                    Text("Loading templates..."),
+                  ],
+                ),
+              );
+            }
 
-        final template = _whatsappSmsController.wsData.first.body ?? '';
-        final customerName = _whatsappSmsController.wsData.first.name ?? '';
+            if (_whatsappSmsController.wsData.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(30.0),
+                child: Text(
+                  "No templates available",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.red, fontSize: 16),
+                ),
+              );
+            }
 
-        final message = template
-            .replaceAll("{{customer_name}}", name)
-            .replaceAll(
-              "{{agent_name}}",
-              LocalStorage.sharedPreferences!.getString('user_name') ?? "User",
+            return Container(
+              width: double.maxFinite,
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.5,
+              ),
+              child: Scrollbar(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  itemCount: _whatsappSmsController.wsData.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final templateData = _whatsappSmsController.wsData[index];
+                    final templateBody = templateData.body ?? '';
+                    final templateName =
+                        templateData.name ?? 'Template ${index + 1}';
+
+                    final processedMessage = _processTemplate(templateBody);
+
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () async {
+                        try {
+                          // Check lead ID
+                          if (leadId == null || leadId!.isEmpty) {
+                            Get.snackbar(
+                              "Error",
+                              "Lead ID is not available",
+                              snackPosition: SnackPosition.TOP,
+                            );
+                            return;
+                          }
+
+                          // Get selected template ID
+                          final templateId = templateData.sId;
+
+                          if (templateId == null || templateId.isEmpty) {
+                            Get.snackbar(
+                              "Error",
+                              "Template ID is not available",
+                              snackPosition: SnackPosition.TOP,
+                            );
+                            return;
+                          }
+
+                          // Record template usage
+                          final response = await DioApi().recordTemplateUsage(
+                            leadId: leadId!,
+                            templateId: templateId,
+                            channel: "sms",
+                          );
+
+                          print(
+                            "========== TEMPLATE USAGE RESPONSE ==========",
+                          );
+                          print(response);
+                          print(
+                            "=============================================",
+                          );
+                          await allocationController.refreshData();
+
+                          // Find the updated lead
+                          final updatedLead = allocationController.leads
+                              .firstWhereOrNull((lead) => lead.sId == leadId);
+
+                          // Update the timeline shown in the bottom sheet
+                          if (updatedLead != null) {
+                            updatedTimeline.assignAll(
+                              updatedLead.timeline ?? [],
+                            );
+
+                            print("========== UPDATED SMS TIMELINE ==========");
+                            print("Timeline count: ${updatedTimeline.length}");
+                            print("==========================================");
+                          } else {
+                            print(
+                              "Updated lead not found after SMS template usage",
+                            );
+                          }
+
+                          // Close template dialog
+                          Navigator.pop(dialogContext);
+
+                          // Open SMS
+                          await openSMS(phone.toString(), processedMessage);
+                        } catch (e) {
+                          Get.snackbar(
+                            "Error",
+                            "Failed to record SMS template usage: $e",
+                            snackPosition: SnackPosition.TOP,
+                          );
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    templateName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    processedMessage,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.send,
+                                color: Colors.blue.shade600,
+                                size: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             );
-
-        await openSMS(phone.toString(), message);
+          }),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 5,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.grey.shade800),
+              ),
+            ),
+          ],
+        );
       },
-      context,
-      _whatsappSmsController,
-      whichSource: 'SMS',
-      content: Obx(() {
-        if (_whatsappSmsController.isLoading.value == PageState.loading) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(strokeWidth: 2, color: Colors.black54),
-              SizedBox(height: 10),
-              Text("Loading..."),
-            ],
-          );
-        }
-
-        /// Show proper message if empty
-        if (_whatsappSmsController.wsData.isEmpty) {
-          return Text(
-            "No templates available",
-            style: TextStyle(color: Colors.red),
-          );
-        }
-
-        return Text('Do you want to open SMS?');
-      }),
     );
 
     Future.microtask(() {
@@ -1056,6 +2310,20 @@ class CallLogCard extends StatelessWidget {
     }
   }
 
+  // WE USED FOR SHOWING DATA INSIDE CARD OF ALLOCATION PAGE [SOURCE , SUBSOURCE AND CAMPAIGN]
+  Widget _buildDetailRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        ),
+        Text(value, style: const TextStyle(fontSize: 13)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1066,10 +2334,6 @@ class CallLogCard extends StatelessWidget {
     // Parse and format
     final dateTime = DateTime.parse(isoTime).toLocal();
     final formattedTime = DateFormat('hh:mm a, dd MMM').format(dateTime);
-
-    // Color scheme
-    // final statusColor = isMissedCall ? Colors.red : Colors.green;
-    // final statusIcon = isMissedCall ? Icons.phone_missed : Icons.phone;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -1087,7 +2351,7 @@ class CallLogCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: Row(
             children: [
               // Status indicator
@@ -1122,7 +2386,9 @@ class CallLogCard extends StatelessWidget {
                   hoverColor: Colors.transparent,
                   highlightColor: Colors.transparent,
                   borderRadius: BorderRadius.all(Radius.circular(12)),
-                  onTap: () => openBottomSheet(context, timelineData, leadId),
+                  onTap: (assignedTo != null || isMissedFUps == true)
+                      ? () => openBottomSheet(context, timelineData, leadId)
+                      : null,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1174,7 +2440,9 @@ class CallLogCard extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 2),
-                                if (phone != null)
+                                if (phone != null &&
+                                    phone != 0 &&
+                                    assignedTo != null)
                                   Text(
                                     phone.toString(),
                                     style: TextStyle(
@@ -1222,7 +2490,55 @@ class CallLogCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 10),
-                      if (campaign != null) ...[
+
+                      // SOURCE IN ALLOCATION PAGE
+                      if (source != null && source!.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.orange.shade50,
+                                Colors.orange.shade100,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            border: Border.all(
+                              color: Colors.orange.withOpacity(0.3),
+                              width: 0.5,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.orange.shade900,
+                              ),
+                              children: [
+                                const TextSpan(
+                                  text: 'Source: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                TextSpan(
+                                  text: source!,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+
+                      // CAMPAIGN IN ALLOCATION PAGE
+                      if (campaign != null && campaign!.isNotEmpty) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -1243,17 +2559,76 @@ class CallLogCard extends StatelessWidget {
                             ),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Text(
-                            campaign ?? '',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue.shade800,
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.green.shade900,
+                              ),
+                              children: [
+                                const TextSpan(
+                                  text: 'Campaign: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                TextSpan(
+                                  text: campaign,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
+                        const SizedBox(height: 10),
                       ],
-                      const SizedBox(height: 10),
+
+                      // SUBSOURCE IN ALLOCATION PAGE
+                      if (subSource != null && subSource!.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.purple.shade50,
+                                Colors.purple.shade100,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            border: Border.all(
+                              color: Colors.purple.withOpacity(0.3),
+                              width: 0.5,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.purple.shade900,
+                              ),
+                              children: [
+                                const TextSpan(
+                                  text: 'Subsource: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                TextSpan(
+                                  text: subSource!,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+
                       if (tag.isNotEmpty) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1275,50 +2650,52 @@ class CallLogCard extends StatelessWidget {
                             ),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Text(
-                            tag,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue.shade800,
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.blue.shade900,
+                              ),
+                              children: [
+                                const TextSpan(
+                                  text: 'Status: ',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                TextSpan(
+                                  text: tag,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ],
                       const SizedBox(height: 7),
-                      if (followUp != null && tag == 'Follow Up') ...[
+
+                      if (followUp != null) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.yellow.shade200,
-                                Colors.yellow.shade300,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
+                            color: Colors.red.shade50,
                             border: Border.all(
-                              color: Colors.yellow,
-                              width: 0.6,
+                              color: Colors.red.withOpacity(0.3),
+                              width: 0.5,
                             ),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
-                            followUp != null
-                                ? DateFormat(
-                                    'dd/MM/yyyy  hh:mm a',
-                                  ).format(followUp!.toLocal())
-                                : 'no date & time',
-                            // followUp!.toIso8601String(),
+                            "Follow up date: ${DateFormat('dd/MM/yyyy  hh:mm a').format(followUp!.toLocal())}",
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Colors.blue.shade800,
+                              color: Colors.red.shade900,
                             ),
+                            softWrap: true,
                           ),
                         ),
                       ],
@@ -1327,11 +2704,58 @@ class CallLogCard extends StatelessWidget {
                 ),
               ),
 
+              if (stageFieldValues != null && stageFieldValues!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                ...stageFieldValues!.map((field) {
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 16.0, bottom: 4.0),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.comment_outlined,
+                            size: 12,
+                            color: Colors.red.shade700,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.red.shade900,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: "Stage Remark: ",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  TextSpan(text: "${field['value'] ?? 'N/A'}"),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+
               const SizedBox(width: 12),
 
               if (assignedTo == null && isMissedFUps == false) ...[
                 Column(
                   children: [
+                    // ACCEPT BUTTON
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green.shade400,
@@ -1343,7 +2767,10 @@ class CallLogCard extends StatelessWidget {
                       onPressed: accept,
                       child: const Text('Accept'),
                     ),
+
                     5.heightBox,
+
+                    // REJECT BUTTON
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red.shade300,
@@ -1358,47 +2785,44 @@ class CallLogCard extends StatelessWidget {
                   ],
                 ),
               ],
+
               // Call Back Button
               if (assignedTo != null || isMissedFUps == true) ...[
                 Column(
                   children: [
                     ///Phone
                     InkWell(
-                      borderRadius: BorderRadius.only(
+                      borderRadius: const BorderRadius.only(
                         topRight: Radius.circular(12),
                         bottomRight: Radius.circular(12),
                       ),
                       onTap: onCallBack,
-                      child: IconButton(
-                        onPressed: onCallBack,
-                        icon: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.blue.shade100,
-                                Colors.blue.shade200,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.blue.withOpacity(0.2),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.blue.shade100,
+                              Colors.blue.shade200,
                             ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          child: Icon(
-                            Icons.phone,
-                            color: Colors.blue.shade800,
-                            size: 20,
-                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.blue.withOpacity(0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                        splashRadius: 24,
+                        child: Icon(
+                          Icons.phone,
+                          color: Colors.blue.shade800,
+                          size: 20,
+                        ),
                       ),
                     ),
 

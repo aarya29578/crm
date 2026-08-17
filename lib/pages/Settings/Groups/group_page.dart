@@ -3,13 +3,7 @@ import 'package:crm_flutter/pages/Settings/Groups/add_group_page.dart';
 import 'package:crm_flutter/pages/Settings/Groups/group_controller.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
-import 'package:flutter/material.dart';
-import 'package:crm_flutter/pages/Settings/Groups/add_group_page.dart';
-import 'package:crm_flutter/pages/Settings/Groups/group_controller.dart';
-import 'package:crm_flutter/styles/text_styles.dart';
-import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 class GroupPage extends StatefulWidget {

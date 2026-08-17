@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
-import 'package:crm_flutter/styles/text_styles.dart';
 
 class SearchPage extends StatelessWidget {
   const SearchPage({super.key});

@@ -1,194 +1,97 @@
-// import 'package:crm_flutter/api/dio_api.dart';
-// import 'package:crm_flutter/api/response/all_leads_response.dart';
-// import 'package:crm_flutter/pages/home/components/date_range_picker_dialog.dart';
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
-
-// class AllocationController extends GetxController {
-//   // final DioApi api = Get.find<DioApi>();
-//   RxList<Data> leads = <Data>[].obs;
-//   RxBool isLoading = false.obs;
-//   RxBool isMoreDataAvailable = true.obs;
-//   int currentPage = 1;
-//   RxString selectedTimeRange = 'Today'.obs;
-//   Rx<DateTime?> selectedStartDate = Rx<DateTime?>(null);
-//   Rx<DateTime?> selectedEndDate = Rx<DateTime?>(null);
-
-//   Future<void> getAllLeads({
-//     bool isInitial = false,
-//     DateTime? startDate,
-//     DateTime? endDate,
-//   }) async {
-//     if (isLoading.value) return;
-
-//     // Use ever to ensure state updates happen properly
-//     ever(isLoading, (_) {
-//       update();
-//     });
-
-//     isLoading.value = true;
-
-//     try {
-//       if (isInitial) {
-//         currentPage = 1;
-//         leads.clear();
-//         isMoreDataAvailable.value = true;
-//       }
-
-//       final response = await DioApi().getAllLeads(
-//         page: currentPage,
-//         startDate: startDate,
-//         endDate: endDate,
-//       );
-
-//       if (response.success == true && response.data != null) {
-//         if (response.data!.isEmpty) {
-//           isMoreDataAvailable.value = false;
-//         } else {
-//           leads.addAll(response.data!);
-//           currentPage++;
-//         }
-//       }
-//     } catch (e) {
-//       print("Error loading leads: $e");
-//     } finally {
-//       isLoading.value = false;
-//     }
-//   }
-
-//   //
-//   void selectTimeRange(String range, BuildContext context) async {
-//     selectedTimeRange.value = range;
-
-//     DateTime? startDate;
-//     DateTime? endDate;
-
-//     final now = DateTime.now();
-
-//     switch (range) {
-//       case 'Today':
-//         startDate = DateTime(now.year, now.month, now.day);
-//         endDate = now;
-//         break;
-//       case 'Yesterday':
-//         final yesterday = now.subtract(Duration(days: 1));
-//         startDate = DateTime(yesterday.year, yesterday.month, yesterday.day);
-//         endDate = DateTime(
-//           now.year,
-//           now.month,
-//           now.day,
-//         ).subtract(Duration(seconds: 1));
-//         break;
-//       case 'Last 30 Days':
-//         startDate = now.subtract(Duration(days: 30));
-//         endDate = now;
-//         break;
-//       case 'Select Range':
-//         final result = await showDialog(
-//           context: context,
-//           builder: (context) => DateRangePickerDialogg(
-//             initialStartDate: selectedStartDate.value,
-//             initialEndDate: selectedEndDate.value,
-//           ),
-//         );
-
-//         if (result != null) {
-//           selectedStartDate.value = result['startDate'];
-//           selectedEndDate.value = result['endDate'];
-//           startDate = selectedStartDate.value;
-//           endDate = selectedEndDate.value;
-//         } else {
-//           return; // User cancelled
-//         }
-//         break;
-//     }
-
-//     // Fetch data with the selected date range
-//     if (startDate != null && endDate != null) {
-//       await getAllLeads(
-//         isInitial: true,
-//         startDate: startDate,
-//         endDate: endDate,
-//       );
-//     }
-//   }
-
-//   //
-// }
+import 'dart:async';
 import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/api/response/all_lead_stage_response.dart' as stage;
 import 'package:crm_flutter/api/response/all_leads_response.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:crm_flutter/pages/home/components/date_range_picker_dialog.dart';
+import 'package:crm_flutter/pages/home/components/status_filter_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class AllocationController extends GetxController {
-  // final DioApi api = Get.find<DioApi>();
+  @override
+  void onInit() {
+    super.onInit();
+    getAllLeadStages();
+  }
+
   RxList<Data> leads = <Data>[].obs;
-  RxBool isLoading = false.obs; // for first load
-  RxBool isPaginationLoading = false.obs; // for next pages
+  RxBool isLoading = false.obs;
+  RxBool isPaginationLoading = false.obs;
   RxBool isMoreDataAvailable = true.obs;
   int currentPage = 1;
   RxString selectedTimeRange = 'Today'.obs;
   Rx<DateTime?> selectedStartDate = Rx<DateTime?>(null);
   Rx<DateTime?> selectedEndDate = Rx<DateTime?>(null);
+  RxList<stage.Data> allLeadStages = <stage.Data>[].obs;
 
   DateTime? filterStartDate;
   DateTime? filterEndDate;
+  RxList<String> selectedStatusIds = <String>[].obs;
+  List<String>? filterStatusIds;
 
-  // Future<void> getAllLeads({
-  //   bool isInitial = false,
-  //   DateTime? startDate,
-  //   DateTime? endDate,
-  // }) async {
-  //   if (!isMoreDataAvailable.value) return;
-  //   if (isLoading.value) return;
+  // ─── Search ───────────────────────────────────────────────
+  RxString searchQuery = ''.obs;
+  RxList<Data> searchResults = <Data>[].obs;
+  RxBool isSearchLoading = false.obs;
+  RxBool isSearchMode = false.obs;
+  Timer? _debounce;
 
-  //   isLoading.value = true;
+  Future<void> onSearchChanged(String query) async {
+    _debounce?.cancel();
 
-  //   try {
-  //     if (isInitial) {
-  //       currentPage = 1;
-  //       leads.clear();
-  //       isMoreDataAvailable.value = true;
-  //     }
+    final trimmed = query.trim();
+    searchQuery.value = trimmed;
 
-  //     await Get.find<FollowUpController>().syncWithApi();
+    if (trimmed.isEmpty) {
+      isSearchMode.value = false;
+      searchResults.clear();
+      return;
+    }
 
-  //     await Future.delayed(Duration(milliseconds: 10));
+    isSearchMode.value = true;
 
-  //     final response = await DioApi().getAllLeads(
-  //       page: currentPage,
-  //       startDate: startDate,
-  //       endDate: endDate,
-  //     );
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      await _doSearch(trimmed);
+    });
+  }
 
-  //     if (response.success == true) {
-  //       // Safely handle the data
-  //       isLoading.value = false;
-  //       final List<Data>? responseData = response.data;
+  Future<void> _doSearch(String query) async {
+    if (isSearchLoading.value) return;
+    isSearchLoading.value = true;
+    try {
+      final response = await DioApi().searchLeads(query);
+      if (response.success == true) {
+        searchResults.assignAll(response.data ?? []);
+      }
+    } catch (e) {
+      print("Search error: $e");
+    } finally {
+      isSearchLoading.value = false;
+    }
+  }
 
-  //       if (responseData == null || responseData.isEmpty) {
-  //         isMoreDataAvailable.value = false;
-  //       } else {
-  //         leads.addAll(responseData);
-  //         currentPage++;
-  //       }
-  //     }
-  //   } catch (e) {
-  //     print("Error loading leads: $e");
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
+  void clearSearch() {
+    _debounce?.cancel();
+    searchQuery.value = '';
+    searchResults.clear();
+    isSearchMode.value = false;
+    isSearchLoading.value = false;
+  }
+
+  @override
+  void onClose() {
+    _debounce?.cancel();
+    super.onClose();
+  }
+  // ──────────────────────────────────────────────────────────
+
   Future<void> getAllLeads({
     bool isInitial = false,
     DateTime? startDate,
     DateTime? endDate,
+    List<String>? statusIds,
   }) async {
-    // if (isLoading.value) return;
-
-    // isLoading.value = true;
     if (isInitial) {
       if (isLoading.value) return;
       isLoading.value = true;
@@ -203,21 +106,20 @@ class AllocationController extends GetxController {
         leads.clear();
         isMoreDataAvailable.value = true;
 
-        /// SAVE FILTERS HERE
         filterStartDate = startDate;
         filterEndDate = endDate;
+        filterStatusIds = statusIds;
       }
 
       await Get.find<FollowUpController>().syncWithApi();
 
-      await Future.delayed(Duration(milliseconds: 10));
+      await Future.delayed(const Duration(milliseconds: 10));
 
       final response = await DioApi().getAllLeads(
         page: currentPage,
-
-        ///  ALWAYS USE STORED VALUES
         startDate: filterStartDate,
         endDate: filterEndDate,
+        statusIds: filterStatusIds,
       );
 
       if (response.success == true) {
@@ -226,7 +128,7 @@ class AllocationController extends GetxController {
         if (responseData == null || responseData.isEmpty) {
           isMoreDataAvailable.value = false;
         } else {
-          leads.addAll(responseData); // append, not replace
+          leads.addAll(responseData);
           currentPage++;
         }
       }
@@ -238,31 +140,32 @@ class AllocationController extends GetxController {
     }
   }
 
-  void selectTimeRange(String range, BuildContext context) async {
+  Future<void> selectTimeRange(String range, BuildContext context) async {
     selectedTimeRange.value = range;
-
-    DateTime? startDate;
-    DateTime? endDate;
 
     final now = DateTime.now();
 
     switch (range) {
       case 'Today':
-        startDate = DateTime(now.year, now.month, now.day);
-        endDate = now;
+        selectedStartDate.value = DateTime(now.year, now.month, now.day);
+        selectedEndDate.value = now;
         break;
       case 'Yesterday':
         final yesterday = now.subtract(const Duration(days: 1));
-        startDate = DateTime(yesterday.year, yesterday.month, yesterday.day);
-        endDate = DateTime(
+        selectedStartDate.value = DateTime(
+          yesterday.year,
+          yesterday.month,
+          yesterday.day,
+        );
+        selectedEndDate.value = DateTime(
           now.year,
           now.month,
           now.day,
         ).subtract(const Duration(seconds: 1));
         break;
       case 'Last 30 Days':
-        startDate = now.subtract(const Duration(days: 30));
-        endDate = now;
+        selectedStartDate.value = now.subtract(const Duration(days: 30));
+        selectedEndDate.value = now;
         break;
       case 'Select Range':
         final result = await showDialog(
@@ -276,21 +179,60 @@ class AllocationController extends GetxController {
         if (result != null) {
           selectedStartDate.value = result['startDate'];
           selectedEndDate.value = result['endDate'];
-          startDate = selectedStartDate.value;
-          endDate = selectedEndDate.value;
         } else {
-          return; // User cancelled
+          return;
         }
         break;
     }
 
-    // Fetch data with the selected date range
-    if (startDate != null && endDate != null) {
-      await getAllLeads(
-        isInitial: true,
-        startDate: startDate,
-        endDate: endDate,
-      );
+    refreshData();
+  }
+
+  Future<void> getAllLeadStages() async {
+    try {
+      final response = await DioApi().getAllLeadStage();
+      if (response.success == true) {
+        allLeadStages.assignAll(response.data ?? []);
+      }
+    } catch (e) {
+      print("Error fetching lead stages: $e");
     }
+  }
+
+  void showStatusFilter(BuildContext context) async {
+    if (allLeadStages.isEmpty) {
+      await getAllLeadStages();
+    }
+
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (context) => StatusFilterDialog(
+        allStages: allLeadStages,
+        initialSelectedIds: selectedStatusIds,
+      ),
+    );
+
+    if (result != null) {
+      selectedStatusIds.assignAll(result);
+      refreshData();
+    }
+  }
+
+  void toggleStatus(String statusId, BuildContext context) {
+    if (selectedStatusIds.contains(statusId)) {
+      selectedStatusIds.remove(statusId);
+    } else {
+      selectedStatusIds.add(statusId);
+    }
+    refreshData();
+  }
+
+  Future<void> refreshData() async {
+    await getAllLeads(
+      isInitial: true,
+      startDate: selectedStartDate.value,
+      endDate: selectedEndDate.value,
+      statusIds: selectedStatusIds,
+    );
   }
 }

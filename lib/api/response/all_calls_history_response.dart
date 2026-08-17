@@ -1,22 +1,37 @@
 class AllCallHistoryResponse {
   bool? success;
-  List<Data>? data;
+  int? total;
+  int? page;
+  int? limit;
+  List<CallHistoryGroup>? data;
 
-  AllCallHistoryResponse({this.success, this.data});
+  AllCallHistoryResponse({
+    this.success,
+    this.total,
+    this.page,
+    this.limit,
+    this.data,
+  });
 
   AllCallHistoryResponse.fromJson(Map<String, dynamic> json) {
     success = json['success'];
+    total = json['total'];
+    page = json['page'];
+    limit = json['limit'];
     if (json['data'] != null) {
-      data = <Data>[];
+      data = <CallHistoryGroup>[];
       json['data'].forEach((v) {
-        data!.add(new Data.fromJson(v));
+        data!.add(CallHistoryGroup.fromJson(v));
       });
     }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['success'] = this.success;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['success'] = success;
+    data['total'] = total;
+    data['page'] = page;
+    data['limit'] = limit;
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
     }
@@ -24,120 +39,108 @@ class AllCallHistoryResponse {
   }
 }
 
-class Data {
-  String? sId;
-  LeadIds? leadId;
-  UserId? userId;
-  String? direction;
-  String? fromNumber;
-  String? toNumber;
-  int? duration;
-  String? recordingUrl;
-  String? disposition;
-  String? status;
-  String? startedAt;
-  String? endedAt;
-  String? createdAt;
-  String? updatedAt;
-  int? iV;
+class CallHistoryGroup {
+  String? date;
+  int? callCount;
+  String? lastCallAt;
+  CalledBy? calledBy;
+  Lead? lead;
 
-  Data({
-    this.sId,
-    this.leadId,
-    this.userId,
-    this.direction,
-    this.fromNumber,
-    this.toNumber,
-    this.duration,
-    this.recordingUrl,
-    this.disposition,
-    this.status,
-    this.startedAt,
-    this.endedAt,
-    this.createdAt,
-    this.updatedAt,
-    this.iV,
+  CallHistoryGroup({
+    this.date,
+    this.callCount,
+    this.lastCallAt,
+    this.calledBy,
+    this.lead,
   });
 
-  Data.fromJson(Map<String, dynamic> json) {
-    sId = json['_id'];
-    leadId = json['lead_id'] != null
-        ? new LeadIds.fromJson(json['lead_id'])
-        : null;
-    userId = json['user_id'] != null
-        ? new UserId.fromJson(json['user_id'])
-        : null;
-    // userId = json['user_id'];
-    direction = json['direction'];
-    fromNumber = json['from_number'];
-    toNumber = json['to_number'];
-    duration = json['duration'];
-    recordingUrl = json['recording_url'];
-    disposition = json['disposition'];
-    status = json['status'];
-    startedAt = json['started_at'];
-    endedAt = json['ended_at'];
-    createdAt = json['createdAt'];
-    updatedAt = json['updatedAt'];
-    iV = json['__v'];
+  CallHistoryGroup.fromJson(Map<String, dynamic> json) {
+    date = json['date'];
+    callCount = json['callCount'];
+    lastCallAt = json['lastCallAt'];
+    calledBy = (json['calledBy'] != null && json['calledBy'] is Map) 
+        ? CalledBy.fromJson(json['calledBy']) : null;
+    lead = (json['lead'] != null && json['lead'] is Map) 
+        ? Lead.fromJson(json['lead']) : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    // data['lead_id'] = this.leadId;
-    if (this.leadId != null) {
-      data['name'] = this.leadId!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['date'] = date;
+    data['callCount'] = callCount;
+    data['lastCallAt'] = lastCallAt;
+    if (calledBy != null) {
+      data['calledBy'] = calledBy!.toJson();
     }
-    if (this.userId != null) {
-      data['user_id'] = this.userId!.toJson();
+    if (lead != null) {
+      data['lead'] = lead!.toJson();
     }
-    // data['user_id'] = this.userId;
-    data['direction'] = this.direction;
-    data['from_number'] = this.fromNumber;
-    data['to_number'] = this.toNumber;
-    data['duration'] = this.duration;
-    data['recording_url'] = this.recordingUrl;
-    data['disposition'] = this.disposition;
-    data['status'] = this.status;
-    data['started_at'] = this.startedAt;
-    data['ended_at'] = this.endedAt;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
     return data;
   }
 }
 
-class LeadIds {
-  String? id;
-  LeadName? leadName;
-  int? phone;
+class CalledBy {
+  String? sId;
+  String? name;
   String? email;
-  bool? status;
 
-  LeadIds({this.id, this.leadName, this.phone, this.email, this.status});
+  CalledBy({this.sId, this.name, this.email});
 
-  LeadIds.fromJson(Map<String, dynamic> json) {
-    id = json['_id'];
-    leadName = json['name'] != null
-        ? new LeadName.fromJson(json['name'])
-        : null;
-    phone = json['phone'];
+  CalledBy.fromJson(Map<String, dynamic> json) {
+    sId = json['_id'];
+    name = json['name'];
     email = json['email'];
-    status = json['status'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.id;
-    data['name'] = this.id;
-    data['phone'] = this.id;
-    data['email'] = this.id;
-    data['status'] = this.id;
-    if (this.leadName != null) {
-      data['name'] = this.leadName!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    data['email'] = email;
+    return data;
+  }
+}
+
+class Lead {
+  String? sId;
+  LeadName? name;
+  int? phone;
+  String? email;
+  LeadStage? leadStage;
+  String? priority;
+
+  Lead({
+    this.sId,
+    this.name,
+    this.phone,
+    this.email,
+    this.leadStage,
+    this.priority,
+  });
+
+  Lead.fromJson(Map<String, dynamic> json) {
+    sId = json['_id'];
+    name = (json['name'] != null && json['name'] is Map) 
+        ? LeadName.fromJson(json['name']) : null;
+    phone = json['phone'];
+    email = json['email'];
+    leadStage = (json['lead_stage_id'] != null && json['lead_stage_id'] is Map) 
+        ? LeadStage.fromJson(json['lead_stage_id']) : null;
+    priority = json['priority'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    if (name != null) {
+      data['name'] = name!.toJson();
     }
+    data['phone'] = phone;
+    data['email'] = email;
+    if (leadStage != null) {
+      data['lead_stage_id'] = leadStage!.toJson();
+    }
+    data['priority'] = priority;
     return data;
   }
 }
@@ -156,32 +159,35 @@ class LeadName {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['first'] = this.first;
-    data['last'] = this.last;
-    data['middle'] = this.middle;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['first'] = first;
+    data['last'] = last;
+    data['middle'] = middle;
     return data;
   }
 }
 
-class UserId {
-  String? uId;
+class LeadStage {
+  String? sId;
   String? name;
-  String? email;
+  String? color;
+  String? connected;
 
-  UserId({this.uId, this.name, this.email});
+  LeadStage({this.sId, this.name, this.color, this.connected});
 
-  UserId.fromJson(Map<String, dynamic> json) {
-    uId = json['first'];
-    name = json['last'];
-    email = json['middle'];
+  LeadStage.fromJson(Map<String, dynamic> json) {
+    sId = json['_id'];
+    name = json['name'];
+    color = json['color'];
+    connected = json['connected'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['first'] = this.uId;
-    data['last'] = this.name;
-    data['middle'] = this.email;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    data['color'] = color;
+    data['connected'] = connected;
     return data;
   }
 }

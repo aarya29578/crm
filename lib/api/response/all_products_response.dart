@@ -24,18 +24,18 @@ class AllProductResponse {
     if (json['data'] != null) {
       data = <Data>[];
       json['data'].forEach((v) {
-        data!.add(new Data.fromJson(v));
+        data!.add(Data.fromJson(v));
       });
     }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['status'] = this.status;
-    data['total'] = this.total;
-    data['success'] = this.success;
-    data['currentPage'] = this.currentPage;
-    data['totalPages'] = this.totalPages;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['status'] = status;
+    data['total'] = total;
+    data['success'] = success;
+    data['currentPage'] = currentPage;
+    data['totalPages'] = totalPages;
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
     }
@@ -72,25 +72,25 @@ class Data {
     name = json['name'];
     description = json['description'];
     quantity = json['quantity'];
-    price = json['price'] != null ? new Price.fromJson(json['price']) : null;
+    price = json['price'] != null ? Price.fromJson(json['price']) : null;
     createdAt = json['createdAt'];
     updatedAt = json['updatedAt'];
     iV = json['__v'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['sku'] = this.sku;
-    data['name'] = this.name;
-    data['description'] = this.description;
-    data['quantity'] = this.quantity;
-    if (this.price != null) {
-      data['price'] = this.price!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['sku'] = sku;
+    data['name'] = name;
+    data['description'] = description;
+    data['quantity'] = quantity;
+    if (price != null) {
+      data['price'] = price!.toJson();
     }
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
     return data;
   }
 }
@@ -105,8 +105,8 @@ class Price {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['\$numberDecimal'] = this.numberDecimal;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['\$numberDecimal'] = numberDecimal;
     return data;
   }
 }

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/all_follow_up_response.dart';
-import 'package:crm_flutter/api/response/call_log_response.dart';
 import 'package:crm_flutter/common_widgets/notificationService.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_storage_service.dart';

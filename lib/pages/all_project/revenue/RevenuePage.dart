@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:crm_flutter/widgets/CallsActivityCard.dart';
 import 'package:crm_flutter/widgets/PipelineCard.dart';
 import 'package:crm_flutter/widgets/ReadAboutStatsCard.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';

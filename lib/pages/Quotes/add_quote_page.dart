@@ -1,7 +1,4 @@
-import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_flutter/api/response/all_products_response.dart'
-    as productRes;
 import 'package:crm_flutter/api/response/all_quotes_response.dart';
 import 'package:crm_flutter/pages/Persons/persons_controller.dart';
 import 'package:crm_flutter/pages/Products/products_controller.dart';
@@ -10,7 +7,6 @@ import 'package:crm_flutter/pages/Quotes/quotes_controller.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:get/get.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:intl/intl.dart';
 
 class AddQuotePage extends StatefulWidget {

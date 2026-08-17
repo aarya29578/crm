@@ -62,7 +62,7 @@ MultiTextFields({
               final input = formKey.currentState!.value[name]?.trim();
 
               if (input == null || input.isEmpty) {
-                showError("${label} cannot be empty.");
+                showError("$label cannot be empty.");
                 return;
               }
 

@@ -21,17 +21,17 @@ class AllOrganizationResponse {
     if (json['data'] != null) {
       data = <Data>[];
       json['data'].forEach((v) {
-        data!.add(new Data.fromJson(v));
+        data!.add(Data.fromJson(v));
       });
     }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['status'] = this.status;
-    data['total'] = this.total;
-    data['currentPage'] = this.currentPage;
-    data['totalPages'] = this.totalPages;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['status'] = status;
+    data['total'] = total;
+    data['currentPage'] = currentPage;
+    data['totalPages'] = totalPages;
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
     }
@@ -62,7 +62,7 @@ class Data {
     sId = json['_id'];
     name = json['name'];
     address =
-        json['address'] != null ? new Address.fromJson(json['address']) : null;
+        json['address'] != null ? Address.fromJson(json['address']) : null;
     userId = json['user_id'];
     createdAt = json['createdAt'];
     updatedAt = json['updatedAt'];
@@ -70,16 +70,16 @@ class Data {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    if (this.address != null) {
-      data['address'] = this.address!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    if (address != null) {
+      data['address'] = address!.toJson();
     }
-    data['user_id'] = this.userId;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
+    data['user_id'] = userId;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
     return data;
   }
 }
@@ -100,11 +100,11 @@ class Address {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['street'] = this.street;
-    data['city'] = this.city;
-    data['state'] = this.state;
-    data['zip'] = this.zip;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['street'] = street;
+    data['city'] = city;
+    data['state'] = state;
+    data['zip'] = zip;
     return data;
   }
 }

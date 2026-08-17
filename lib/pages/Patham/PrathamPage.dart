@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:crm_flutter/pages/Patham/PrathamController.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:phone_state/phone_state.dart';
 import 'package:call_log/call_log.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -11,7 +10,7 @@ class PrathamPage extends StatefulWidget {
   final String phoneNumber;
   final String leadId;
 
-  PrathamPage({required this.phoneNumber, required this.leadId});
+  const PrathamPage({super.key, required this.phoneNumber, required this.leadId});
 
   @override
   _PrathamPageState createState() => _PrathamPageState();
@@ -33,22 +32,20 @@ class _PrathamPageState extends State<PrathamPage> {
     requestPermissions();
 
     PhoneState.stream.listen((event) async {
-      if (event != null) {
-        setState(() {
-          status = event.status;
-        });
+      setState(() {
+        status = event.status;
+      });
 
-        if (event.status == PhoneStateStatus.CALL_STARTED) {
-          callStarted = true;
-        }
-
-        if (event.status == PhoneStateStatus.CALL_ENDED && callStarted) {
-          callStarted = false;
-          await Future.delayed(Duration(seconds: 1));
-          fetchLatestCallLog();
-        }
+      if (event.status == PhoneStateStatus.CALL_STARTED) {
+        callStarted = true;
       }
-    });
+
+      if (event.status == PhoneStateStatus.CALL_ENDED && callStarted) {
+        callStarted = false;
+        await Future.delayed(Duration(seconds: 1));
+        fetchLatestCallLog();
+      }
+        });
   }
 
   Future<void> requestPermissions() async {

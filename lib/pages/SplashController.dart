@@ -1,7 +1,5 @@
-import 'package:crm_flutter/common_widgets/notificationService.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Auth/LoginPage.dart';
-import 'package:crm_flutter/pages/bottom_navigation_bar/BottomNavigationBarPage.dart';
 import 'package:get/get.dart';
 
 class SplashController extends GetxController {
@@ -11,21 +9,33 @@ class SplashController extends GetxController {
   void onInit() {
     super.onInit();
 
-    Future.delayed(Duration(seconds: 2), () {
-      String token = LocalStorage.sharedPreferences?.getString("token") ?? "";
-      print(token);
-      if (token == null || token == "") {
-        Get.offAll(LoginPage());
-      } else {
-        Get.off(BottomNavigationBarPage());
-      }
-      // Get.off(
-      // () => const BottomNavigationBarPage(),
-      //() => const LoginPage(),
-      // ); // Replaces the splash with MainPage
-    });
+    Future.delayed(const Duration(seconds: 2), () async {
+      await LocalStorage.sharedPreferences?.remove("token");
 
-    // NotificationService.init();
-    // NotificationService.requestPermission();
+      Get.offAll(() => const LoginPage());
+    });
   }
+
+  // SESSION MANAGEMENT
+
+  // void onInit() {
+  //   super.onInit();
+
+  //   Future.delayed(Duration(seconds: 2), () {
+  //     String token = LocalStorage.sharedPreferences?.getString("token") ?? "";
+  //     print(token);
+  //     if (token == "") {
+  //       Get.offAll(LoginPage());
+  //     } else {
+  //       Get.off(BottomNavigationBarPage());
+  //     }
+  //     // Get.off(
+  //     // () => const BottomNavigationBarPage(),
+  //     //() => const LoginPage(),
+  //     // ); // Replaces the splash with MainPage
+  //   });
+
+  //   // NotificationService.init();
+  //   // NotificationService.requestPermission();
+  // }
 }

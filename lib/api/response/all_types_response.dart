@@ -21,7 +21,7 @@ class AllTypeResponse {
     if (json['data'] != null) {
       data = <Data>[];
       json['data'].forEach((v) {
-        data!.add(new Data.fromJson(v));
+        data!.add(Data.fromJson(v));
       });
     }
     total = json['total'];
@@ -30,15 +30,15 @@ class AllTypeResponse {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['status'] = this.status;
-    data['success'] = this.success;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['status'] = status;
+    data['success'] = success;
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
     }
-    data['total'] = this.total;
-    data['currentPage'] = this.currentPage;
-    data['totalPage'] = this.totalPage;
+    data['total'] = total;
+    data['currentPage'] = currentPage;
+    data['totalPage'] = totalPage;
     return data;
   }
 }
@@ -61,12 +61,12 @@ class Data {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
     return data;
   }
 }

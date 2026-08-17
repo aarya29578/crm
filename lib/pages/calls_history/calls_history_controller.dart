@@ -14,7 +14,7 @@ class CallsHistoryController extends GetxController {
         allCallsHistoryRes.value = response;
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -29,7 +29,7 @@ class CallsHistoryController extends GetxController {
         await getAllCallsHistory(null);
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -130,7 +130,7 @@ class CallsHistoryController extends GetxController {
         await getAllCallsHistory(idLead);
       }
     } catch (e) {
-      throw (e);
+      rethrow;
     }
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class ReviewPage extends StatelessWidget {
   final Map<String, dynamic> formData;
-  const ReviewPage({Key? key, required this.formData}) : super(key: key);
+  const ReviewPage({super.key, required this.formData});
 
   @override
   Widget build(BuildContext context) {

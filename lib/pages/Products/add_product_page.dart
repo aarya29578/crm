@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:crm_flutter/pages/Products/products_controller.dart';
 import 'package:crm_flutter/pages/Quotes/components/TextFields.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:crm_flutter/api/response/all_products_response.dart';
 
 class AddProductPage extends StatefulWidget {

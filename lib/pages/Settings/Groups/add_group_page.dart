@@ -4,13 +4,12 @@ import 'package:crm_flutter/pages/Settings/Groups/group_controller.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:crm_flutter/api/response/all_groups_response.dart' as groupRes;
 
 class AddGroupPage extends StatefulWidget {
   final bool isEdit;
   final groupRes.Data? groupData;
-  AddGroupPage({super.key, required this.isEdit, this.groupData});
+  const AddGroupPage({super.key, required this.isEdit, this.groupData});
 
   @override
   State<AddGroupPage> createState() => _AddGroupPageState();

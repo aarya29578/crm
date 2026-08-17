@@ -14,7 +14,7 @@ class OrganizationsController extends GetxController {
         allOrganizationRes.value = response;
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -29,7 +29,7 @@ class OrganizationsController extends GetxController {
         await getAllOrganizations(); // Refresh the list
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -44,7 +44,7 @@ class OrganizationsController extends GetxController {
         await getAllOrganizations(); // Refresh the list
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -55,7 +55,7 @@ class OrganizationsController extends GetxController {
         await getAllOrganizations();
       }
     } catch (e) {
-      throw (e);
+      rethrow;
     }
   }
 }

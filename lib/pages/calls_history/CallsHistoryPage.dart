@@ -140,10 +140,8 @@
 //   }
 // }
 
-import 'package:call_log/call_log.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_flutter/pages/calls_history/calls_history_controller.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
@@ -241,7 +239,7 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
               );
             }
 
-            final callsHistoryList = response.data!.reversed.toList();
+            final callsHistoryList = response.data!;
 
             return RefreshIndicator(
               onRefresh: () async {
@@ -253,15 +251,15 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 12),
                 itemBuilder: (context, index) {
-                  final callHistory = callsHistoryList[index];
-                  final isIncoming =
-                      callHistory.direction?.toLowerCase() == 'incoming';
-                  final isMissed =
-                      callHistory.disposition?.toLowerCase() == 'missed';
-                  final isAnswered =
-                      callHistory.disposition?.toLowerCase() == 'answered' ||
-                      callHistory.disposition?.toLowerCase() == 'completed';
-
+                  final callGroup = callsHistoryList[index];
+                  final lead = callGroup.lead;
+                  final leadName = (lead?.name?.first != null || lead?.name?.last != null)
+                      ? "${lead?.name?.first ?? ""} ${lead?.name?.last ?? ""}".trim()
+                      : (lead != null ? "Unnamed Lead" : "External Contact");
+                  final phone = lead?.phone?.toString() ?? "No Contact Number";
+                  final priority = lead?.priority ?? "Normal";
+                  final agentName = callGroup.calledBy?.name ?? "Unknown Agent";
+                  
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -286,161 +284,132 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
                                 child: Row(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.all(6),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: _getCallTypeColor(
-                                          isIncoming,
-                                          isMissed,
-                                          isAnswered,
-                                        ).withOpacity(0.1),
+                                        color: Colors.blue.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: Icon(
-                                        _getCallTypeIcon(
-                                          isIncoming,
-                                          isMissed,
-                                          isAnswered,
-                                        ),
-                                        size: 18,
-                                        color: _getCallTypeColor(
-                                          isIncoming,
-                                          isMissed,
-                                          isAnswered,
-                                        ),
+                                      child: const Icon(
+                                        Icons.history,
+                                        size: 20,
+                                        color: Colors.blue,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            callHistory.toNumber ??
-                                                "Unknown number",
+                                            leadName,
                                             style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          if (callHistory.fromNumber != null)
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                top: 2,
-                                              ),
-                                              child: Text(
-                                                "From: ${callHistory.fromNumber}",
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey.shade600,
-                                                ),
-                                              ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            phone,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.grey.shade600,
                                             ),
+                                          ),
                                         ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              PopupMenuButton<String>(
-                                onSelected: (value) {
-                                  if (value == 'delete') {
-                                    _showDeleteDialog(callHistory);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  PopupMenuItem(
-                                    value: 'delete',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.delete_outline,
-                                          size: 20,
-                                          color: Colors.red.shade400,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          "Delete",
-                                          style: TextStyle(
-                                            color: Colors.red.shade400,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    Icons.more_vert,
-                                    size: 20,
-                                    color: Colors.grey.shade600,
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade700,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  "${callGroup.callCount ?? 0} Calls",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const Divider(height: 24),
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _buildStatusChip(
-                                icon: Icons.access_time,
-                                text: "${callHistory.duration ?? 0}s",
-                                color: Colors.blue,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade500),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        callGroup.date ?? "Unknown Date",
+                                        style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "Last: ${_formatLastCallAt(callGroup.lastCallAt)}",
+                                        style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              _buildStatusChip(
-                                icon: _getStatusIcon(callHistory.disposition),
-                                text: callHistory.disposition ?? "Unknown",
-                                color: _getStatusColor(callHistory.disposition),
-                              ),
+                              if (priority.isNotEmpty)
+                                _buildStatusChip(
+                                  icon: Icons.star_outline,
+                                  text: priority,
+                                  color: _getPriorityColor(priority),
+                                ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          if (lead?.leadStage != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _parseColor(lead?.leadStage?.color).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                lead?.leadStage?.name ?? "",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: _parseColor(lead?.leadStage?.color),
+                                ),
+                              ),
+                            ),
+                          ],
+                          const Divider(height: 16),
                           Row(
                             children: [
-                              Icon(
-                                Icons.phone_callback,
-                                size: 14,
-                                color: Colors.grey.shade500,
-                              ),
+                              Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
                               const SizedBox(width: 4),
                               Text(
-                                "Direction: ${callHistory.direction ?? "No direction"}",
+                                "Agent: $agentName",
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade600,
+                                  fontStyle: FontStyle.italic,
                                 ),
                               ),
                             ],
                           ),
-                          if (callHistory.startedAt != null) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 14,
-                                  color: Colors.grey.shade500,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    _formatDateTime(callHistory.startedAt!),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
                         ],
                       ),
                     ),
@@ -530,100 +499,36 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
     );
   }
 
-  Color _getCallTypeColor(bool isIncoming, bool isMissed, bool isAnswered) {
-    if (isIncoming) {
-      if (isMissed) return Colors.orange;
-      if (isAnswered) return Colors.green;
-      return Colors.blue;
-    } else {
-      // Outgoing
-      if (isAnswered) return Colors.green;
-      return Colors.purple;
-    }
-  }
-
-  IconData _getCallTypeIcon(bool isIncoming, bool isMissed, bool isAnswered) {
-    if (isIncoming) {
-      if (isMissed) return Icons.call_missed;
-      if (isAnswered) return Icons.call_received;
-      return Icons.call;
-    } else {
-      // Outgoing
-      if (isAnswered) return Icons.call_made;
-      return Icons.call_made;
-    }
-  }
-
-  Color _getStatusColor(String? status) {
-    if (status == null) return Colors.grey;
-
-    switch (status.toLowerCase()) {
-      case 'answered':
-      case 'completed':
-        return Colors.green;
-      case 'missed':
-        return Colors.orange;
-      case 'busy':
-        return Colors.red;
-      case 'failed':
-        return Colors.redAccent;
-      case 'no answer':
-        return Colors.amber;
-      default:
-        return Colors.blueGrey;
-    }
-  }
-
-  IconData _getStatusIcon(String? status) {
-    if (status == null) return Icons.help_outline;
-
-    switch (status.toLowerCase()) {
-      case 'answered':
-      case 'completed':
-        return Icons.check_circle;
-      case 'missed':
-        return Icons.call_missed;
-      case 'busy':
-        return Icons.phone_callback;
-      case 'failed':
-        return Icons.error_outline;
-      case 'no answer':
-        return Icons.phone_missed;
-      default:
-        return Icons.help_outline;
-    }
-  }
-
-  String _formatDateTime(String timestamp) {
+  String _formatLastCallAt(String? lastCallAt) {
+    if (lastCallAt == null) return "Never";
     try {
-      DateTime dateTime;
-
-      // Try parsing as milliseconds first
-      final milliseconds = int.tryParse(timestamp);
-      if (milliseconds != null) {
-        dateTime = DateTime.fromMillisecondsSinceEpoch(milliseconds);
-      } else {
-        // Try parsing as ISO string
-        dateTime = DateTime.tryParse(timestamp) ?? DateTime.now();
-      }
-
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final yesterday = today.subtract(const Duration(days: 1));
-      final callDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
-
-      String datePrefix;
-      if (callDate == today) {
-        datePrefix = "Today";
-      } else if (callDate == yesterday) {
-        datePrefix = "Yesterday";
-      } else {
-        datePrefix = DateFormat('MMM d, yyyy').format(dateTime);
-      }
-
-      return "Time: $datePrefix at ${DateFormat('h:mm a').format(dateTime)}";
+      DateTime dateTime = DateTime.parse(lastCallAt);
+      return DateFormat('h:mm a').format(dateTime);
     } catch (e) {
-      return "Time: $timestamp";
+      return lastCallAt;
+    }
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'hot':
+      case 'very hot':
+        return Colors.red;
+      case 'warm':
+        return Colors.orange;
+      case 'cold':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _parseColor(String? colorStr) {
+    if (colorStr == null || !colorStr.startsWith('#')) return Colors.blue;
+    try {
+      return Color(int.parse(colorStr.replaceFirst('#', '0xFF')));
+    } catch (e) {
+      return Colors.blue;
     }
   }
 }

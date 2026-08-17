@@ -1,7 +1,6 @@
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:get/get.dart';
 import 'package:crm_flutter/api/response/all_types_response.dart';
-import 'package:get/get.dart';
 
 class TypeController extends GetxController {
   Rx<AllTypeResponse> allTypeRes = AllTypeResponse().obs;
@@ -13,7 +12,7 @@ class TypeController extends GetxController {
         allTypeRes.value = response;
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -28,7 +27,7 @@ class TypeController extends GetxController {
         await getAllTypes();
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -39,7 +38,7 @@ class TypeController extends GetxController {
         await getAllTypes();
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

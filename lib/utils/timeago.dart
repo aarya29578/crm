@@ -4,7 +4,7 @@ String timeAgo(String isoDateStr) {
 
   Duration diff = now.difference(pastDate);
 
-  int seconds = diff.inSeconds;
+  // int seconds = diff.inSeconds;
   int minutes = diff.inMinutes;
   int hours = diff.inHours;
   int days = diff.inDays;

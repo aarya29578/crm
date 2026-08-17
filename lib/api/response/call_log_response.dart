@@ -623,10 +623,10 @@ class Name {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['first'] = this.first;
-    data['last'] = this.last;
-    data['middle'] = this.middle;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['first'] = first;
+    data['last'] = last;
+    data['middle'] = middle;
     return data;
   }
 }
@@ -645,10 +645,10 @@ class CustomList {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['label'] = this.label;
-    data['value'] = this.value;
-    data['_id'] = this.sId;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['label'] = label;
+    data['value'] = value;
+    data['_id'] = sId;
     return data;
   }
 }
@@ -667,10 +667,10 @@ class Location {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['country'] = this.country;
-    data['state'] = this.state;
-    data['city'] = this.city;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['country'] = country;
+    data['state'] = state;
+    data['city'] = city;
     return data;
   }
 }
@@ -714,17 +714,17 @@ class UserId {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    data['email'] = this.email;
-    data['password'] = this.password;
-    data['status'] = this.status;
-    data['role'] = this.role;
-    data['tenantId'] = this.tenantId;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    data['email'] = email;
+    data['password'] = password;
+    data['status'] = status;
+    data['role'] = role;
+    data['tenantId'] = tenantId;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
     return data;
   }
 }

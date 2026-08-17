@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/Allocations/WhatsappSMS/whatsapp_sms_controller.dart';
 import 'package:flutter/material.dart';
@@ -6,8 +5,6 @@ import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Auth/LoginPage.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/snackbar/snackbar.dart';
 
 logoutpoppup(context) {
   return showModalBottomSheet(

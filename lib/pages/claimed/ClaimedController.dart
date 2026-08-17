@@ -4,14 +4,16 @@ import 'package:crm_flutter/models/enums.dart';
 import 'package:get/get.dart';
 
 class Claimedcontroller extends GetxController {
+
   Rx<GetLeadbyStageRes> getLeadByStageRes = GetLeadbyStageRes().obs;
   Rx<PageState> stateload = PageState.loading.obs;
-  Future getLeadbyStage(String stage_id) async {
+
+  Future getLeadbyStage(String stageId) async {
     stateload.value = PageState.loading;
-    print('Fetching leads for stage: $stage_id');
+    print('Fetching leads for stage: $stageId');
     try {
       await Future.delayed(Duration(seconds: 1));
-      final response = await DioApi().getLeadbyStage(stage_id);
+      final response = await DioApi().getLeadbyStage(stageId);
       if (response.success == true) {
         getLeadByStageRes.value = response;
         stateload.value = PageState.stable;
@@ -19,7 +21,30 @@ class Claimedcontroller extends GetxController {
     } catch (e) {
       stateload.value = PageState.error;
 
-      throw e;
+      rethrow;
+    }
+  }
+
+  Future getLeadsByMultipleStages(List<String> stageIds) async {
+    stateload.value = PageState.loading;
+    print('Fetching leads for multiple stages: $stageIds');
+    try {
+      await Future.delayed(Duration(milliseconds: 500));
+      List<dynamic> allLeads = [];
+      for (String id in stageIds) {
+        final response = await DioApi().getLeadbyStage(id);
+        if (response.success == true && response.leadDetails != null) {
+          allLeads.addAll(response.leadDetails!);
+        }
+      }
+      getLeadByStageRes.value = GetLeadbyStageRes(
+        success: true,
+        leadDetails: allLeads.cast(),
+      );
+      stateload.value = PageState.stable;
+    } catch (e) {
+      stateload.value = PageState.error;
+      rethrow;
     }
   }
 }

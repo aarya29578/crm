@@ -77,7 +77,8 @@ class MissedFUpsData {
   Location? location;
   String? listId;
   DateTime? followUpDate;
-  List<Timeline>? timeline; // <-- ADD THIS LINE
+  List<Timeline>? timeline;
+  List<dynamic>? stageFieldValues;
 
   MissedFUpsData({
     this.sId,
@@ -108,7 +109,8 @@ class MissedFUpsData {
     this.location,
     this.listId,
     this.followUpDate,
-    this.timeline, // <-- ADD THIS LINE
+    this.timeline,
+    this.stageFieldValues,
   });
 
   MissedFUpsData.fromJson(Map<String, dynamic> json) {
@@ -180,6 +182,7 @@ class MissedFUpsData {
     followUpDate = json['followUpDate'] != null
         ? DateTime.tryParse(json['followUpDate'])
         : null;
+    stageFieldValues = json['stageFieldValues'];
   }
 
   Map<String, dynamic> toJson() {
@@ -236,6 +239,7 @@ class MissedFUpsData {
     }
     data['listId'] = listId;
     data['followUpDate'] = followUpDate?.toIso8601String();
+    data['stageFieldValues'] = stageFieldValues;
     return data;
   }
 }

@@ -6,12 +6,12 @@ class DashboardDataRes {
 
   DashboardDataRes.fromJson(Map<String, dynamic> json) {
     success = json['success'];
-    data = json['data'] != null ? new Data.fromJson(json['data']) : null;
+    data = json['data'] != null ? Data.fromJson(json['data']) : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['success'] = this.success;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['success'] = success;
     if (this.data != null) {
       data['data'] = this.data!.toJson();
     }
@@ -39,46 +39,46 @@ class Data {
     if (json['leadCountByNewStage'] != null) {
       leadCountByNewStage = <LeadCountByNewStage>[];
       json['leadCountByNewStage'].forEach((v) {
-        leadCountByNewStage!.add(new LeadCountByNewStage.fromJson(v));
+        leadCountByNewStage!.add(LeadCountByNewStage.fromJson(v));
       });
     }
     if (json['leadCountByConnected'] != null) {
       leadCountByConnected = <LeadCountByConnected>[];
       json['leadCountByConnected'].forEach((v) {
-        leadCountByConnected!.add(new LeadCountByConnected.fromJson(v));
+        leadCountByConnected!.add(LeadCountByConnected.fromJson(v));
       });
     }
     if (json['leadCountBystages'] != null) {
       leadCountBystages = <LeadCountBystages>[];
       json['leadCountBystages'].forEach((v) {
-        leadCountBystages!.add(new LeadCountBystages.fromJson(v));
+        leadCountBystages!.add(LeadCountBystages.fromJson(v));
       });
     }
     callStats = json['callStates'] != null
-        ? new CallStats.fromJson(json['callStates'])
+        ? CallStats.fromJson(json['callStates'])
         : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['totalLeads'] = this.totalLeads;
-    if (this.leadCountByNewStage != null) {
-      data['leadCountByNewStage'] = this.leadCountByNewStage!
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['totalLeads'] = totalLeads;
+    if (leadCountByNewStage != null) {
+      data['leadCountByNewStage'] = leadCountByNewStage!
           .map((v) => v.toJson())
           .toList();
     }
-    if (this.leadCountByConnected != null) {
-      data['leadCountByConnected'] = this.leadCountByConnected!
+    if (leadCountByConnected != null) {
+      data['leadCountByConnected'] = leadCountByConnected!
           .map((v) => v.toJson())
           .toList();
     }
-    if (this.leadCountBystages != null) {
-      data['leadCountBystages'] = this.leadCountBystages!
+    if (leadCountBystages != null) {
+      data['leadCountBystages'] = leadCountBystages!
           .map((v) => v.toJson())
           .toList();
     }
-    if (this.callStats != null) {
-      data['callStats'] = this.callStats!.toJson();
+    if (callStats != null) {
+      data['callStats'] = callStats!.toJson();
     }
     return data;
   }
@@ -96,9 +96,9 @@ class LeadCountByNewStage {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['count'] = this.count;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['count'] = count;
     return data;
   }
 }
@@ -117,10 +117,10 @@ class LeadCountByConnected {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['count'] = this.count;
-    data['connected'] = this.connected;
-    data['percentage'] = this.percentage;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['count'] = count;
+    data['connected'] = connected;
+    data['percentage'] = percentage;
     return data;
   }
 }
@@ -136,18 +136,18 @@ class LeadCountBystages {
   LeadCountBystages.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];
     count = json['count'];
-    stage = json['stage'] != null ? new Stage.fromJson(json['stage']) : null;
+    stage = json['stage'] != null ? Stage.fromJson(json['stage']) : null;
     percentage = json['percentage'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['count'] = this.count;
-    if (this.stage != null) {
-      data['stage'] = this.stage!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['count'] = count;
+    if (stage != null) {
+      data['stage'] = stage!.toJson();
     }
-    data['percentage'] = this.percentage;
+    data['percentage'] = percentage;
     return data;
   }
 }
@@ -191,17 +191,17 @@ class Stage {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['code'] = this.code;
-    data['name'] = this.name;
-    data['tenantId'] = this.tenantId;
-    data['color'] = this.color;
-    data['is_user_defined'] = this.isUserDefined;
-    data['connected'] = this.connected;
-    data['__v'] = this.iV;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['code'] = code;
+    data['name'] = name;
+    data['tenantId'] = tenantId;
+    data['color'] = color;
+    data['is_user_defined'] = isUserDefined;
+    data['connected'] = connected;
+    data['__v'] = iV;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
     return data;
   }
 }
@@ -213,10 +213,17 @@ class CallStats {
   int? callCount;
   int? followUp;
   int? connCount;
+  int? missedFollowUps;
   int? totalDuration;
   String? formattedTotalDuration;
 
-  CallStats({this.overall, this.outbound, this.inbound, this.followUp});
+  CallStats({
+    this.overall,
+    this.outbound,
+    this.inbound,
+    this.followUp,
+    this.missedFollowUps,
+  });
 
   CallStats.fromJson(Map<String, dynamic> json) {
     overall = json['overall'];
@@ -225,20 +232,24 @@ class CallStats {
     callCount = json['overallTotalCallsCount'];
     followUp = json['overallFollowupCount'];
     connCount = json['overallConnectedCount'];
+    missedFollowUps = json['missedFollowUps'];
     totalDuration = json['totalDuration'];
     formattedTotalDuration = json['totalDurationFormatted'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['overall'] = this.overall;
-    data['outbound'] = this.outbound;
-    data['inbound'] = this.inbound;
-    data['overallTotalCallsCount'] = this.callCount;
-    data['overallFollowupCount'] = this.followUp;
-    data['overallConnectedCount'] = this.connCount;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['overall'] = overall;
+    data['outbound'] = outbound;
+    data['inbound'] = inbound;
+    data['overallTotalCallsCount'] = callCount;
+    data['overallFollowupCount'] = followUp;
+    data['overallConnectedCount'] = connCount;
+    data['missedFollowUps'] = missedFollowUps;
     data['totalDuration'] = totalDuration;
     data['totalDurationFormatted'] = formattedTotalDuration;
     return data;
   }
 }
+
+

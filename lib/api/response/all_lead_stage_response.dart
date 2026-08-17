@@ -24,7 +24,7 @@ class AllLeadStageResponse {
         //This loop runs once for every object in the JSON array.
         //it runs 6 times (because there are 6 objects).
         //EACH TIME: v = one single JSON object
-        data!.add(new Data.fromJson(v));
+        data!.add(Data.fromJson(v));
       });
     }
     total = json['total'];
@@ -35,14 +35,14 @@ class AllLeadStageResponse {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['success'] = this.success;
+    data['success'] = success;
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
     }
-    data['total'] = this.total;
-    data['currentPage'] = this.currentPage;
-    data['limit'] = this.limit;
-    data['totalPages'] = this.totalPages;
+    data['total'] = total;
+    data['currentPage'] = currentPage;
+    data['limit'] = limit;
+    data['totalPages'] = totalPages;
     return data;
   }
 }
@@ -83,17 +83,17 @@ class Data {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
+    final Map<String, dynamic> data = <String, dynamic>{};
     // final Map<String, dynamic> data = <String, String>{};
-    data['_id'] = this.sId;
-    data['code'] = this.code;
-    data['name'] = this.name;
-    data['is_user_defined'] = this.isUserDefined;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
+    data['_id'] = sId;
+    data['code'] = code;
+    data['name'] = name;
+    data['is_user_defined'] = isUserDefined;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
     data['hasSubStatus'] = hasSubStatus;
-    data['count'] = this.count;
+    data['count'] = count;
     return data;
   }
 }

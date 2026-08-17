@@ -229,6 +229,9 @@ class Data {
   List<Document> documents = [];
   List<String> visitedStageIds = [];
   List<dynamic> customList = [];
+  String? followUpDate;
+  List<dynamic>? stageFieldValues;
+  LeadSubStatusId? subStatusId;
 
   Data();
 
@@ -315,6 +318,17 @@ class Data {
     if (json['customList'] is List) {
       customList = json['customList'];
     }
+
+    followUpDate = json['followUpDate']?.toString();
+    if (json['stageFieldValues'] is List) {
+      stageFieldValues = json['stageFieldValues'];
+    }
+    final subStatusJson = json['sub_status_id'] ?? json['subStatusId'];
+    if (subStatusJson is Map<String, dynamic>) {
+      subStatusId = LeadSubStatusId.fromJson(subStatusJson);
+    } else if (subStatusJson is String) {
+      subStatusId = LeadSubStatusId(sId: subStatusJson);
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -347,6 +361,9 @@ class Data {
       'documents': documents.map((e) => e.toJson()).toList(),
       'visitedStageIds': visitedStageIds,
       'customList': customList,
+      'followUpDate': followUpDate,
+      'stageFieldValues': stageFieldValues,
+      'sub_status_id': subStatusId?.toJson(),
     };
   }
 }
@@ -421,22 +438,22 @@ class Location {
 
   Location.fromJson(Map<String, dynamic> json) {
     country = json['country'] != null
-        ? new Country.fromJson(json['country'])
+        ? Country.fromJson(json['country'])
         : null;
-    state = json['state'] != null ? new Country.fromJson(json['state']) : null;
-    city = json['city'] != null ? new Country.fromJson(json['city']) : null;
+    state = json['state'] != null ? Country.fromJson(json['state']) : null;
+    city = json['city'] != null ? Country.fromJson(json['city']) : null;
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    if (this.country != null) {
-      data['country'] = this.country!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    if (country != null) {
+      data['country'] = country!.toJson();
     }
-    if (this.state != null) {
-      data['state'] = this.state!.toJson();
+    if (state != null) {
+      data['state'] = state!.toJson();
     }
-    if (this.city != null) {
-      data['city'] = this.city!.toJson();
+    if (city != null) {
+      data['city'] = city!.toJson();
     }
 
     return data;
@@ -455,9 +472,9 @@ class Country {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
 
     return data;
   }
@@ -477,10 +494,10 @@ class Countrys {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    data['color'] = this.color;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    data['color'] = color;
     return data;
   }
 }
@@ -499,10 +516,30 @@ class Name {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['first'] = this.first;
-    data['middle'] = this.middle;
-    data['last'] = this.last;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['first'] = first;
+    data['middle'] = middle;
+    data['last'] = last;
     return data;
   }
 }
+
+class LeadSubStatusId {
+  String? sId;
+  String? name;
+
+  LeadSubStatusId({this.sId, this.name});
+
+  LeadSubStatusId.fromJson(Map<String, dynamic> json) {
+    sId = json['_id']?.toString() ?? json['id']?.toString();
+    name = json['name']?.toString();
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    return data;
+  }
+}
+  

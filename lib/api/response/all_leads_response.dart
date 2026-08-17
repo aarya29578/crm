@@ -377,9 +377,10 @@
 //   }
 // }
 
+// SECOND METHOD
+
 import 'package:intl/intl.dart';
 
-/////////////////////////////2
 class AllLeadsResponse {
   bool? success;
   int? total;
@@ -431,6 +432,7 @@ class Data {
   String? sId;
   UserId? userId;
   LeadSourceId? leadSourceId;
+  LeadSourceId? leadSubSourceId;
   LeadStageId? leadStageId;
   Name? name;
   int? phone;
@@ -456,12 +458,14 @@ class Data {
   Location? location;
   String? listId;
   DateTime? followUpDate;
-  List<Timeline>? timeline; // <-- ADD THIS LINE
+  List<dynamic>? stageFieldValues;
+  List<Timeline>? timeline;
 
   Data({
     this.sId,
     this.userId,
     this.leadSourceId,
+    this.leadSubSourceId,
     this.leadStageId,
     this.name,
     this.phone,
@@ -487,6 +491,7 @@ class Data {
     this.location,
     this.listId,
     this.followUpDate,
+    this.stageFieldValues, // Add this line
     this.timeline, // <-- ADD THIS LINE
   });
 
@@ -496,6 +501,13 @@ class Data {
     leadSourceId = json['lead_source_id'] != null
         ? LeadSourceId.fromJson(json['lead_source_id'])
         : null;
+
+    if (json['sub_source_id'] is Map<String, dynamic>) {
+      leadSubSourceId = LeadSourceId.fromJson(json['sub_source_id']);
+    } else {
+      leadSubSourceId = null;
+    }
+
     leadStageId = json['lead_stage_id'] != null
         ? LeadStageId.fromJson(json['lead_stage_id'])
         : null;
@@ -559,6 +571,9 @@ class Data {
     followUpDate = json['followUpDate'] != null
         ? DateTime.tryParse(json['followUpDate'])
         : null;
+    stageFieldValues = json['stageFieldValues'] is List
+        ? json['stageFieldValues']
+        : null; // Add this line
   }
 
   Map<String, dynamic> toJson() {
@@ -569,6 +584,9 @@ class Data {
     }
     if (leadSourceId != null) {
       data['lead_source_id'] = leadSourceId!.toJson();
+    }
+    if (leadSubSourceId != null) {
+      data['sub_source_id'] = leadSubSourceId!.toJson();
     }
     if (leadStageId != null) {
       data['lead_stage_id'] = leadStageId!.toJson();
@@ -615,6 +633,7 @@ class Data {
     }
     data['listId'] = listId;
     data['followUpDate'] = followUpDate?.toIso8601String();
+    data['stageFieldValues'] = stageFieldValues; // Add this line
     return data;
   }
 }
@@ -626,8 +645,22 @@ class Timeline {
   String? agent;
   String? action;
   String? date;
+  String? source;
+  String? subSource;
+  String? campaign;
+  String? status;
 
-  Timeline({this.stage, this.note, this.agent, this.action, this.date});
+  Timeline({
+    this.stage,
+    this.note,
+    this.agent,
+    this.action,
+    this.date,
+    this.source,
+    this.subSource,
+    this.campaign,
+    this.status,
+  });
 
   Timeline.fromJson(Map<String, dynamic> json) {
     stage = json['stage'] ?? '';
@@ -635,6 +668,10 @@ class Timeline {
     agent = json['agent'] ?? '';
     action = json['action'] ?? '';
     date = json['date'] ?? '';
+    source = json['source'] ?? '';
+    // subSource = json['subSource'] ?? '';
+    campaign = json['campaign'] ?? '';
+    status = json['status'] ?? '';
   }
 
   Map<String, dynamic> toJson() {
@@ -644,6 +681,9 @@ class Timeline {
     data['agent'] = agent;
     data['action'] = action;
     data['date'] = date;
+    data['source'] = source;
+    data['campaign'] = campaign;
+    data['status'] = status;
     return data;
   }
 }

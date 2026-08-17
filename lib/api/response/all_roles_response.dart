@@ -21,17 +21,17 @@ class AllRoleResponse {
     if (json['data'] != null) {
       data = <Data>[];
       json['data'].forEach((v) {
-        data!.add(new Data.fromJson(v));
+        data!.add(Data.fromJson(v));
       });
     }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['success'] = this.success;
-    data['totalPage'] = this.totalPage;
-    data['total'] = this.total;
-    data['currentPage'] = this.currentPage;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['success'] = success;
+    data['totalPage'] = totalPage;
+    data['total'] = total;
+    data['currentPage'] = currentPage;
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
     }
@@ -75,16 +75,16 @@ class Data {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
-    data['description'] = this.description;
-    data['permission_type'] = this.permissionType;
-    data['permissions'] = this.permissions;
-    data['tenantId'] = this.tenantId;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
+    data['description'] = description;
+    data['permission_type'] = permissionType;
+    data['permissions'] = permissions;
+    data['tenantId'] = tenantId;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
     return data;
   }
 }

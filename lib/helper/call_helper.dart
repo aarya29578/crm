@@ -4,14 +4,11 @@ import 'package:crm_flutter/common_widgets/popup_after_call_ui.dart';
 import 'package:crm_flutter/common_widgets/call_storage.dart';
 import 'package:crm_flutter/helper/bottom_sheet_helper.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
-import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
-import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:phone_state/phone_state.dart';
 import 'package:call_log/call_log.dart';
-import 'package:telephony_info_plus/telephony_info_plus_platform_interface.dart';
 
 class CallHelper {
   static bool _startApiSent = false;
@@ -356,6 +353,7 @@ class CallHelper {
               }
 
               data = {
+                "lead_id": leadId,
                 "to_number": log.number,
                 "from_number":
                     LocalStorage.sharedPreferences!.getInt('phone_number') ??
@@ -373,6 +371,7 @@ class CallHelper {
               print("No call log found");
 
               data = {
+                "lead_id": leadId,
                 "number": number,
                 "duration": 0,
                 "timestamp": DateTime.now().millisecondsSinceEpoch,
@@ -424,6 +423,7 @@ class CallHelper {
             print("Error fetching call log: $e");
 
             PendingCallData.data = {
+              "lead_id": leadId,
               "number": number,
               "duration": 0,
               "timestamp": DateTime.now().millisecondsSinceEpoch,

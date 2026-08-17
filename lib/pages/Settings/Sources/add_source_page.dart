@@ -4,7 +4,6 @@ import 'package:crm_flutter/pages/Settings/Sources/source_controller.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 class AddSourcePage extends StatefulWidget {
   const AddSourcePage({super.key});

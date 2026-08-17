@@ -115,6 +115,13 @@ class NotificationService {
     await _notifications.cancel(id: id);
   }
 
+
+/// CANCEL ALL SCHEDULED NOTIFICATIONS
+static Future<void> cancelAllScheduledNotifications() async {
+  await _notifications.cancelAll();
+  print("🔕 All scheduled notifications cancelled");
+}
+
   /// SHOW INSTANT NOTIFICATION
   Future<void> showNotification({
     required int id,

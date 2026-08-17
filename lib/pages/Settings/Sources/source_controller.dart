@@ -13,7 +13,7 @@ class SourceController extends GetxController {
         allSourceRes.value = response;
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -28,7 +28,7 @@ class SourceController extends GetxController {
         await getAllSources();
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -39,7 +39,7 @@ class SourceController extends GetxController {
         await getAllSources();
       }
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

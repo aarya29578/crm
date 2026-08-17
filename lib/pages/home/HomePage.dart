@@ -1,16 +1,12 @@
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
-import 'package:crm_flutter/pages/home/components/type_tab.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_flutter/pages/home/HomeController.dart';
-import 'package:crm_flutter/pages/ignored_leads/IgnoredLeadsPage.dart';
-import 'package:crm_flutter/styles/text_styles.dart';
-import 'package:crm_flutter/widgets/ColorCountLabelCard.dart';
-import 'package:crm_flutter/widgets/CountLabelCard.dart';
-import 'package:crm_flutter/widgets/ListTileCard.dart';
 import 'package:get/get.dart';
-import 'package:crm_flutter/pages/follow_up/TodayFollowUpPage.dart';
+import 'package:crm_flutter/pages/Call/Call_Logs.dart';
+import 'package:crm_flutter/pages/claimed/ClaimedController.dart';
+import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -25,7 +21,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // home_controller.getAllLeadStage();
+    homeController.fetchAllCampaigns();
     homeController.selectTimeRange('Today', context);
     homeController.getAllLeads();
   }
@@ -41,75 +37,36 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: ColorConstants.MainPurpleBackground.withValues(
         alpha: 0.06,
       ),
-
-      body: SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
-        child: Obx(() {
-          return homeController.dashboardLoading.value == PageState.loading
-              ? Container(
-                  height: MediaQuery.of(context).size.height - 150,
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              : homeController.dashboardLoading.value == PageState.error
-              ? Center(child: Text("Error loading data"))
-              : Column(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          try {
+            await homeController.getAllLeadStage();
+            await homeController.getAllLeads();
+            homeController.refreshData();
+          } catch (e) {
+            print("Error refreshing home page: $e");
+          }
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Dashboard content wrapped in Obx
+              Obx(() {
+                if (homeController.dashboardLoading.value ==
+                    PageState.loading) {
+                  return SizedBox(
+                    height: MediaQuery.of(context).size.height - 250,
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (homeController.dashboardLoading.value == PageState.error) {
+                  return const Center(child: Text("Error loading data"));
+                }
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Text("Upcoming events for today", style: greyHeading),
-                    // const SizedBox(height: 8),
-                    // GestureDetector(
-                    //   onTap: () {
-                    //     Get.to(TodayFollowUpPage());
-                    //   },
-                    //   child: ColorCountLabelCard(context),
-                    // ),
-                    // //ColorCountLabelCard(context),
-                    // const SizedBox(height: 16),
-
-                    // Text("Action Required", style: greyHeading),
-                    // const SizedBox(height: 8),
-                    // GestureDetector(
-                    //   onTap: () {
-                    //     Get.to(IgnoredLeadsPage());
-                    //   },
-                    //   child: ListTileCard(),
-                    // ),
-
-                    // const SizedBox(height: 16),
-
-                    // Text("Leads Summary", style: greyHeading),
-                    // const SizedBox(height: 8),
-                    // if ((homeController
-                    //         .allLeadStageRes
-                    //         .value
-                    //         .data
-                    //         ?.isNotEmpty ??
-                    //     false))
-                    //   GridView.builder(
-                    //     shrinkWrap: true,
-                    //     itemCount:
-                    //         homeController.allLeadStageRes.value.data!.length,
-                    //     physics: const NeverScrollableScrollPhysics(),
-                    //     gridDelegate:
-                    //         const SliverGridDelegateWithFixedCrossAxisCount(
-                    //           crossAxisCount: 2,
-                    //           mainAxisSpacing: 12,
-                    //           crossAxisSpacing: 12,
-                    //           childAspectRatio: 2.4,
-                    //         ),
-                    //     itemBuilder: (context, index) {
-                    //       final item =
-                    //           homeController.allLeadStageRes.value.data![index];
-                    //       print("++++++++++++++++++++++++++++++++++++++++");
-                    //       print(item.toJson());
-                    //       print("++++++++++++++++++++++++++++++++++++++++");
-                    //       return countLabelCard(
-                    //         item.count.toString(),
-                    //         item.name,
-                    //       );
-                    //     },
-                    //   ),
-                    const SizedBox(height: 10),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -459,216 +416,236 @@ class _HomePageState extends State<HomePage> {
                         horizontal: 10,
                         vertical: 10,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        // crossAxisAlignment: CrossAxisAlignment.center,
+                      child: GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 2.2,
                         children: [
-                          /// Total Customers Section
-                          // Container(
-                          //   padding: const EdgeInsets.all(12),
-                          //   decoration: BoxDecoration(
-                          //     color: //Colors.blue.shade50,
-                          //     ColorConstants.MainPurpleBackground.withValues(
-                          //       alpha: 0.1,
-                          //     ),
-                          //     borderRadius: BorderRadius.circular(8),
-                          //   ),
-                          //   child: Column(
-                          //     mainAxisAlignment: MainAxisAlignment.center,
-                          //     children: [
-                          //       Row(
-                          //         // mainAxisAlignment:
-                          //         //     MainAxisAlignment.spaceEvenly,
-                          //         mainAxisSize: MainAxisSize.min,
-                          //         children: [
-                          //           Icon(
-                          //             Icons.people,
-                          //             color: Colors.blue.shade700,
-                          //             size: 20,
-                          //           ),
-                          //           const SizedBox(width: 8),
-                          //           Text(
-                          //             '${homeController.dashboardData.value.data?.totalLeads ?? 0}',
-                          //             style: TextStyle(
-                          //               fontSize: 18,
-                          //               fontWeight: FontWeight.bold,
-                          //               color: Colors.blue.shade800,
-                          //             ),
-                          //           ),
-                          //         ],
-                          //       ),
-                          //       const SizedBox(height: 4),
-                          //       Text(
-                          //         'Total Leads',
-                          //         style: TextStyle(
-                          //           fontSize: 12,
-                          //           color: Colors.grey.shade600,
-                          //           fontWeight: FontWeight.w500,
-                          //         ),
-                          //       ),
-                          //     ],
-                          //   ),
-                          // ),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: //Colors.blue.shade50,
-                              ColorConstants.MainPurpleBackground.withValues(
-                                alpha: 0.1,
+                          GestureDetector(
+                            onTap: () => Get.to(
+                              () => CallLogs(
+                                startDate:
+                                    homeController.selectedStartDate.value,
+                                endDate: homeController.selectedEndDate.value,
+                                timeRange:
+                                    homeController.selectedTimeRange.value,
                               ),
-                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.people,
-                                      color: Colors.blue.shade700,
-                                      size: 20,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${homeController.dashboardData.value.data?.callStats?.callCount ?? 0}',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade800,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.call,
+                                        color: Colors.blue.shade700,
+                                        size: 20,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Total Calls',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${homeController.dashboardData.value.data?.callStats?.callCount ?? 0}',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue.shade800,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Total Calls',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: //Colors.blue.shade50,
-                              ColorConstants.MainPurpleBackground.withValues(
-                                alpha: 0.1,
+                          GestureDetector(
+                            onTap: () => Get.to(
+                              () => CallLogs(
+                                startDate:
+                                    homeController.selectedStartDate.value,
+                                endDate: homeController.selectedEndDate.value,
+                                timeRange:
+                                    homeController.selectedTimeRange.value,
                               ),
-                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.people,
-                                      color: Colors.blue.shade700,
-                                      size: 20,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${homeController.dashboardData.value.data?.callStats?.followUp ?? 0}',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade800,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.headset_mic,
+                                        color: Colors.blue.shade700,
+                                        size: 20,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Follow Up',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${homeController.dashboardData.value.data?.callStats?.connCount ?? 0}',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue.shade800,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Connected',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: //Colors.blue.shade50,
-                              ColorConstants.MainPurpleBackground.withValues(
-                                alpha: 0.1,
+                          GestureDetector(
+                            onTap: () => Get.to(
+                              () => MissedFollowupsPage(
+                                initialType: 'All',
+                                startDate:
+                                    homeController.selectedStartDate.value,
+                                endDate: homeController.selectedEndDate.value,
+                                timeRange:
+                                    homeController.selectedTimeRange.value,
                               ),
-                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.people,
-                                      color: Colors.blue.shade700,
-                                      size: 20,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${homeController.dashboardData.value.data?.callStats?.connCount ?? 0}',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue.shade800,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.schedule,
+                                        color: Colors.blue.shade700,
+                                        size: 20,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Connected',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${homeController.dashboardData.value.data?.callStats?.followUp ?? 0}',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue.shade800,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Reminder Follow Up',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-
-                          // const SizedBox(width: 16),
-
-                          // Customer Ranges Section
-                          // Expanded(
-                          //   child: Column(
-                          //     children: [
-                          //       ...(homeController
-                          //                   .dashboardData
-                          //                   .value
-                          //                   .data
-                          //                   ?.leadCountBystages ??
-                          //               [])
-                          //           .map(
-                          //             (e) => CustomerRangeRow(
-                          //               text: e.stage?.name ?? '',
-                          //               percentage:
-                          //                   double.tryParse(
-                          //                     e.percentage
-                          //                             ?.toString()
-                          //                             .replaceAll('%', '') ??
-                          //                         '',
-                          //                   ) ??
-                          //                   0,
-                          //               count: e.count?.toString() ?? '0',
-                          //             ),
-                          //           )
-                          //           .toList(),
-                          //     ],
-                          //   ),
-                          // ),
+                          GestureDetector(
+                            onTap: () => Get.to(
+                              () => MissedFollowupsPage(
+                                initialType: 'Missed',
+                                startDate:
+                                    homeController.selectedStartDate.value,
+                                endDate: homeController.selectedEndDate.value,
+                                timeRange:
+                                    homeController.selectedTimeRange.value,
+                              ),
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.phone_missed,
+                                        color: Colors.blue.shade700,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${homeController.dashboardData.value.data?.callStats?.missedFollowUps ?? 0}',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue.shade800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Missed',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -732,7 +709,7 @@ class _HomePageState extends State<HomePage> {
                         child: Column(
                           children: [
                             Text(
-                              'Status',
+                              'Total Leads Breakdown',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w500,
@@ -745,7 +722,7 @@ class _HomePageState extends State<HomePage> {
                                 horizontal: 10,
                               ),
                               // separatorBuilder: (context, index) =>
-                              //     Divider(color: Colors.grey.shade500),
+                                  // Divider(color: Colors.grey.shade500),
                               physics: NeverScrollableScrollPhysics(),
                               itemCount: homeController
                                   .allLeadStageRes
@@ -758,10 +735,15 @@ class _HomePageState extends State<HomePage> {
                                     .allLeadStageRes
                                     .value
                                     .data![index];
+
+                                // Hide the "New" stage
+                                // if (data.name?.toLowerCase() == "new") {
+                                //   return const SizedBox.shrink();
+                                // }
+
                                 return Card(
                                   elevation: 0,
-                                  surfaceTintColor:
-                                      Colors.transparent, // VERY IMPORTANT
+                                  surfaceTintColor: Colors.transparent,
                                   margin: const EdgeInsets.symmetric(
                                     vertical: 5,
                                   ),
@@ -770,42 +752,54 @@ class _HomePageState extends State<HomePage> {
                                           .MainPurpleBackground.withValues(
                                         alpha: 0.01,
                                       ),
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: 10,
-                                      horizontal: 20,
-                                    ),
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color:
-                                          ColorConstants
-                                              .MainPurpleBackground.withValues(
-                                            alpha: 0.12,
-                                          ),
-                                      //border: Border.all(color: Colors.black),
-                                      //boxShadow: [BoxShadow(color: Colors.black)],
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      homeController.mainSelectedIndices
+                                          .clear();
+                                      homeController.mainSelectedIndices.add(
+                                        index + 1,
+                                      );
 
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          data.name.toString(),
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w500,
+                                      final ccontroller =
+                                          Get.find<Claimedcontroller>();
+                                      homeController.loadLeadsForSelectedTab(
+                                        ccontroller,
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 10,
+                                        horizontal: 20,
+                                      ),
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        color:
+                                            ColorConstants
+                                                .MainPurpleBackground.withValues(
+                                              alpha: 0.12,
+                                            ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            data.name.toString(),
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          data.count.toString(),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
+                                          Text(
+                                            data.count.toString(),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 );
@@ -818,7 +812,10 @@ class _HomePageState extends State<HomePage> {
                     //
                   ],
                 );
-        }),
+              }),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -835,53 +832,51 @@ Widget _buildStatTab({
   final HomeController homeController = Get.find();
   // final isSelected = homeController.selectedTab.value == index;
 
-  return Expanded(
-    child: Container(
-      margin: EdgeInsets.only(left: isFirst ? 0 : 4, right: isLast ? 0 : 4),
-      child: Material(
-        // color: isSelected ? Theme.of(context).primaryColor : Colors.white,
-        color: Colors.white,
+  return Container(
+    margin: EdgeInsets.only(left: isFirst ? 0 : 4, right: isLast ? 0 : 4),
+    child: Material(
+      // color: isSelected ? Theme.of(context).primaryColor : Colors.white,
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        // onTap: () => homeController.selectedTab.value = index,
         borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          // onTap: () => homeController.selectedTab.value = index,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Count - emphasized for large numbers
-                Text(
-                  _formatNumber(count),
-                  style: TextStyle(
-                    fontSize: _getFontSizeForCount(count),
-                    fontWeight: FontWeight.w700,
-                    // color: isSelected
-                    //     ? Colors.white
-                    //     : const Color(0xFF1A237E), //Try it amazing
-                    color: const Color(0xFF1A237E),
-                    height: 1.2,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Count - emphasized for large numbers
+              Text(
+                _formatNumber(count),
+                style: TextStyle(
+                  fontSize: _getFontSizeForCount(count),
+                  fontWeight: FontWeight.w700,
+                  // color: isSelected
+                  //     ? Colors.white
+                  //     : const Color(0xFF1A237E), //Try it amazing
+                  color: const Color(0xFF1A237E),
+                  height: 1.2,
                 ),
-                const SizedBox(height: 2),
-                // Label
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    // color: isSelected
-                    //     ? Colors.white.withOpacity(0.9)
-                    //     : Colors.grey[600],
-                    color: Colors.grey[600],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              // Label
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  // color: isSelected
+                  //     ? Colors.white.withOpacity(0.9)
+                  //     : Colors.grey[600],
+                  color: Colors.grey[600],
                 ),
-              ],
-            ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ),

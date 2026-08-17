@@ -3,7 +3,6 @@ import 'package:crm_flutter/pages/calls_history/calls_history_controller.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 class CallPage extends StatefulWidget {
   final String leadId;

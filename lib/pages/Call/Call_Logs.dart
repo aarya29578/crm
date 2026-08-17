@@ -1,260 +1,19 @@
-// import 'package:call_log/call_log.dart';
-// import 'package:crm_flutter/models/enums.dart';
-// import 'package:crm_flutter/styles/color_palette.dart';
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
-// import 'package:crm_flutter/pages/Call/call_controller.dart';
-
-// class CallLogs extends StatefulWidget {
-//   const CallLogs({super.key});
-//   @override
-//   State<CallLogs> createState() => _CallLogsState();
-// }
-// class _CallLogsState extends State<CallLogs> {
-//   final CallLogController controller = Get.put(CallLogController());
-//   @override
-//   void initState() {
-//     controller.getApi();
-//     super.initState();
-//   }
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('sCall Logs', style: TextStyle(color: Colors.white)),
-//         actions: [
-//           IconButton(
-//             icon: const Icon(Icons.refresh),
-//             onPressed: controller.getApi,
-//           ),
-//         ],
-//         backgroundColor: ColorConstants.MainPurpleBackground,
-//       ),
-//       body: SafeArea(
-//         child: Obx(() {
-//           if (controller.callApiState.value == PageState.loading) {
-//             return const Center(child: CircularProgressIndicator());
-//           }
-//           if (controller.callLogsResponse.value.data?.isEmpty ?? true) {
-//             return const Center(child: Text('No call logs found'));
-//           }
-//           return Container(
-//             color: ColorConstants.MainPurpleBackground.withValues(alpha: 0.06),
-//             child: ListView.builder(
-//               itemCount: controller.callLogsResponse.value.data?.length ?? 0,
-//               itemBuilder: (context, index) {
-//                 final log = controller.callLogsResponse.value.data![index];
-//                 return Card(
-//                   margin: const EdgeInsets.symmetric(
-//                     horizontal: 10,
-//                     vertical: 6,
-//                   ),
-//                   elevation: 2,
-//                   child: Padding(
-//                     padding: const EdgeInsets.symmetric(
-//                       horizontal: 12,
-//                       vertical: 10,
-//                     ),
-//                     child: Column(
-//                       crossAxisAlignment: CrossAxisAlignment.start,
-//                       children: [
-//                         // Header row with call type icon and basic info
-//                         Row(
-//                           children: [
-//                             // Call type icon
-//                             Container(
-//                               padding: const EdgeInsets.all(8),
-//                               decoration: BoxDecoration(
-//                                 color: _getCallTypeColor(CallType.incoming),
-//                                 shape: BoxShape.circle,
-//                               ),
-//                               child: Icon(
-//                                 _getCallTypeIcon(log.direction.toString()),
-//                                 color: Colors.white,
-//                                 size: 20,
-//                               ),
-//                             ),
-//                             const SizedBox(width: 12),
-//                             // Name/Number and time
-//                             Expanded(
-//                               child: Column(
-//                                 crossAxisAlignment: CrossAxisAlignment.start,
-//                                 children: [
-//                                   Text(
-//                                     '${log.leadId?.name?.first} ${log.leadId?.name?.last}',
-//                                     style: const TextStyle(
-//                                       fontWeight: FontWeight.bold,
-//                                       fontSize: 16,
-//                                     ),
-//                                   ),
-//                                   if (log.startedAt != null)
-//                                     Text(
-//                                       formatDateTime(log.startedAt.toString()),
-//                                       style: TextStyle(
-//                                         color: Colors.grey[600],
-//                                         fontSize: 12,
-//                                       ),
-//                                     ),
-//                                 ],
-//                               ),
-//                             ),
-//                             // Duration
-//                             Text(
-//                               log.duration != null
-//                                   ? '${log.duration} sec'
-//                                   : '--',
-//                               style: const TextStyle(
-//                                 fontWeight: FontWeight.bold,
-//                               ),
-//                             ),
-//                           ],
-//                         ),
-//                         const SizedBox(height: 12),
-//                         // Detailed information section
-//                         _buildDetailRow(
-//                           Icons.directions,
-//                           'Direction',
-//                           log.direction ?? 'Unknown',
-//                         ),
-//                         _buildDetailRow(
-//                           Icons.call_made_rounded,
-//                           'From',
-//                           log.fromNumber ?? 'Unknown',
-//                         ),
-//                         _buildDetailRow(
-//                           Icons.call_received,
-//                           'To',
-//                           log.toNumber ?? 'Unknown',
-//                         ),
-//                         _buildDetailRow(
-//                           Icons.timer,
-//                           'Duration',
-//                           '${log.duration ?? 0} sec',
-//                         ),
-//                         _buildDetailRow(
-//                           Icons.check_circle,
-//                           'Status',
-//                           log.status ?? 'Unknown',
-//                         ),
-//                         _buildDetailRow(
-//                           Icons.play_arrow,
-//                           'Started At',
-//                           formatDateTime(log.startedAt ?? ''),
-//                         ),
-//                         _buildDetailRow(
-//                           Icons.stop,
-//                           'Ended At',
-//                           formatDateTime(log.endedAt ?? ''),
-//                         ),
-//                         // Lead details
-//                         if (log.leadId != null) ...[
-//                           const SizedBox(height: 10),
-//                           if (log.leadId!.email != null)
-//                             _buildDetailRow(
-//                               Icons.email,
-//                               'Email',
-//                               log.leadId!.email!,
-//                             ),
-//                         ],
-//                       ],
-//                     ),
-//                   ),
-//                 );
-//               },
-//             ),
-//           );
-//         }),
-//       ),
-//     );
-//   }
-//   Widget _buildDetailRow(IconData icon, String label, String value) {
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(vertical: 8),
-//       child: Row(
-//         children: [
-//           Icon(icon, size: 18, color: Colors.blueGrey),
-//           const SizedBox(width: 10),
-//           Expanded(
-//             child: Text(
-//               label,
-//               style: TextStyle(color: Colors.grey[600], fontSize: 13),
-//             ),
-//           ),
-//           Text(
-//             value,
-//             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-//   String _formatDateTime(int timestamp) {
-//     final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-//     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-//   }
-//   String formatDateTime(String timestamp) {
-//     final date = DateTime.parse(
-//       timestamp,
-//     ).toLocal(); // Parse ISO string & convert to local time
-//     return '${date.day}/${date.month}/${date.year} '
-//         '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-//   }
-//   IconData _getCallTypeIcon(String? direction) {
-//     if (direction == null) return Icons.call;
-//     switch (direction) {
-//       case 'incoming':
-//         return Icons.call_received;
-//       case 'outgoing':
-//         return Icons.call_made;
-//       default:
-//         return Icons.call;
-//     }
-//   }
-//   Color _getCallTypeColor(CallType? type) {
-//     if (type == null) return Colors.grey;
-//     switch (type) {
-//       default:
-//         return Colors.grey;
-//     }
-//   }
-//   String _getCallTypeText(CallType type) {
-//     switch (type) {
-//       case CallType.incoming:
-//         return 'Incoming';
-//       case CallType.outgoing:
-//         return 'Outgoing';
-//       case CallType.missed:
-//         return 'Missed';
-//       case CallType.voiceMail:
-//         return 'Voicemail';
-//       case CallType.rejected:
-//         return 'Rejected';
-//       case CallType.blocked:
-//         return 'Blocked';
-//       case CallType.answeredExternally:
-//         return 'Answered Externally';
-//       case CallType.wifiIncoming:
-//         return 'WiFi Incoming';
-//       case CallType.wifiOutgoing:
-//         return 'WiFi Outgoing';
-//       default:
-//         return 'Unknown';
-//     }
-//   }
-// }
-
-import 'package:call_log/call_log.dart';
+import 'package:crm_flutter/api/response/all_calls_history_response.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
+import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:crm_flutter/pages/Call/call_controller.dart';
 import 'package:intl/intl.dart';
 
 class CallLogs extends StatefulWidget {
-  const CallLogs({super.key});
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String? timeRange;
+  const CallLogs({super.key, this.startDate, this.endDate, this.timeRange});
 
   @override
   State<CallLogs> createState() => _CallLogsState();
@@ -262,39 +21,80 @@ class CallLogs extends StatefulWidget {
 
 class _CallLogsState extends State<CallLogs> {
   final CallLogController controller = Get.put(CallLogController());
+  bool _isSearchVisible = false;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
-    controller.getApi();
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // If dates are passed from Home, mark the correct time range chip
+      if (widget.startDate != null && widget.endDate != null) {
+        controller.selectedStartDate.value = widget.startDate;
+        controller.selectedEndDate.value = widget.endDate;
+        controller.selectedTimeRange.value = widget.timeRange ?? 'Today';
+      }
+      controller.getApi(startDate: widget.startDate, endDate: widget.endDate);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Call Logs',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-          ),
-        ),
+        title: _isSearchVisible
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                decoration: InputDecoration(
+                  hintText: 'Search by name or phone...',
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) {
+                  controller.searchQuery.value = value;
+                },
+              )
+            : const Text(
+                'Call Logs',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                ),
+              ),
         actions: [
-          // IconButton(
-          //   icon: const Icon(Icons.search, color: Colors.white),
-          //   onPressed: () => _showSearchDialog(),
-          // ),
-          // IconButton(
-          //   icon: const Icon(Icons.filter_list, color: Colors.white),
-          //   onPressed: () => _showFilterDialog(),
-          // ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: controller.getApi,
-            tooltip: 'Refresh',
+            icon: Icon(
+              _isSearchVisible ? Icons.close : Icons.search,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              setState(() {
+                if (_isSearchVisible) {
+                  _isSearchVisible = false;
+                  _searchController.clear();
+                  controller.searchQuery.value = '';
+                } else {
+                  _isSearchVisible = true;
+                }
+              });
+            },
+            tooltip: 'Search',
           ),
+          if (!_isSearchVisible)
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              onPressed: () => controller.refreshData(),
+              tooltip: 'Refresh',
+            ),
         ],
         backgroundColor: ColorConstants.MainPurpleBackground,
         elevation: 2,
@@ -302,9 +102,40 @@ class _CallLogsState extends State<CallLogs> {
       body: SafeArea(
         child: Column(
           children: [
-            /// Stats Summary
-            // Obx(() => _buildStatsSummary()),
-
+            // Date Filter Chips
+            Padding(
+              padding: const EdgeInsets.only(top: 10.0, bottom: 6.0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Obx(() => Row(
+                  children: [
+                    const SizedBox(width: 10),
+                    TimeTab(
+                      text: 'Today',
+                      first: true,
+                      isSelected: controller.selectedTimeRange.value == 'Today',
+                      onTap: () => controller.selectTimeRange('Today', context),
+                    ),
+                    TimeTab(
+                      text: 'Yesterday',
+                      isSelected: controller.selectedTimeRange.value == 'Yesterday',
+                      onTap: () => controller.selectTimeRange('Yesterday', context),
+                    ),
+                    TimeTab(
+                      text: 'Last 30 Days',
+                      isSelected: controller.selectedTimeRange.value == 'Last 30 Days',
+                      onTap: () => controller.selectTimeRange('Last 30 Days', context),
+                    ),
+                    TimeTab(
+                      text: 'Select Range',
+                      last: true,
+                      isSelected: controller.selectedTimeRange.value == 'Select Range',
+                      onTap: () => controller.selectTimeRange('Select Range', context),
+                    ),
+                  ],
+                )),
+              ),
+            ),
             // Call Logs List
             Expanded(
               child: Obx(() {
@@ -331,6 +162,23 @@ class _CallLogsState extends State<CallLogs> {
                   return _buildEmptyState();
                 }
 
+                final filteredLogs = controller.filteredCallLogs;
+                if (filteredLogs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.search_off, size: 60, color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No matching call logs',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 return RefreshIndicator(
                   onRefresh: () async {
                     controller.getApi();
@@ -338,14 +186,12 @@ class _CallLogsState extends State<CallLogs> {
                   },
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
-                    itemCount:
-                        controller.callLogsResponse.value.data?.length ?? 0,
+                    itemCount: filteredLogs.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 8),
                     itemBuilder: (context, index) {
-                      final log =
-                          controller.callLogsResponse.value.data?[index];
-                      return _buildCallLogCard(log, context);
+                      final callGroup = filteredLogs[index];
+                      return _buildCallLogCard(callGroup, context);
                     },
                   ),
                 );
@@ -357,81 +203,16 @@ class _CallLogsState extends State<CallLogs> {
     );
   }
 
-  Widget _buildStatsSummary() {
-    final logs = controller.callLogsResponse.value.data ?? [];
-    if (logs.isEmpty) return const SizedBox();
+  Widget _buildCallLogCard(CallHistoryGroup? callGroup, BuildContext context) {
+    if (callGroup == null) return const SizedBox();
 
-    final incoming = logs.where((log) => log.direction == 'incoming').length;
-    final outgoing = logs.where((log) => log.direction == 'outgoing').length;
-    final totalDuration = logs.fold<int>(
-      0,
-      (sum, log) => sum + (log.duration ?? 0),
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: ColorConstants.MainPurpleBackground.withOpacity(0.05),
-        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem(
-            icon: Icons.call_received,
-            value: incoming.toString(),
-            label: 'Incoming',
-            color: Colors.green,
-          ),
-          _buildStatItem(
-            icon: Icons.call_made,
-            value: outgoing.toString(),
-            label: 'Outgoing',
-            color: Colors.blue,
-          ),
-          _buildStatItem(
-            icon: Icons.timer,
-            value: '${(totalDuration / 60).ceil()} min',
-            label: 'Total Time',
-            color: Colors.orange,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCallLogCard(dynamic log, BuildContext context) {
-    // final isMissed = log.status?.toLowerCase().contains('missed') ?? false;
-    final isMissed = log.disposition == 'not connected' ?? false;
+    final lead = callGroup.lead;
+    final leadName = (lead?.name?.first != null || lead?.name?.last != null)
+        ? "${lead?.name?.first ?? ""} ${lead?.name?.last ?? ""}".trim()
+        : (lead != null ? "Unnamed Lead" : "External Contact");
+    final phone = lead?.phone?.toString() ?? "No Contact Number";
+    final isMissed = lead?.leadStage?.connected?.toLowerCase() == 'not connected';
+    final agentName = callGroup.calledBy?.name ?? "Unknown Agent";
 
     return Card(
       margin: EdgeInsets.zero,
@@ -445,7 +226,7 @@ class _CallLogsState extends State<CallLogs> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _showCallDetails(log, context),
+        onTap: () => _showCallDetails(callGroup, context),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -479,8 +260,7 @@ class _CallLogsState extends State<CallLogs> {
                           children: [
                             Expanded(
                               child: Text(
-                                '${log.leadId?.name?.first ?? ''} ${log.leadId?.name?.last ?? 'Unknown Contact'}'
-                                    .trim(),
+                                leadName,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
@@ -489,31 +269,12 @@ class _CallLogsState extends State<CallLogs> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (isMissed)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Text(
-                                  'Not Connected',
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
                           ],
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          log.startedAt != null
-                              ? _formatRelativeTime(log.startedAt.toString())
+                          callGroup.lastCallAt != null
+                              ? _formatRelativeTime(callGroup.lastCallAt.toString())
                               : 'Time unknown',
                           style: TextStyle(
                             color: Colors.grey.shade600,
@@ -524,99 +285,60 @@ class _CallLogsState extends State<CallLogs> {
                     ),
                   ),
 
-                  // Duration and Action
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.timer,
-                            size: 14,
-                            color: Colors.grey.shade500,
+                  // Action
+                  IconButton(
+                    onPressed: () async {
+                      if (phone == "No Contact Number") {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Phone number not available"),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${log.duration ?? 0}s',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
+                        );
+                        return;
+                      }
+
+                      showCallAlertDialog(
+                        context,
+                        'Call $leadName',
+                        'Are you sure want to call to $phone number?',
+                        () async {
+                          await CallHelper.callAndTrack(
+                            phone,
+                            lead?.sId,
+                            '',
+                          );
+                        },
+                        Colors.blue,
+                      );
+                    },
+                    icon: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.blue.shade100,
+                            Colors.green.shade200,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withOpacity(0.2),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                      // const SizedBox(height: 8),
-                      // IconButton(
-                      //   icon: Icon(
-                      //     Icons.phone,
-                      //     color: ColorConstants.MainPurpleBackground,
-                      //     size: 20,
-                      //   ),
-                      //   onPressed: () => _callContact(log),
-                      //   padding: EdgeInsets.zero,
-                      //   constraints: const BoxConstraints(),
-                      //   tooltip: 'Call back',
-                      // ),
-                      IconButton(
-                        onPressed: () async {
-                          final phone = log.toNumber?.toString() ?? '';
-                          if (phone.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Phone number not available"),
-                              ),
-                            );
-
-                            return;
-                          }
-
-                          showCallAlertDialog(
-                            context,
-                            'Call ${log.leadId?.name?.first ?? ''}',
-                            'Are you sure want to call to $phone number?',
-                            () async {
-                              await CallHelper.callAndTrack(
-                                phone,
-                                log.leadId?.sId,
-                                '',
-                              );
-                              // Navigator.pop(context);
-                            },
-                            Colors.blue,
-                          );
-                          // requestPermissions();
-                          // await CallHelper.callAndTrack(phone);
-                        },
-                        icon: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.blue.shade100,
-                                Colors.green.shade200,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.blue.withOpacity(0.2),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.phone,
-                            color: Colors.green.shade800,
-                            size: 20,
-                          ),
-                        ),
-                        splashRadius: 24,
+                      child: Icon(
+                        Icons.phone,
+                        color: Colors.green.shade800,
+                        size: 20,
                       ),
-                    ],
+                    ),
+                    splashRadius: 24,
                   ),
                 ],
               ),
@@ -627,23 +349,61 @@ class _CallLogsState extends State<CallLogs> {
               Row(
                 children: [
                   Expanded(
+                    flex: 2,
                     child: _buildInfoChip(
                       icon: Icons.phone,
-                      text: log.toNumber ?? 'Unknown',
+                      text: phone,
                       color: Colors.blue.shade50,
                       iconColor: Colors.blue,
                     ),
                   ),
-                  // const SizedBox(width: 8),
-                  // if (log.leadId?.email != null)
-                  //   Expanded(
-                  //     child: _buildInfoChip(
-                  //       icon: Icons.email,
-                  //       text: log.leadId!.email!,
-                  //       color: Colors.green.shade50,
-                  //       iconColor: Colors.green,
-                  //     ),
-                  //   ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    flex: 2,
+                    child: _buildInfoChip(
+                      icon: Icons.person_outline,
+                      text: agentName,
+                      color: Colors.grey.shade100,
+                      iconColor: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade600,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.repeat, size: 12, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '${callGroup.callCount ?? 1} Calls',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -660,7 +420,7 @@ class _CallLogsState extends State<CallLogs> {
     required Color iconColor,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(20),
@@ -683,70 +443,8 @@ class _CallLogsState extends State<CallLogs> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.call_missed_outgoing,
-            size: 80,
-            color: Colors.grey.shade300,
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'No Call logs found',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Make your first call to see it here',
-            style: TextStyle(color: Colors.grey.shade500),
-          ),
-          const SizedBox(height: 20),
-          // ElevatedButton.icon(
-          //   onPressed: () => _showCallOptions(context),
-          //   icon: const Icon(Icons.add_call),
-          //   label: const Text('Make a Call'),
-          //   style: ElevatedButton.styleFrom(
-          //     backgroundColor: ColorConstants.MainPurpleBackground,
-          //     foregroundColor: Colors.white,
-          //   ),
-          // ),
-        ],
-      ),
-    );
-  }
 
-  // Helper Methods (keep existing logic)
-  IconData _getCallTypeIcon(String? direction) {
-    if (direction == null) return Icons.call;
-    switch (direction.toLowerCase()) {
-      case 'incoming':
-        return Icons.call_received;
-      case 'outgoing':
-        return Icons.call_made;
-      default:
-        return Icons.call;
-    }
-  }
-
-  Color _getCallTypeColor(String? direction) {
-    if (direction == null) return Colors.grey;
-    switch (direction.toLowerCase()) {
-      case 'incoming':
-        return Colors.green;
-      case 'outgoing':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
-  }
-
+  // Helper Methods
   String formatDateTime(String timestamp) {
     if (timestamp.isEmpty) return 'Unknown';
     try {
@@ -780,233 +478,137 @@ class _CallLogsState extends State<CallLogs> {
     }
   }
 
-  // New UI Methods
-  void _showCallDetails(dynamic log, BuildContext context) {
-    // if (log == null) {
-    //   showModalBottomSheet(
-    //     context: context,
-    //     isScrollControlled: true,
-    //     backgroundColor: Colors.transparent,
-    //     builder: (context) => Center(child: Text(""),)
-    //   );
-    // }
-    if (log != null) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => _buildDetailsSheet(log),
-      );
-    }
+  void _showCallDetails(CallHistoryGroup callGroup, BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildDetailsSheet(callGroup),
+    );
   }
 
-  Widget _buildDetailsSheet(dynamic log) {
+  Widget _buildDetailsSheet(CallHistoryGroup callGroup) {
+    final lead = callGroup.lead;
+    final leadName = (lead?.name?.first != null || lead?.name?.last != null)
+        ? "${lead?.name?.first ?? ""} ${lead?.name?.last ?? ""}".trim()
+        : (lead != null ? "Unnamed Lead" : "External Contact");
+    final isMissed = lead?.leadStage?.connected?.toLowerCase() == 'not connected';
+
     return DraggableScrollableSheet(
-      initialChildSize: 1.0,
-      minChildSize: 0.7,
-      maxChildSize: 1.0,
-      expand: false,
-      builder: (context, scrollController) {
-        final isMissed = log.disposition == 'not connected' ?? false;
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              // Handle
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(20),
-                  children: [
-                    // Header
-                    Center(
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: isMissed ? Colors.red : Colors.blue,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            log.leadId?.name?.first[0].toUpperCase() ?? "U",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(20),
+                children: [
+                  // Header
+                  Center(
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: isMissed ? Colors.red : Colors.blue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          leadName.isNotEmpty ? leadName[0].toUpperCase() : "U",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${log.leadId?.name?.first ?? ''} ${log.leadId?.name?.last ?? 'Unknown'}'
-                                .trim(),
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 2),
-                          Container(
-                            width: 30,
-                            height: 30,
-                            // decoration: BoxDecoration(
-                            //   color: isMissed ? Colors.red : Colors.blue,
-                            //   shape: BoxShape.circle,
-                            // ),
-                            child: Icon(
-                              isMissed ? Icons.phone_missed_sharp : Icons.phone,
-                              color: isMissed ? Colors.red : Colors.blue,
-                              size: 17,
-                            ),
-                          ),
-                        ],
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      leadName,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Center(
-                      child: Text(
-                        log.leadId?.email ?? 'No email',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
+                  ),
+                  Center(
+                    child: Text(
+                      lead?.email ?? 'No email available',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
                       ),
                     ),
-                    const SizedBox(height: 30),
+                  ),
+                  const SizedBox(height: 30),
 
-                    // Details
+                  // Details
+                  _buildDetailItem(
+                    icon: Icons.phone,
+                    title: 'Contact Number',
+                    value: lead?.phone?.toString() ?? 'N/A',
+                  ),
+                  _buildDetailItem(
+                    icon: Icons.person_outline,
+                    title: 'Called By (Agent)',
+                    value: callGroup.calledBy?.name ?? 'Unknown Agent',
+                  ),
+                  _buildDetailItem(
+                    icon: Icons.calendar_today,
+                    title: 'Date',
+                    value: callGroup.date ?? 'N/A',
+                  ),
+                  _buildDetailItem(
+                    icon: Icons.access_time,
+                    title: 'Last Call Time',
+                    value: formatDateTime(callGroup.lastCallAt ?? ''),
+                  ),
+                  _buildDetailItem(
+                    icon: Icons.format_list_numbered,
+                    title: 'Total Calls',
+                    value: '${callGroup.callCount ?? 0}',
+                  ),
+                  if (lead?.priority != null)
                     _buildDetailItem(
-                      icon: Icons.phone,
-                      title: 'From Number',
-                      value: log.fromNumber ?? 'Unknown',
+                      icon: Icons.star_outline,
+                      title: 'Priority',
+                      value: lead!.priority!,
                     ),
+                  if (lead?.leadStage != null)
                     _buildDetailItem(
-                      icon: Icons.call_made,
-                      title: 'To Number',
-                      value: log.toNumber ?? 'Unknown',
-                    ),
-                    _buildDetailItem(
-                      icon: Icons.timer,
-                      title: 'Duration',
-                      value: '${log.duration ?? 0} seconds',
-                    ),
-                    _buildDetailItem(
-                      icon: Icons.calendar_today,
-                      title: 'Started',
-                      value: formatDateTime(log.startedAt ?? ''),
-                    ),
-                    _buildDetailItem(
-                      icon: Icons.check_circle,
-                      title: 'Status',
-                      value: log.status ?? 'Unknown',
+                      icon: Icons.sync,
+                      title: 'Current Stage',
+                      value: lead!.leadStage!.name ?? 'N/A',
                     ),
 
-                    const SizedBox(height: 40),
-                    // const Spacer(),
-
-                    /// Action Buttons
-                    Row(
-                      children: [
-                        SizedBox(
-                          height: 50,
-                          width: 100,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text("Cancel"),
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: SizedBox(
-                            height: 50,
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                final phone = log.toNumber?.toString() ?? '';
-                                if (phone.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        "Phone number not available",
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                // requestPermissions();
-                                showCallAlertDialog(
-                                  context,
-                                  'Call again - ${log.leadId?.name?.first ?? ''}',
-                                  'Are you sure want to call to $phone number?',
-                                  () async {
-                                    await CallHelper.callAndTrack(
-                                      phone,
-                                      log.leadId?.sId,
-                                      '',
-                                    );
-                                    // Navigator.pop(context);
-                                  },
-                                  Colors.blue,
-                                );
-                              },
-                              icon: const Icon(Icons.phone),
-                              label: const Text('Call Again'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    ColorConstants.MainPurpleBackground,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // const SizedBox(width: 12),
-                        // Expanded(
-                        //   child: OutlinedButton.icon(
-                        //     onPressed: () => _addNote(log),
-                        //     icon: const Icon(Icons.note_add),
-                        //     label: const Text('Add Note'),
-                        //     style: OutlinedButton.styleFrom(
-                        //       padding: const EdgeInsets.symmetric(vertical: 16),
-                        //       side: BorderSide(
-                        //         color: ColorConstants.MainPurpleBackground,
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
-                      ],
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 40),
+                ],
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1045,133 +647,31 @@ class _CallLogsState extends State<CallLogs> {
     );
   }
 
-  void _showSearchDialog() {
-    // Implement search functionality
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Search Calls'),
-        content: TextField(
-          decoration: const InputDecoration(
-            hintText: 'Search by name, number, or email...',
-            prefixIcon: Icon(Icons.search),
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.call_missed_outgoing,
+            size: 80,
+            color: Colors.grey.shade300,
           ),
-          onChanged: (value) {
-            // Implement search logic
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Search'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showFilterDialog() {
-    // Implement filter functionality
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Filter Calls',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          const SizedBox(height: 20),
+          Text(
+            'No Call logs found',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(height: 20),
-            // Add filter options here
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Apply Filters'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showCallOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                Icons.phone,
-                color: ColorConstants.MainPurpleBackground,
-              ),
-              title: const Text('Make a new call'),
-              onTap: () {
-                Navigator.pop(context);
-                // Implement new call
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.contacts, color: Colors.green),
-              title: const Text('Call from contacts'),
-              onTap: () {
-                Navigator.pop(context);
-                // Implement contact picker
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.history, color: Colors.orange),
-              title: const Text('Recent calls'),
-              onTap: () {
-                Navigator.pop(context);
-                // Show recent calls
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _callContact(dynamic log) {
-    // Implement call functionality
-    final number = log.toNumber ?? log.fromNumber;
-    if (number != null) {
-      // Make call
-    }
-  }
-
-  void _addNote(dynamic log) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Note'),
-        content: TextField(
-          maxLines: 5,
-          decoration: const InputDecoration(
-            hintText: 'Enter notes about this call...',
-            border: OutlineInputBorder(),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+          const SizedBox(height: 10),
+          Text(
+            'Make your first call to see it here',
+            style: TextStyle(color: Colors.grey.shade500),
           ),
-          ElevatedButton(
-            onPressed: () {
-              // Save note logic
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
+          const SizedBox(height: 20),
         ],
       ),
     );

@@ -37,14 +37,26 @@ class _FollowUpFormState extends State<FollowUpForm> {
       );
 
       if (pickedTime != null) {
-        setState(() {
-          _selectedDateTime = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
+        final combined = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+
+        if (combined.isBefore(DateTime.now())) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Cannot select a past date or time"),
+              backgroundColor: Colors.red,
+            ),
           );
+          return;
+        }
+
+        setState(() {
+          _selectedDateTime = combined;
           _dateTimeController.text = _formatDateTime(_selectedDateTime!);
         });
       }
@@ -151,7 +163,7 @@ class _FollowUpFormState extends State<FollowUpForm> {
                   // Duration dropdown
                   Expanded(
                     child: DropdownButtonFormField<int>(
-                      value: selectedDuration,
+                      initialValue: selectedDuration,
                       decoration: InputDecoration(
                         labelText: 'Duration',
                         border: OutlineInputBorder(),
@@ -181,7 +193,7 @@ class _FollowUpFormState extends State<FollowUpForm> {
                   // Reminder dropdown
                   Expanded(
                     child: DropdownButtonFormField<int>(
-                      value: selectedReminder,
+                      initialValue: selectedReminder,
                       decoration: InputDecoration(
                         labelText: 'Remind me before',
                         border: OutlineInputBorder(),

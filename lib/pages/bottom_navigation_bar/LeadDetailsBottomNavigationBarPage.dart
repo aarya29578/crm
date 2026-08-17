@@ -2,13 +2,10 @@ import 'package:call_log/call_log.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_flutter/pages/Patham/PrathamPage.dart';
-import 'package:crm_flutter/pages/calls_history/CallsHistoryPage.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsPage.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:phone_state/phone_state.dart';
 
 class LeadDetailsBottomNavigationBarPage extends StatefulWidget {
@@ -36,21 +33,19 @@ class _LeadDetailsBottomNavigationBarPageState
     leadDetailsController.requestPermissions();
 
     PhoneState.stream.listen((event) async {
-      if (event != null) {
-        setState(() {
-          status = event.status;
-        });
+      setState(() {
+        status = event.status;
+      });
 
-        if (event.status == PhoneStateStatus.CALL_STARTED) {
-          callStarted = true;
-        }
-
-        if (event.status == PhoneStateStatus.CALL_ENDED && callStarted) {
-          callStarted = false;
-          await Future.delayed(Duration(seconds: 1));
-        }
+      if (event.status == PhoneStateStatus.CALL_STARTED) {
+        callStarted = true;
       }
-    });
+
+      if (event.status == PhoneStateStatus.CALL_ENDED && callStarted) {
+        callStarted = false;
+        await Future.delayed(Duration(seconds: 1));
+      }
+        });
     super.initState();
   }
 
@@ -240,7 +235,7 @@ class _LeadDetailsBottomNavigationBarPageState
                         showCallAlertDialog(
                           context,
                           'Call',
-                          'Are you sure want to call to ${exactNumber} number?',
+                          'Are you sure want to call to $exactNumber number?',
                           () async {
                             await CallHelper.callAndTrack(
                               exactNumber.toString(),

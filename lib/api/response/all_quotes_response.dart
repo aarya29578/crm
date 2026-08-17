@@ -24,18 +24,18 @@ class AllQuoteResponse {
     if (json['data'] != null) {
       data = <Data>[];
       json['data'].forEach((v) {
-        data!.add(new Data.fromJson(v));
+        data!.add(Data.fromJson(v));
       });
     }
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['status'] = this.status;
-    data['total'] = this.total;
-    data['success'] = this.success;
-    data['currentPage'] = this.currentPage;
-    data['totalPages'] = this.totalPages;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['status'] = status;
+    data['total'] = total;
+    data['success'] = success;
+    data['currentPage'] = currentPage;
+    data['totalPages'] = totalPages;
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
     }
@@ -90,45 +90,45 @@ class Data {
     description = json['description'];
     billingAddress =
         json['billing_address'] != null
-            ? new BillingAddress.fromJson(json['billing_address'])
+            ? BillingAddress.fromJson(json['billing_address'])
             : null;
     shippingAddress =
         json['shipping_address'] != null
-            ? new BillingAddress.fromJson(json['shipping_address'])
+            ? BillingAddress.fromJson(json['shipping_address'])
             : null;
     discountPercent =
         json['discount_percent'] != null
-            ? new DiscountPercent.fromJson(json['discount_percent'])
+            ? DiscountPercent.fromJson(json['discount_percent'])
             : null;
     discountAmount =
         json['discount_amount'] != null
-            ? new DiscountPercent.fromJson(json['discount_amount'])
+            ? DiscountPercent.fromJson(json['discount_amount'])
             : null;
     taxAmount =
         json['tax_amount'] != null
-            ? new DiscountPercent.fromJson(json['tax_amount'])
+            ? DiscountPercent.fromJson(json['tax_amount'])
             : null;
     adjustmentAmount =
         json['adjustment_amount'] != null
-            ? new DiscountPercent.fromJson(json['adjustment_amount'])
+            ? DiscountPercent.fromJson(json['adjustment_amount'])
             : null;
     subTotal =
         json['sub_total'] != null
-            ? new DiscountPercent.fromJson(json['sub_total'])
+            ? DiscountPercent.fromJson(json['sub_total'])
             : null;
     grandTotal =
         json['grand_total'] != null
-            ? new DiscountPercent.fromJson(json['grand_total'])
+            ? DiscountPercent.fromJson(json['grand_total'])
             : null;
     expiredAt = json['expired_at'];
     personId =
         json['person_id'] != null
-            ? new PersonId.fromJson(json['person_id'])
+            ? PersonId.fromJson(json['person_id'])
             : null;
     if (json['items'] != null) {
       items = <Items>[];
       json['items'].forEach((v) {
-        items!.add(new Items.fromJson(v));
+        items!.add(Items.fromJson(v));
       });
     }
     createdAt = json['createdAt'];
@@ -138,45 +138,45 @@ class Data {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['subject'] = this.subject;
-    data['description'] = this.description;
-    if (this.billingAddress != null) {
-      data['billing_address'] = this.billingAddress!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['subject'] = subject;
+    data['description'] = description;
+    if (billingAddress != null) {
+      data['billing_address'] = billingAddress!.toJson();
     }
-    if (this.shippingAddress != null) {
-      data['shipping_address'] = this.shippingAddress!.toJson();
+    if (shippingAddress != null) {
+      data['shipping_address'] = shippingAddress!.toJson();
     }
-    if (this.discountPercent != null) {
-      data['discount_percent'] = this.discountPercent!.toJson();
+    if (discountPercent != null) {
+      data['discount_percent'] = discountPercent!.toJson();
     }
-    if (this.discountAmount != null) {
-      data['discount_amount'] = this.discountAmount!.toJson();
+    if (discountAmount != null) {
+      data['discount_amount'] = discountAmount!.toJson();
     }
-    if (this.taxAmount != null) {
-      data['tax_amount'] = this.taxAmount!.toJson();
+    if (taxAmount != null) {
+      data['tax_amount'] = taxAmount!.toJson();
     }
-    if (this.adjustmentAmount != null) {
-      data['adjustment_amount'] = this.adjustmentAmount!.toJson();
+    if (adjustmentAmount != null) {
+      data['adjustment_amount'] = adjustmentAmount!.toJson();
     }
-    if (this.subTotal != null) {
-      data['sub_total'] = this.subTotal!.toJson();
+    if (subTotal != null) {
+      data['sub_total'] = subTotal!.toJson();
     }
-    if (this.grandTotal != null) {
-      data['grand_total'] = this.grandTotal!.toJson();
+    if (grandTotal != null) {
+      data['grand_total'] = grandTotal!.toJson();
     }
-    data['expired_at'] = this.expiredAt;
-    if (this.personId != null) {
-      data['person_id'] = this.personId!.toJson();
+    data['expired_at'] = expiredAt;
+    if (personId != null) {
+      data['person_id'] = personId!.toJson();
     }
-    if (this.items != null) {
-      data['items'] = this.items!.map((v) => v.toJson()).toList();
+    if (items != null) {
+      data['items'] = items!.map((v) => v.toJson()).toList();
     }
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['__v'] = this.iV;
-    data['user_id'] = this.userId;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['__v'] = iV;
+    data['user_id'] = userId;
     return data;
   }
 }
@@ -205,12 +205,12 @@ class BillingAddress {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['line1'] = this.line1;
-    data['country'] = this.country;
-    data['state'] = this.state;
-    data['city'] = this.city;
-    data['postal_code'] = this.postalCode;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['line1'] = line1;
+    data['country'] = country;
+    data['state'] = state;
+    data['city'] = city;
+    data['postal_code'] = postalCode;
     return data;
   }
 }
@@ -225,8 +225,8 @@ class DiscountPercent {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['$numberDecimal'] = this.numberDecimal;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['$numberDecimal'] = numberDecimal;
     return data;
   }
 }
@@ -243,9 +243,9 @@ class PersonId {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['_id'] = this.sId;
-    data['name'] = this.name;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['_id'] = sId;
+    data['name'] = name;
     return data;
   }
 }
@@ -286,27 +286,27 @@ class Items {
     quantity = json['quantity'];
     price =
         json['price'] != null
-            ? new DiscountPercent.fromJson(json['price'])
+            ? DiscountPercent.fromJson(json['price'])
             : null;
     discountPercent =
         json['discount_percent'] != null
-            ? new DiscountPercent.fromJson(json['discount_percent'])
+            ? DiscountPercent.fromJson(json['discount_percent'])
             : null;
     discountAmount =
         json['discount_amount'] != null
-            ? new DiscountPercent.fromJson(json['discount_amount'])
+            ? DiscountPercent.fromJson(json['discount_amount'])
             : null;
     taxPercent =
         json['tax_percent'] != null
-            ? new DiscountPercent.fromJson(json['tax_percent'])
+            ? DiscountPercent.fromJson(json['tax_percent'])
             : null;
     taxAmount =
         json['tax_amount'] != null
-            ? new DiscountPercent.fromJson(json['tax_amount'])
+            ? DiscountPercent.fromJson(json['tax_amount'])
             : null;
     total =
         json['total'] != null
-            ? new DiscountPercent.fromJson(json['total'])
+            ? DiscountPercent.fromJson(json['total'])
             : null;
     productId = json['product_id'];
     sId = json['_id'];
@@ -316,32 +316,32 @@ class Items {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['name'] = this.name;
-    data['quantity'] = this.quantity;
-    if (this.price != null) {
-      data['price'] = this.price!.toJson();
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['name'] = name;
+    data['quantity'] = quantity;
+    if (price != null) {
+      data['price'] = price!.toJson();
     }
-    if (this.discountPercent != null) {
-      data['discount_percent'] = this.discountPercent!.toJson();
+    if (discountPercent != null) {
+      data['discount_percent'] = discountPercent!.toJson();
     }
-    if (this.discountAmount != null) {
-      data['discount_amount'] = this.discountAmount!.toJson();
+    if (discountAmount != null) {
+      data['discount_amount'] = discountAmount!.toJson();
     }
-    if (this.taxPercent != null) {
-      data['tax_percent'] = this.taxPercent!.toJson();
+    if (taxPercent != null) {
+      data['tax_percent'] = taxPercent!.toJson();
     }
-    if (this.taxAmount != null) {
-      data['tax_amount'] = this.taxAmount!.toJson();
+    if (taxAmount != null) {
+      data['tax_amount'] = taxAmount!.toJson();
     }
-    if (this.total != null) {
-      data['total'] = this.total!.toJson();
+    if (total != null) {
+      data['total'] = total!.toJson();
     }
-    data['product_id'] = this.productId;
-    data['_id'] = this.sId;
-    data['createdAt'] = this.createdAt;
-    data['updatedAt'] = this.updatedAt;
-    data['sku'] = this.sku;
+    data['product_id'] = productId;
+    data['_id'] = sId;
+    data['createdAt'] = createdAt;
+    data['updatedAt'] = updatedAt;
+    data['sku'] = sku;
     return data;
   }
 }

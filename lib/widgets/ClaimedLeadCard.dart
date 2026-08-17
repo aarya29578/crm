@@ -1,8 +1,7 @@
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:crm_flutter/styles/text_styles.dart';
-import 'package:crm_flutter/widgets/ScheduleCard.dart';
+import 'package:intl/intl.dart';
 
 ClaimedLeadCard(
   context,
@@ -14,6 +13,8 @@ ClaimedLeadCard(
   campaignName,
   id,
   mail,
+  followUpDate,
+  stageFieldValues,
 ) {
   return Column(
     children: [
@@ -32,6 +33,8 @@ ClaimedLeadCard(
           campaignName,
           id,
           mail,
+          followUpDate,
+          stageFieldValues,
         ),
       ),
       // ScheduleCard(),
@@ -132,6 +135,8 @@ ClaimedLeads(
   campaignName,
   id,
   mail,
+  followUpDate,
+  stageFieldValues,
 ) {
   return Container(
     padding: EdgeInsets.all(16),
@@ -154,37 +159,97 @@ ClaimedLeads(
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
-                SizedBox(width: 6),
-                Text(
-                  time,
+            Flexible(
+              child: Row(
+                children: [
+                  Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                  SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      time,
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8),
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade500,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  campaignName ?? 'no Campaign Assign!',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: Colors.white,
                     fontWeight: FontWeight.w500,
                     fontSize: 12,
                   ),
-                ),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade500,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                campaignName ?? 'no Campaign Assign!',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ),
           ],
         ),
+
+        if (followUpDate != null && followUpDate != '') ...[
+          Builder(
+            builder: (context) {
+              DateTime? parsedDate;
+              if (followUpDate is DateTime) {
+                parsedDate = followUpDate;
+              } else if (followUpDate is String && followUpDate.isNotEmpty) {
+                parsedDate = DateTime.tryParse(followUpDate);
+              }
+
+              if (parsedDate == null) return const SizedBox.shrink();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      border: Border.all(
+                        color: Colors.red.withOpacity(0.3),
+                        width: 0.5,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.calendar_today, size: 12, color: Colors.red.shade800),
+                        SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            "Follow up date: ${DateFormat('dd/MM/yyyy hh:mm a').format(parsedDate.toLocal())}",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
 
         SizedBox(height: 16),
 
@@ -192,6 +257,44 @@ ClaimedLeads(
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (stageFieldValues != null && stageFieldValues is List && stageFieldValues.isNotEmpty) ...[
+              ...stageFieldValues.map<Widget>((field) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.comment_outlined, size: 14, color: Colors.red.shade700),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(fontSize: 13, color: Colors.red.shade900),
+                              children: [
+                                TextSpan(
+                                  text: "Stage Remark: ",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                TextSpan(
+                                  text: "${field['value'] ?? 'N/A'}",
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              SizedBox(height: 8),
+            ],
             // Name with avatar
             Row(
               children: [
@@ -276,6 +379,7 @@ ClaimedLeads(
               margin: EdgeInsets.symmetric(vertical: 12),
               color: Colors.grey.shade200,
             ),
+
 
             // Assignment section
             Container(
