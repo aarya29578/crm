@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/common_widgets/popup_after_call_ui.dart';
+
 import 'package:crm_flutter/common_widgets/call_storage.dart';
 import 'package:crm_flutter/helper/bottom_sheet_helper.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
@@ -90,10 +90,7 @@ class CallHelper {
             // START LOCAL RECORDING
             // --------------------------------------------------
 
-            await _startRecording(
-              number: number,
-              leadId: leadId,
-            );
+            await _startRecording(number: number, leadId: leadId);
 
             // --------------------------------------------------
             // EXISTING START CALL API
@@ -137,17 +134,13 @@ class CallHelper {
             // WAIT FOR CALL LOG TO UPDATE
             // --------------------------------------------------
 
-            await Future.delayed(
-              const Duration(seconds: 3),
-            );
+            await Future.delayed(const Duration(seconds: 3));
 
             try {
               var now = DateTime.now();
 
               int from = now
-                  .subtract(
-                    const Duration(hours: 1),
-                  )
+                  .subtract(const Duration(hours: 1))
                   .millisecondsSinceEpoch;
 
               int to = now.millisecondsSinceEpoch;
@@ -156,8 +149,7 @@ class CallHelper {
               // GET CALL LOG ONLY FOR CRM-INITIATED NUMBER
               // ------------------------------------------------
 
-              final Iterable<CallLogEntry> entries =
-                  await CallLog.query(
+              final Iterable<CallLogEntry> entries = await CallLog.query(
                 number: number,
                 dateFrom: from,
                 dateTo: to,
@@ -172,22 +164,15 @@ class CallHelper {
               if (entries.isNotEmpty) {
                 final log = entries.first;
 
-                final int timestampMilliseconds =
-                    log.timestamp ?? 0;
+                final int timestampMilliseconds = log.timestamp ?? 0;
 
                 final DateTime callStartTime =
-                    DateTime.fromMillisecondsSinceEpoch(
-                  timestampMilliseconds,
-                );
+                    DateTime.fromMillisecondsSinceEpoch(timestampMilliseconds);
 
-                final int durationSeconds =
-                    log.duration ?? 0;
+                final int durationSeconds = log.duration ?? 0;
 
-                final DateTime endedAt =
-                    callStartTime.add(
-                  Duration(
-                    seconds: durationSeconds,
-                  ),
+                final DateTime endedAt = callStartTime.add(
+                  Duration(seconds: durationSeconds),
                 );
 
                 String status;
@@ -234,10 +219,8 @@ class CallHelper {
                   "to_number": log.number,
 
                   "from_number":
-                      LocalStorage
-                              .sharedPreferences!
-                              .getInt('phone_number') ??
-                          "no number found",
+                      LocalStorage.sharedPreferences!.getInt('phone_number') ??
+                      "no number found",
 
                   "direction": "outbound",
 
@@ -255,18 +238,14 @@ class CallHelper {
 
                   "disposition": disposition,
 
-                  "started_at":
-                      callStartTime.toIso8601String(),
+                  "started_at": callStartTime.toIso8601String(),
 
-                  "ended_at":
-                      endedAt.toIso8601String(),
+                  "ended_at": endedAt.toIso8601String(),
                 };
               }
-
               // =================================================
               // CALL LOG NOT FOUND
               // =================================================
-
               else {
                 print("No call log found");
 
@@ -277,16 +256,13 @@ class CallHelper {
 
                   "duration": 0,
 
-                  "timestamp":
-                      DateTime.now()
-                          .millisecondsSinceEpoch,
+                  "timestamp": DateTime.now().millisecondsSinceEpoch,
 
                   "callType": "OUTGOING",
 
                   "userStatus": "idle",
 
-                  "recording_path":
-                      recordingPath ?? "",
+                  "recording_path": recordingPath ?? "",
 
                   "note": "Call log not found",
                 };
@@ -298,16 +274,13 @@ class CallHelper {
 
               PendingCallData.data = data;
 
-              print(
-                "✅ DATA STORED: ${PendingCallData.data}",
-              );
+              print("✅ DATA STORED: ${PendingCallData.data}");
 
               // =================================================
               // SHOW POST-CALL POPUP
               // =================================================
 
-              final context =
-                  AppNavigator.key.currentContext;
+              final context = AppNavigator.key.currentContext;
 
               if (context != null) {
                 showDialog(
@@ -317,8 +290,7 @@ class CallHelper {
                     return PopScope(
                       canPop: false,
                       child: Dialog(
-                        insetPadding:
-                            const EdgeInsets.all(20),
+                        insetPadding: const EdgeInsets.all(20),
                         child: PopupAfterCallUi(
                           leadId: leadId!,
                           stageName: stageName,
@@ -329,9 +301,7 @@ class CallHelper {
                 );
               }
             } catch (e) {
-              print(
-                "Error fetching call log: $e",
-              );
+              print("Error fetching call log: $e");
 
               // =================================================
               // FALLBACK DATA
@@ -344,23 +314,18 @@ class CallHelper {
 
                 "duration": 0,
 
-                "timestamp":
-                    DateTime.now()
-                        .millisecondsSinceEpoch,
+                "timestamp": DateTime.now().millisecondsSinceEpoch,
 
                 "callType": "OUTGOING",
 
                 "userStatus": "idle",
 
-                "recording_path":
-                    recordingPath ?? "",
+                "recording_path": recordingPath ?? "",
 
                 "note": "Error: $e",
               };
 
-              print(
-                "✅ FALLBACK DATA STORED",
-              );
+              print("✅ FALLBACK DATA STORED");
             }
 
             // ==================================================
@@ -382,9 +347,7 @@ class CallHelper {
         }
       },
       onError: (error) {
-        print(
-          "❌ Phone State Stream Error: $error",
-        );
+        print("❌ Phone State Stream Error: $error");
       },
     );
 
@@ -392,14 +355,9 @@ class CallHelper {
     // INITIATE PHONE CALL
     // ==========================================================
 
-    bool? res =
-        await FlutterPhoneDirectCaller.callNumber(
-      number,
-    );
+    bool? res = await FlutterPhoneDirectCaller.callNumber(number);
 
-    print(
-      "📞 Call initiated: $res",
-    );
+    print("📞 Call initiated: $res");
   }
 
   // ============================================================
@@ -416,9 +374,7 @@ class CallHelper {
       // --------------------------------------------------------
 
       if (_isRecording) {
-        print(
-          "⚠️ Recording already running",
-        );
+        print("⚠️ Recording already running");
         return;
       }
 
@@ -426,17 +382,13 @@ class CallHelper {
       // Check microphone permission
       // --------------------------------------------------------
 
-      final microphoneStatus =
-          await Permission.microphone.status;
+      final microphoneStatus = await Permission.microphone.status;
 
       if (!microphoneStatus.isGranted) {
-        final result =
-            await Permission.microphone.request();
+        final result = await Permission.microphone.request();
 
         if (!result.isGranted) {
-          print(
-            "❌ Microphone permission denied",
-          );
+          print("❌ Microphone permission denied");
 
           return;
         }
@@ -446,13 +398,10 @@ class CallHelper {
       // Check recorder permission
       // --------------------------------------------------------
 
-      final hasRecorderPermission =
-          await _recorder.hasPermission();
+      final hasRecorderPermission = await _recorder.hasPermission();
 
       if (!hasRecorderPermission) {
-        print(
-          "❌ Recorder permission denied",
-        );
+        print("❌ Recorder permission denied");
 
         return;
       }
@@ -461,46 +410,33 @@ class CallHelper {
       // Get application documents directory
       // --------------------------------------------------------
 
-      final Directory appDirectory =
-          await getApplicationDocumentsDirectory();
+      final Directory appDirectory = await getApplicationDocumentsDirectory();
 
       // --------------------------------------------------------
       // Create recordings folder
       // --------------------------------------------------------
 
-      final Directory recordingsDirectory =
-          Directory(
+      final Directory recordingsDirectory = Directory(
         '${appDirectory.path}/call_recordings',
       );
 
       if (!await recordingsDirectory.exists()) {
-        await recordingsDirectory.create(
-          recursive: true,
-        );
+        await recordingsDirectory.create(recursive: true);
       }
 
       // --------------------------------------------------------
       // Create unique filename
       // --------------------------------------------------------
 
-      final timestamp =
-          DateTime.now()
-              .millisecondsSinceEpoch;
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
 
-      final safeNumber =
-          number.replaceAll(
-        RegExp(r'[^0-9+]'),
-        '',
-      );
+      final safeNumber = number.replaceAll(RegExp(r'[^0-9+]'), '');
 
-      final leadPart =
-          leadId ?? 'unknown_lead';
+      final leadPart = leadId ?? 'unknown_lead';
 
-      final fileName =
-          'call_${leadPart}_${safeNumber}_$timestamp.m4a';
+      final fileName = 'call_${leadPart}_${safeNumber}_$timestamp.m4a';
 
-      final filePath =
-          '${recordingsDirectory.path}/$fileName';
+      final filePath = '${recordingsDirectory.path}/$fileName';
 
       // --------------------------------------------------------
       // Start recording
@@ -520,22 +456,16 @@ class CallHelper {
 
       _currentRecordingPath = filePath;
 
-      print(
-        "🎙️ RECORDING STARTED",
-      );
+      print("🎙️ RECORDING STARTED");
 
-      print(
-        "📁 Recording path:",
-      );
+      print("📁 Recording path:");
 
       print(filePath);
     } catch (e) {
       _isRecording = false;
       _currentRecordingPath = null;
 
-      print(
-        "❌ Failed to start recording: $e",
-      );
+      print("❌ Failed to start recording: $e");
     }
   }
 
@@ -546,52 +476,36 @@ class CallHelper {
   static Future<String?> _stopRecording() async {
     try {
       if (!_isRecording) {
-        print(
-          "ℹ️ No active recording",
-        );
+        print("ℹ️ No active recording");
 
         return null;
       }
 
-      print(
-        "🛑 Stopping recording...",
-      );
+      print("🛑 Stopping recording...");
 
-      final String? path =
-          await _recorder.stop();
+      final String? path = await _recorder.stop();
 
       _isRecording = false;
 
-      final savedPath =
-          path ?? _currentRecordingPath;
+      final savedPath = path ?? _currentRecordingPath;
 
       _currentRecordingPath = null;
 
       if (savedPath != null) {
-        print(
-          "🎙️ RECORDING STOPPED",
-        );
+        print("🎙️ RECORDING STOPPED");
 
-        print(
-          "📁 Saved at:",
-        );
+        print("📁 Saved at:");
 
         print(savedPath);
 
-        final file =
-            File(savedPath);
+        final file = File(savedPath);
 
         if (await file.exists()) {
-          final size =
-              await file.length();
+          final size = await file.length();
 
-          print(
-            "📦 Recording size: $size bytes",
-          );
+          print("📦 Recording size: $size bytes");
         } else {
-          print(
-            "⚠️ Recording file does not exist",
-          );
+          print("⚠️ Recording file does not exist");
         }
       }
 
@@ -600,9 +514,7 @@ class CallHelper {
       _isRecording = false;
       _currentRecordingPath = null;
 
-      print(
-        "❌ Failed to stop recording: $e",
-      );
+      print("❌ Failed to stop recording: $e");
 
       return null;
     }
@@ -613,8 +525,7 @@ class CallHelper {
   // ============================================================
 
   static Future<void> _requestPermissions() async {
-    Map<Permission, PermissionStatus> statuses =
-        await [
+    Map<Permission, PermissionStatus> statuses = await [
       Permission.phone,
       Permission.contacts,
       Permission.microphone,
@@ -624,38 +535,27 @@ class CallHelper {
     // Phone permission
     // ----------------------------------------------------------
 
-    if (statuses[Permission.phone] !=
-        PermissionStatus.granted) {
-      throw Exception(
-        "Phone permission not granted",
-      );
+    if (statuses[Permission.phone] != PermissionStatus.granted) {
+      throw Exception("Phone permission not granted");
     }
 
     // ----------------------------------------------------------
     // Contacts permission
     // ----------------------------------------------------------
 
-    if (statuses[Permission.contacts] !=
-        PermissionStatus.granted) {
-      throw Exception(
-        "Contacts permission not granted",
-      );
+    if (statuses[Permission.contacts] != PermissionStatus.granted) {
+      throw Exception("Contacts permission not granted");
     }
 
     // ----------------------------------------------------------
     // Microphone permission
     // ----------------------------------------------------------
 
-    if (statuses[Permission.microphone] !=
-        PermissionStatus.granted) {
-      throw Exception(
-        "Microphone permission not granted",
-      );
+    if (statuses[Permission.microphone] != PermissionStatus.granted) {
+      throw Exception("Microphone permission not granted");
     }
 
-    print(
-      "✅ Required permissions granted",
-    );
+    print("✅ Required permissions granted");
   }
 
   // ============================================================
@@ -684,13 +584,9 @@ class CallHelper {
 
       _startApiSent = false;
 
-      print(
-        "🧹 CallHelper disposed",
-      );
+      print("🧹 CallHelper disposed");
     } catch (e) {
-      print(
-        "Dispose Error: $e",
-      );
+      print("Dispose Error: $e");
     }
   }
 }
