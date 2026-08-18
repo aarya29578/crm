@@ -61,6 +61,7 @@ dependencies:
   external_path: ^2.2.0
   flutter_local_notifications: ^20.1.0
   timezone: ^0.10.0
+  record: ^6.1.2
 
 dev_dependencies:
   flutter_test:

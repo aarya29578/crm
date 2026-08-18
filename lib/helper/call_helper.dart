@@ -1,14 +1,19 @@
 import 'dart:async';
+import 'dart:io';
+
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/common_widgets/popup_after_call_ui.dart';
 import 'package:crm_flutter/common_widgets/call_storage.dart';
 import 'package:crm_flutter/helper/bottom_sheet_helper.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:phone_state/phone_state.dart';
 import 'package:call_log/call_log.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 class CallHelper {
   static bool _startApiSent = false;
@@ -16,459 +21,676 @@ class CallHelper {
   static StreamSubscription<PhoneState>? _subscription;
   static bool _isCallInProgress = false;
 
-  /// Initiates a phone call and tracks it until completion.
+  // ============================================================
+  // CALL RECORDER
+  // ============================================================
+
+  static final AudioRecorder _recorder = AudioRecorder();
+
+  static bool _isRecording = false;
+
+  static String? _currentRecordingPath;
+
+  // ============================================================
+  // INITIATE CALL + TRACK CALL
+  // ============================================================
+
   static Future<void> callAndTrack(
     String number,
     String? leadId,
     String? stageName,
   ) async {
     _isCallInProgress = false;
-    _startApiSent = false; // IMPORTANT
+    _startApiSent = false;
 
-    // ✅ Request permissions
+    // ==========================================================
+    // REQUEST PERMISSIONS
+    // ==========================================================
+
     await _requestPermissions();
 
-    // Reset state
+    // ==========================================================
+    // RESET STATE
+    // ==========================================================
+
     _isCallInProgress = false;
-    // ✅ Start listening to phone state before the call
-    _subscription = PhoneState.stream.listen((event) async {
-      print("📞 Phone State: ${event.status}");
 
-      switch (event.status) {
-        case PhoneStateStatus.CALL_INCOMING:
-          _isCallInProgress = true;
-          break;
-        // case PhoneStateStatus.CALL_STARTED:
-        //   // _isCallInProgress = true;
-        //   // print("📞 Call started/connected");
-        //   // await DioApi().startPostPhoneCall();
-        //   // break;
-        //   _isCallInProgress = true;
-        //   print("📞 Call started/connected");
+    // ==========================================================
+    // START LISTENING BEFORE DIALER OPENS
+    // ==========================================================
 
-        //   try {
-        //     await DioApi().startPostPhoneCall(); // ✅ API HIT
-        //     print("✅ Start call API sent");
-        //   } catch (e) {
-        //     print("❌ Start call API failed: $e");
-        //   }
-        //   break;
-        case PhoneStateStatus.CALL_STARTED:
-          if (_startApiSent) return; // ✅ STOP DUPLICATES
+    await _subscription?.cancel();
 
-          _startApiSent = true;
-          _isCallInProgress = true;
+    _subscription = PhoneState.stream.listen(
+      (event) async {
+        print("📞 Phone State: ${event.status}");
 
-          print("📞 Call started/connected");
+        switch (event.status) {
+          // ====================================================
+          // INCOMING CALL
+          // ====================================================
 
-          try {
-            await DioApi().startPostPhoneCall();
-            print("✅ Start call API sent");
-          } catch (e) {
-            print("❌ Start call API failed: $e");
-          }
-          break;
+          case PhoneStateStatus.CALL_INCOMING:
+            _isCallInProgress = true;
+            break;
 
-        // case PhoneStateStatus.CALL_ENDED:
-        //   if (_isCallInProgress) {
-        //     print("✅ Call ended. Fetching call log...");
-        //     _isCallInProgress = false;
+          // ====================================================
+          // CALL STARTED
+          // ====================================================
 
-        //     // Wait for system to update call logs
-        //     await Future.delayed(const Duration(seconds: 3));
+          case PhoneStateStatus.CALL_STARTED:
+            if (_startApiSent) return;
 
-        //     try {
-        //       // ✅ Show Bottom Sheet
-        //       final context = AppNavigator.key.currentContext;
-        //       // if (context != null) {
-        //       //   showModalBottomSheet(
-        //       //     context: context,
-        //       //     isDismissible: false, // ❌ Disable outside tap
-        //       //     enableDrag: false, // ❌ Disable swipe down
-        //       //     isScrollControlled: true, //for full screen
-        //       //     builder: (context) {
-        //       //       return BottomSheetUi();
-        //       //     },
-        //       //   );
-        //       // }
+            _startApiSent = true;
+            _isCallInProgress = true;
 
-        //       if (context != null) {
-        //         showDialog(
-        //           context: context,
-        //           barrierDismissible: false, // ❌ Disable outside tap
-        //           builder: (context) {
-        //             return Dialog(
-        //               insetPadding: EdgeInsets.all(
-        //                 20,
-        //               ), // spacing from screen edges
-        //               child: BottomSheetUi(), // ✅ Reuse same widget
-        //             );
-        //           },
-        //         );
-        //       }
+            print("📞 Call started/connected");
 
-        //       var now = DateTime.now();
-        //       int from = now
-        //           .subtract(Duration(hours: 1))
-        //           .millisecondsSinceEpoch;
-        //       int to = now.millisecondsSinceEpoch;
-        //       final Iterable<CallLogEntry> entries = await CallLog.query(
-        //         number: number,
-        //         dateFrom: from,
-        //         dateTo: to,
-        //       );
+            // --------------------------------------------------
+            // START LOCAL RECORDING
+            // --------------------------------------------------
 
-        //       if (entries.isNotEmpty) {
-        //         // Get the most recent call log for this number
-
-        //         ;
-
-        //         final log = entries.first;
-
-        //         print("📋 Call Log Found:");
-
-        //         print("Number: ${log.number}");
-        //         print("Duration: ${log.duration} seconds");
-        //         print(
-        //           "Timestamp: ${DateTime.fromMillisecondsSinceEpoch(log.timestamp ?? 0)}",
-        //         );
-        //         print("Call Type: ${log.callType}");
-        //         //
-        //         print('Name: ${log.name}');
-        //         print('Number: ${log.number}');
-
-        //         print('Formatted Number: ${log.formattedNumber}');
-        //         print('Call Type: ${log.callType}');
-        //         print('Duration: ${log.duration}');
-        //         print('Timestamp: ${log.timestamp}');
-        //         print('Cached Number Type: ${log.cachedNumberType}');
-        //         print('Cached Number Label: ${log.cachedNumberLabel}');
-        //         print('SIM Display Name: ${log.simDisplayName}');
-        //         print('Phone Account ID: ${log.phoneAccountId}');
-        //         print('ID: ${log.id}');
-        //         final int timestampMilliseconds = log.timestamp ?? 0;
-        //         final DateTime callStartTime =
-        //             DateTime.fromMillisecondsSinceEpoch(timestampMilliseconds);
-        //         final int durationSeconds = log?.duration ?? 0;
-        //         final DateTime endedAt = callStartTime.add(
-        //           Duration(seconds: durationSeconds),
-        //         );
-        //         //
-
-        //         String status;
-        //         String disposition;
-
-        //         // Logic to determine status and disposition
-        //         switch (log.callType) {
-        //           case CallType.incoming:
-        //           case CallType.wifiIncoming:
-        //             // If incoming call has a duration, it was answered/completed
-        //             if (log.duration! > 0) {
-        //               status = 'completed';
-        //               disposition = 'answered';
-        //             } else {
-        //               // If duration is 0, it was missed/not answered
-        //               status = 'missed';
-        //               disposition = 'no answer';
-        //             }
-        //             break;
-
-        //           case CallType.outgoing:
-        //           case CallType.wifiOutgoing:
-        //             // If outgoing call has a duration, it was connected/completed
-        //             if (log.duration! > 0) {
-        //               status = 'completed';
-        //               disposition = 'connected';
-        //             } else {
-        //               // If duration is 0, it likely failed or wasn't answered
-        //               status = 'failed';
-        //               disposition =
-        //                   'not connected'; // Use 'not connected' or 'no answer'
-        //             }
-        //             break;
-
-        //           case CallType.missed:
-        //             status = 'missed';
-        //             disposition = 'no answer';
-        //             break;
-
-        //           case CallType.rejected:
-        //             status =
-        //                 'missed'; // Treat as missed since the call didn't complete
-        //             disposition = 'rejected';
-        //             break;
-
-        //           case CallType.answeredExternally:
-        //             status = 'completed';
-        //             disposition = 'answered externally';
-        //             break;
-
-        //           case CallType.blocked:
-        //             status = 'failed';
-        //             disposition = 'blocked';
-        //             break;
-
-        //           case CallType.voiceMail:
-        //             status = 'failed';
-        //             disposition = 'voicemail';
-        //             break;
-
-        //           case CallType.unknown:
-        //           default:
-        //             status = 'failed';
-        //             disposition = 'unknown';
-        //             break;
-        //         }
-        //         // Send data to API
-        //         final data = {
-        //           "to_number": log.number,
-        //           "from_number":
-        //               LocalStorage.sharedPreferences!.getInt('phone_number') ??
-        //               "no number found",
-        //           "direction": "outbound",
-        //           "duration": log.duration,
-        //           "recording_url": "",
-        //           "status": status,
-        //           "userStatus": "idle",
-        //           // "lead_stage_id":,
-        //           "disposition": disposition,
-        //           "started_at": callStartTime.toIso8601String(),
-        //           "ended_at": endedAt.toIso8601String(),
-        //         };
-
-        //         print('num1: ${log.formattedNumber}');
-        //         print('num2: ${log.cachedNumberType}');
-        //         print('num3: ${log.cachedNumberLabel}');
-
-        //         // await DioApi().postPhoneCall(data);
-        //         PendingCallData.data = data;
-
-        //         print("✅ DATA STORED: ${PendingCallData.data}");
-        //         print("✅ Call data stored. Waiting for user action.");
-        //         print("Call details sent to server successfully.");
-        //       } else {
-        //         print("No call log found for $number");
-
-        //         // Fallback: Send basic call data even if log isn't found
-        //         final data = {
-        //           "number": number,
-        //           "duration": 0,
-        //           "timestamp": DateTime.now().millisecondsSinceEpoch,
-        //           "callType": "OUTGOING",
-        //           "userStatus": "idle",
-        //           "note": "Call log not found",
-        //         };
-        //         // await DioApi().postPhoneCall(data);
-        //         PendingCallData.data = data;
-        //         print("✅ DATA STORED: ${PendingCallData.data}");
-        //         print("✅ Call data stored. Waiting for user action.");
-        //       }
-        //     } catch (e) {
-        //       print("Error fetching call log: $e");
-
-        //       // Fallback on error
-        //       final data = {
-        //         "number": number,
-        //         "duration": 0,
-        //         "timestamp": DateTime.now().millisecondsSinceEpoch,
-        //         "callType": "OUTGOING",
-        //         "userStatus": "idle",
-        //         "note": "Error: $e",
-        //       };
-        //       // await DioApi().postPhoneCall(data);
-        //       PendingCallData.data = data;
-        //       print("✅ DATA STORED: ${PendingCallData.data}");
-        //       print("✅ Call data stored. Waiting for user action.");
-        //     }
-
-        //     // Stop listening after call ends
-        //     await _subscription?.cancel();
-        //     _subscription = null;
-        //   }
-        //   break;
-
-        case PhoneStateStatus.CALL_ENDED:
-          if (!_isCallInProgress) return; // ✅ Prevent duplicate triggers
-
-          print("✅ Call ended. Fetching call log...");
-
-          _isCallInProgress = false;
-
-          await Future.delayed(const Duration(seconds: 3));
-
-          try {
-            var now = DateTime.now();
-            int from = now.subtract(Duration(hours: 1)).millisecondsSinceEpoch;
-            int to = now.millisecondsSinceEpoch;
-
-            final Iterable<CallLogEntry> entries = await CallLog.query(
+            await _startRecording(
               number: number,
-              dateFrom: from,
-              dateTo: to,
+              leadId: leadId,
             );
 
-            Map<String, dynamic> data;
+            // --------------------------------------------------
+            // EXISTING START CALL API
+            // --------------------------------------------------
 
-            if (entries.isNotEmpty) {
-              final log = entries.first;
+            try {
+              await DioApi().startPostPhoneCall();
 
-              final int timestampMilliseconds = log.timestamp ?? 0;
-              final DateTime callStartTime =
-                  DateTime.fromMillisecondsSinceEpoch(timestampMilliseconds);
+              print("✅ Start call API sent");
+            } catch (e) {
+              print("❌ Start call API failed: $e");
+            }
 
-              final int durationSeconds = log.duration ?? 0;
-              final DateTime endedAt = callStartTime.add(
-                Duration(seconds: durationSeconds),
+            break;
+
+          // ====================================================
+          // CALL ENDED
+          // ====================================================
+
+          case PhoneStateStatus.CALL_ENDED:
+            if (!_isCallInProgress) return;
+
+            print("✅ Call ended");
+
+            _isCallInProgress = false;
+
+            // --------------------------------------------------
+            // STOP RECORDING FIRST
+            // --------------------------------------------------
+
+            final recordingPath = await _stopRecording();
+
+            if (recordingPath != null) {
+              print("🎙️ Recording saved at:");
+              print(recordingPath);
+            } else {
+              print("⚠️ No recording file was created");
+            }
+
+            // --------------------------------------------------
+            // WAIT FOR CALL LOG TO UPDATE
+            // --------------------------------------------------
+
+            await Future.delayed(
+              const Duration(seconds: 3),
+            );
+
+            try {
+              var now = DateTime.now();
+
+              int from = now
+                  .subtract(
+                    const Duration(hours: 1),
+                  )
+                  .millisecondsSinceEpoch;
+
+              int to = now.millisecondsSinceEpoch;
+
+              // ------------------------------------------------
+              // GET CALL LOG ONLY FOR CRM-INITIATED NUMBER
+              // ------------------------------------------------
+
+              final Iterable<CallLogEntry> entries =
+                  await CallLog.query(
+                number: number,
+                dateFrom: from,
+                dateTo: to,
               );
 
-              String status;
-              String disposition;
+              Map<String, dynamic> data;
 
-              switch (log.callType) {
-                case CallType.outgoing:
-                case CallType.wifiOutgoing:
-                  if (log.duration! > 0) {
-                    status = 'completed';
-                    disposition = 'connected';
-                  } else {
+              // =================================================
+              // CALL LOG FOUND
+              // =================================================
+
+              if (entries.isNotEmpty) {
+                final log = entries.first;
+
+                final int timestampMilliseconds =
+                    log.timestamp ?? 0;
+
+                final DateTime callStartTime =
+                    DateTime.fromMillisecondsSinceEpoch(
+                  timestampMilliseconds,
+                );
+
+                final int durationSeconds =
+                    log.duration ?? 0;
+
+                final DateTime endedAt =
+                    callStartTime.add(
+                  Duration(
+                    seconds: durationSeconds,
+                  ),
+                );
+
+                String status;
+                String disposition;
+
+                // ------------------------------------------------
+                // DETERMINE CALL STATUS
+                // ------------------------------------------------
+
+                switch (log.callType) {
+                  case CallType.outgoing:
+                  case CallType.wifiOutgoing:
+                    if (log.duration! > 0) {
+                      status = 'completed';
+                      disposition = 'connected';
+                    } else {
+                      status = 'failed';
+                      disposition = 'not connected';
+                    }
+                    break;
+
+                  case CallType.incoming:
+                  case CallType.wifiIncoming:
+                    if (log.duration! > 0) {
+                      status = 'completed';
+                      disposition = 'answered';
+                    } else {
+                      status = 'missed';
+                      disposition = 'no answer';
+                    }
+                    break;
+
+                  default:
                     status = 'failed';
-                    disposition = 'not connected';
-                  }
-                  break;
+                    disposition = 'unknown';
+                }
 
-                case CallType.incoming:
-                case CallType.wifiIncoming:
-                  if (log.duration! > 0) {
-                    status = 'completed';
-                    disposition = 'answered';
-                  } else {
-                    status = 'missed';
-                    disposition = 'no answer';
-                  }
-                  break;
+                // =================================================
+                // CREATE CALL DATA
+                // =================================================
 
-                default:
-                  status = 'failed';
-                  disposition = 'unknown';
+                data = {
+                  "lead_id": leadId,
+                  "to_number": log.number,
+
+                  "from_number":
+                      LocalStorage
+                              .sharedPreferences!
+                              .getInt('phone_number') ??
+                          "no number found",
+
+                  "direction": "outbound",
+
+                  "duration": log.duration,
+
+                  // Recording is local for now.
+                  // We are NOT sending it to backend.
+                  "recording_url": "",
+
+                  "recording_path": recordingPath ?? "",
+
+                  "status": status,
+
+                  "userStatus": "idle",
+
+                  "disposition": disposition,
+
+                  "started_at":
+                      callStartTime.toIso8601String(),
+
+                  "ended_at":
+                      endedAt.toIso8601String(),
+                };
               }
 
-              data = {
-                "lead_id": leadId,
-                "to_number": log.number,
-                "from_number":
-                    LocalStorage.sharedPreferences!.getInt('phone_number') ??
-                    "no number found",
-                "direction": "outbound",
-                "duration": log.duration,
-                "recording_url": "",
-                "status": status,
-                "userStatus": "idle",
-                "disposition": disposition,
-                "started_at": callStartTime.toIso8601String(),
-                "ended_at": endedAt.toIso8601String(),
-              };
-            } else {
-              print("No call log found");
+              // =================================================
+              // CALL LOG NOT FOUND
+              // =================================================
 
-              data = {
-                "lead_id": leadId,
-                "number": number,
-                "duration": 0,
-                "timestamp": DateTime.now().millisecondsSinceEpoch,
-                "callType": "OUTGOING",
-                "userStatus": "idle",
-                "note": "Call log not found",
-              };
-            }
+              else {
+                print("No call log found");
 
-            /// ✅ STORE DATA FIRST 🔥
-            PendingCallData.data = data;
+                data = {
+                  "lead_id": leadId,
 
-            print("✅ DATA STORED: ${PendingCallData.data}");
+                  "number": number,
 
-            /// ✅ SHOW DIALOG AFTER DATA EXISTS 🔥
-            final context = AppNavigator.key.currentContext;
+                  "duration": 0,
 
-            if (context != null) {
-              // showDialog(
-              //   context: context,
-              //   barrierDismissible: false,
-              //   builder: (context) {
-              //     onWillPop:
-              //     () async => false;
-              //     return Dialog(
-              //       insetPadding: EdgeInsets.all(20),
-              //       child: BottomSheetUi(),
-              //     );
-              //   },
-              // );
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) {
-                  return PopScope(
-                    canPop: false, //  BLOCK BACK BUTTON
-                    child: Dialog(
-                      insetPadding: EdgeInsets.all(20),
-                      child: PopupAfterCallUi(
-                        leadId: leadId!,
-                        stageName: stageName,
+                  "timestamp":
+                      DateTime.now()
+                          .millisecondsSinceEpoch,
+
+                  "callType": "OUTGOING",
+
+                  "userStatus": "idle",
+
+                  "recording_path":
+                      recordingPath ?? "",
+
+                  "note": "Call log not found",
+                };
+              }
+
+              // =================================================
+              // STORE DATA
+              // =================================================
+
+              PendingCallData.data = data;
+
+              print(
+                "✅ DATA STORED: ${PendingCallData.data}",
+              );
+
+              // =================================================
+              // SHOW POST-CALL POPUP
+              // =================================================
+
+              final context =
+                  AppNavigator.key.currentContext;
+
+              if (context != null) {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) {
+                    return PopScope(
+                      canPop: false,
+                      child: Dialog(
+                        insetPadding:
+                            const EdgeInsets.all(20),
+                        child: PopupAfterCallUi(
+                          leadId: leadId!,
+                          stageName: stageName,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                );
+              }
+            } catch (e) {
+              print(
+                "Error fetching call log: $e",
+              );
+
+              // =================================================
+              // FALLBACK DATA
+              // =================================================
+
+              PendingCallData.data = {
+                "lead_id": leadId,
+
+                "number": number,
+
+                "duration": 0,
+
+                "timestamp":
+                    DateTime.now()
+                        .millisecondsSinceEpoch,
+
+                "callType": "OUTGOING",
+
+                "userStatus": "idle",
+
+                "recording_path":
+                    recordingPath ?? "",
+
+                "note": "Error: $e",
+              };
+
+              print(
+                "✅ FALLBACK DATA STORED",
               );
             }
-          } catch (e) {
-            print("Error fetching call log: $e");
 
-            PendingCallData.data = {
-              "lead_id": leadId,
-              "number": number,
-              "duration": 0,
-              "timestamp": DateTime.now().millisecondsSinceEpoch,
-              "callType": "OUTGOING",
-              "userStatus": "idle",
-              "note": "Error: $e",
-            };
+            // ==================================================
+            // STOP PHONE STATE LISTENER
+            // ==================================================
 
-            print("✅ FALLBACK DATA STORED");
-          }
+            await _subscription?.cancel();
 
-          await _subscription?.cancel();
-          _subscription = null;
+            _subscription = null;
 
-          break;
+            break;
 
-        default:
-          break;
-      }
-    });
+          // ====================================================
+          // OTHER PHONE STATES
+          // ====================================================
 
-    // Initiate call
-    bool? res = await FlutterPhoneDirectCaller.callNumber(number);
-    print("Call initiated: $res");
+          default:
+            break;
+        }
+      },
+      onError: (error) {
+        print(
+          "❌ Phone State Stream Error: $error",
+        );
+      },
+    );
+
+    // ==========================================================
+    // INITIATE PHONE CALL
+    // ==========================================================
+
+    bool? res =
+        await FlutterPhoneDirectCaller.callNumber(
+      number,
+    );
+
+    print(
+      "📞 Call initiated: $res",
+    );
   }
 
-  /// Requests necessary permissions for calling and call log access
-  static Future<void> _requestPermissions() async {
-    // Request all permissions at once
-    Map<Permission, PermissionStatus> statuses = await [
-      Permission.phone,
-      Permission.contacts,
-    ].request();
+  // ============================================================
+  // START RECORDING
+  // ============================================================
 
-    // Check if all permissions are granted
-    if (statuses[Permission.phone] != PermissionStatus.granted ||
-        statuses[Permission.contacts] != PermissionStatus.granted) {
-      throw Exception("Required permissions not granted");
+  static Future<void> _startRecording({
+    required String number,
+    String? leadId,
+  }) async {
+    try {
+      // --------------------------------------------------------
+      // Prevent duplicate recording
+      // --------------------------------------------------------
+
+      if (_isRecording) {
+        print(
+          "⚠️ Recording already running",
+        );
+        return;
+      }
+
+      // --------------------------------------------------------
+      // Check microphone permission
+      // --------------------------------------------------------
+
+      final microphoneStatus =
+          await Permission.microphone.status;
+
+      if (!microphoneStatus.isGranted) {
+        final result =
+            await Permission.microphone.request();
+
+        if (!result.isGranted) {
+          print(
+            "❌ Microphone permission denied",
+          );
+
+          return;
+        }
+      }
+
+      // --------------------------------------------------------
+      // Check recorder permission
+      // --------------------------------------------------------
+
+      final hasRecorderPermission =
+          await _recorder.hasPermission();
+
+      if (!hasRecorderPermission) {
+        print(
+          "❌ Recorder permission denied",
+        );
+
+        return;
+      }
+
+      // --------------------------------------------------------
+      // Get application documents directory
+      // --------------------------------------------------------
+
+      final Directory appDirectory =
+          await getApplicationDocumentsDirectory();
+
+      // --------------------------------------------------------
+      // Create recordings folder
+      // --------------------------------------------------------
+
+      final Directory recordingsDirectory =
+          Directory(
+        '${appDirectory.path}/call_recordings',
+      );
+
+      if (!await recordingsDirectory.exists()) {
+        await recordingsDirectory.create(
+          recursive: true,
+        );
+      }
+
+      // --------------------------------------------------------
+      // Create unique filename
+      // --------------------------------------------------------
+
+      final timestamp =
+          DateTime.now()
+              .millisecondsSinceEpoch;
+
+      final safeNumber =
+          number.replaceAll(
+        RegExp(r'[^0-9+]'),
+        '',
+      );
+
+      final leadPart =
+          leadId ?? 'unknown_lead';
+
+      final fileName =
+          'call_${leadPart}_${safeNumber}_$timestamp.m4a';
+
+      final filePath =
+          '${recordingsDirectory.path}/$fileName';
+
+      // --------------------------------------------------------
+      // Start recording
+      // --------------------------------------------------------
+
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          numChannels: 1,
+          sampleRate: 44100,
+          bitRate: 128000,
+        ),
+        path: filePath,
+      );
+
+      _isRecording = true;
+
+      _currentRecordingPath = filePath;
+
+      print(
+        "🎙️ RECORDING STARTED",
+      );
+
+      print(
+        "📁 Recording path:",
+      );
+
+      print(filePath);
+    } catch (e) {
+      _isRecording = false;
+      _currentRecordingPath = null;
+
+      print(
+        "❌ Failed to start recording: $e",
+      );
     }
   }
 
-  /// Disposes of the phone state listener
+  // ============================================================
+  // STOP RECORDING
+  // ============================================================
+
+  static Future<String?> _stopRecording() async {
+    try {
+      if (!_isRecording) {
+        print(
+          "ℹ️ No active recording",
+        );
+
+        return null;
+      }
+
+      print(
+        "🛑 Stopping recording...",
+      );
+
+      final String? path =
+          await _recorder.stop();
+
+      _isRecording = false;
+
+      final savedPath =
+          path ?? _currentRecordingPath;
+
+      _currentRecordingPath = null;
+
+      if (savedPath != null) {
+        print(
+          "🎙️ RECORDING STOPPED",
+        );
+
+        print(
+          "📁 Saved at:",
+        );
+
+        print(savedPath);
+
+        final file =
+            File(savedPath);
+
+        if (await file.exists()) {
+          final size =
+              await file.length();
+
+          print(
+            "📦 Recording size: $size bytes",
+          );
+        } else {
+          print(
+            "⚠️ Recording file does not exist",
+          );
+        }
+      }
+
+      return savedPath;
+    } catch (e) {
+      _isRecording = false;
+      _currentRecordingPath = null;
+
+      print(
+        "❌ Failed to stop recording: $e",
+      );
+
+      return null;
+    }
+  }
+
+  // ============================================================
+  // REQUEST PERMISSIONS
+  // ============================================================
+
+  static Future<void> _requestPermissions() async {
+    Map<Permission, PermissionStatus> statuses =
+        await [
+      Permission.phone,
+      Permission.contacts,
+      Permission.microphone,
+    ].request();
+
+    // ----------------------------------------------------------
+    // Phone permission
+    // ----------------------------------------------------------
+
+    if (statuses[Permission.phone] !=
+        PermissionStatus.granted) {
+      throw Exception(
+        "Phone permission not granted",
+      );
+    }
+
+    // ----------------------------------------------------------
+    // Contacts permission
+    // ----------------------------------------------------------
+
+    if (statuses[Permission.contacts] !=
+        PermissionStatus.granted) {
+      throw Exception(
+        "Contacts permission not granted",
+      );
+    }
+
+    // ----------------------------------------------------------
+    // Microphone permission
+    // ----------------------------------------------------------
+
+    if (statuses[Permission.microphone] !=
+        PermissionStatus.granted) {
+      throw Exception(
+        "Microphone permission not granted",
+      );
+    }
+
+    print(
+      "✅ Required permissions granted",
+    );
+  }
+
+  // ============================================================
+  // DISPOSE
+  // ============================================================
+
   static Future<void> dispose() async {
-    await _subscription?.cancel();
-    _subscription = null;
-    _isCallInProgress = false;
+    try {
+      // --------------------------------------------------------
+      // If somehow recording is active, stop it
+      // --------------------------------------------------------
+
+      if (_isRecording) {
+        await _stopRecording();
+      }
+
+      // --------------------------------------------------------
+      // Cancel phone state listener
+      // --------------------------------------------------------
+
+      await _subscription?.cancel();
+
+      _subscription = null;
+
+      _isCallInProgress = false;
+
+      _startApiSent = false;
+
+      print(
+        "🧹 CallHelper disposed",
+      );
+    } catch (e) {
+      print(
+        "Dispose Error: $e",
+      );
+    }
   }
 }
