@@ -886,13 +886,15 @@ class DioApi {
     }
   }
 
-  Future<AllLeadsResponse> getAllLeads({
-    int page = 1,
-    DateTime? startDate,
-    DateTime? endDate,
-    List<String>? statusIds,
-    String? campaignId,
-  }) async {
+ Future<AllLeadsResponse> getAllLeads({
+  int page = 1,
+  DateTime? startDate,
+  DateTime? endDate,
+  List<String>? statusIds,
+  String? campaignId,
+  String? leadSourceId,
+})
+  async {
     try {
       // Build query parameters
       Map<String, dynamic> queryParams = {};
@@ -928,6 +930,10 @@ class DioApi {
       if (campaignId != null && campaignId.isNotEmpty) {
         queryParams['campaign'] = campaignId;
       }
+
+      if (leadSourceId != null && leadSourceId.isNotEmpty) {
+  queryParams['lead_source_id'] = leadSourceId;
+}
 
       final response = await DioUtil.dio.get(
         "$link/lead/all?page=$page",
