@@ -320,70 +320,7 @@ class ProfileMenuPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                                        // Change Name Button
-                    const SizedBox(height: 10),
-
-                    Container(
-                      width: double.infinity,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.blue.shade100),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: () {
-                            // No functionality yet
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade100,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Icon(
-                                    Icons.edit,
-                                    color: Colors.blue.shade700,
-                                    size: 22,
-                                  ),
-                                ),
-
-                                const SizedBox(width: 15),
-
-                                const Expanded(
-                                  child: Text(
-                                    "Change Name",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF2563EB),
-                                    ),
-                                  ),
-                                ),
-
-                                Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 16,
-                                  color: Colors.blue,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                    
               ),
             ],
           ),
