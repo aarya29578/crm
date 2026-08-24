@@ -56,14 +56,6 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
   void initState() {
     super.initState();
 
-    // homeController.getAllLeadStage();
-
-    // print("leadId777:${widget.leadId}");
-
-    // //CALL API WHEN BOTTOMSHEET OPENS
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   leadDetailsController.getAllLeadDetails(widget.leadId);
-    // });
     Future.microtask(() async {
       await homeController.getAllLeadStage();
       await leadDetailsController.getAllLeadDetails(context, widget.leadId);
@@ -77,8 +69,8 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
 
       if (leadData != null) {
         setState(() {
-          // Only set rating if it's a known option to avoid dropdown crash
           final priority = leadData.priority;
+
           selectedRating =
               (priority != null && ratingOptions.contains(priority))
               ? priority
@@ -109,29 +101,23 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
         }
 
         if (selectedStageObj?.hasSubStatus == true) {
-          print(
-            "PopupAfterCallUi: initState - fetching sub statuses for $selectedStageId",
-          );
           await homeController.getFailedSubLStage(
             selectedStageId: selectedStageId,
           );
 
           final subStatuses = homeController.allSubLStageRes.value.data ?? [];
-          print(
-            "PopupAfterCallUi: initState - sub statuses fetched: ${subStatuses.length}",
-          );
 
           if (leadData?.subStatusId?.sId != null) {
             setState(() {
               selectedSubStatusId = leadData!.subStatusId!.sId;
             });
-            print(
-              "PopupAfterCallUi: initState - pre-filled selectedSubStatusId: $selectedSubStatusId",
-            );
           }
         }
       }
-      setState(() {}); // Force update UI
+
+      if (mounted) {
+        setState(() {});
+      }
     });
   }
 
@@ -969,7 +955,7 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
                             ),
                           ),
                   ),
-                )
+                ),
               ],
             ),
           ),

@@ -1,5 +1,6 @@
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
+import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:crm_flutter/pages/Auth/LoginPage.dart';
 import 'package:crm_flutter/pages/bottom_navigation_bar/BottomNavigationBarPage.dart';
 import 'package:crm_flutter/widgets/poppups/poppups.dart';
@@ -150,6 +151,18 @@ class AuthController extends GetxController {
         TextInput.finishAutofillContext();
 
         // ------------------------------------------------------
+        // Re-init follow-up reminders for this (freshly logged-in) user.
+        // FollowUpController may be a permanent/singleton controller, so
+        // onInit() won't fire again on its own after the first app launch.
+        // Calling init() explicitly here ensures it doesn't show stale
+        // data left over from a previous account and starts fresh timers.
+        // ------------------------------------------------------
+
+        if (Get.isRegistered<FollowUpController>()) {
+          await Get.find<FollowUpController>().init();
+        }
+
+        // ------------------------------------------------------
         // Navigate to Main App
         // ------------------------------------------------------
 
@@ -214,8 +227,14 @@ class AuthController extends GetxController {
         // Continue clearing local session even if API fails
       }
 
-      // 2. Cancel scheduled notifications
+      // 2. Cancel scheduled (OS-level) notifications
       await NotificationService.cancelAllScheduledNotifications();
+
+      // 2b. Stop in-memory follow-up timers/dialogs so nothing fires
+      // after this point (e.g. the "Follow-ups" popup on the login page)
+      if (Get.isRegistered<FollowUpController>()) {
+        await Get.find<FollowUpController>().stop();
+      }
 
       // 3. Remove login/session data
       await LocalStorage.sharedPreferences?.remove('token');

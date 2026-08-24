@@ -4,6 +4,7 @@ import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/all_follow_up_response.dart';
 import 'package:crm_flutter/common_widgets/notificationService.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
+import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_storage_service.dart';
 import 'package:crm_flutter/pages/bottom_navigation_bar/LeadDetailsBottomNavigationBarPage.dart';
 import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
@@ -35,95 +36,6 @@ class FollowUpController extends GetxController {
     await syncWithApi();
   }
 
-  // Future<void> syncWithApi() async {
-  //   final apiList = await _dioApi.fetchTodayFollowUps();
-
-  //   // 🔹 remove expired from API also
-  //   _removeExpired(apiList);
-
-  //   // 🔹 merge logic
-  //   Map<String, FollowUpData> map = {};
-
-  //   // OLD
-  //   for (var item in localList) {
-  //     if (item.id != null) map[item.id!] = item;
-  //   }
-
-  //   // NEW → overwrite / add
-  //   for (var item in apiList) {
-  //     if (item.id != null) map[item.id!] = item;
-  //   }
-
-  //   final updatedList = map.values.toList();
-
-  //   // 🔹 save
-  //   localList = updatedList;
-  //   await FollowUpStorage.save(localList);
-
-  //   // 🔹 reschedule
-  //   _clearTimers();
-  //   _schedule(localList);
-  // }
-  // Future<void> syncWithApi() async {
-  //   final apiList = await _dioApi.fetchTodayFollowUps();
-
-  //   _removeExpired(apiList);
-
-  //   Map<String, FollowUpData> map = {};
-
-  //   // Step 1: Put all local data
-  //   for (var item in localList) {
-  //     if (item.id != null) {
-  //       map[item.id!] = item;
-  //     }
-  //   }
-
-  //   // Step 2: Merge API
-  //   for (var apiItem in apiList) {
-  //     if (apiItem.id == null) continue;
-
-  //     final existing = map[apiItem.id!];
-
-  //     if (existing == null) {
-  //       // 🆕 NEW ITEM
-  //       map[apiItem.id!] = apiItem;
-
-  //       print("🆕 New follow-up added: ${apiItem.id}");
-  //     } else {
-  //       // 🔄 EXISTING → check followUpDate
-  //       if (existing.followUpDate != apiItem.followUpDate) {
-  //         print("🔄 Follow-up updated: ${apiItem.id}");
-
-  //         // ✅ Update item
-  //         map[apiItem.id!] = apiItem;
-
-  //         // 🔥 Cancel old notification
-  //         await NotificationService.cancelNotification(apiItem.id.hashCode);
-
-  //         // 🔔 Schedule new notification
-  //         final newTime = DateTime.parse(apiItem.followUpDate!).toLocal();
-
-  //         await _notificationService.scheduleNotification(
-  //           id: apiItem.id.hashCode,
-  //           title: "Follow-up Updated",
-  //           body: "${apiItem.name?.first ?? ''} rescheduled",
-  //           scheduledDate: newTime,
-  //         );
-  //       } else {
-  //         // ✅ No change → keep old
-  //         map[apiItem.id!] = existing;
-  //       }
-  //     }
-  //   }
-
-  //   // Step 3: Save
-  //   localList = map.values.toList();
-  //   await FollowUpStorage.save(localList);
-
-  //   // Step 4: Reschedule all timers (UI dialog)
-  //   _clearTimers();
-  //   _schedule(localList);
-  // }
   Future<void> syncWithApi() async {
     final apiList = await _dioApi.fetchTodayFollowUps();
 
@@ -184,6 +96,14 @@ class FollowUpController extends GetxController {
       if (!delay.isNegative) {
         timers.add(
           Timer(delay, () async {
+            // 🔒 SAFETY NET: skip entirely if user has logged out.
+            // Handles the case where logout() runs at the same moment
+            // this timer fires, before stop() gets a chance to cancel it.
+            final token = LocalStorage.sharedPreferences?.getString('token');
+            if (token == null || token.isEmpty) {
+              return;
+            }
+
             // 🔥 1. CANCEL scheduled notification
             await NotificationService.cancelNotification(item.id.hashCode);
 
@@ -207,6 +127,12 @@ class FollowUpController extends GetxController {
       t.cancel();
     }
     timers.clear();
+  }
+
+  Future<void> stop() async {
+    _clearTimers();
+    localList.clear();
+    await FollowUpStorage.save(localList);
   }
 
   void _removeDeletedFromApi(List<FollowUpData> apiList) {
@@ -327,24 +253,6 @@ class FollowUpController extends GetxController {
                                       Colors.blue,
                                     );
                                   },
-                                  // onPressed: () async {
-                                  //   await CallHelper.callAndTrack(
-                                  //     phone,
-                                  //     item.id,
-                                  //     '',
-                                  //   );
-
-                                  //   setState(() {
-                                  //     tempList.removeAt(index);
-                                  //   });
-
-                                  //   if (tempList.isEmpty) {
-                                  //     Get.back();
-                                  //   }
-
-                                  //   /// VERY IMPORTANT
-                                  //   await syncWithApi();
-                                  // },
                                   child: const Icon(Icons.phone),
                                 ),
                               ],

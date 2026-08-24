@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:crm_flutter/pages/follow_up/TodayFollowUpController.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:crm_flutter/styles/text_styles.dart';
@@ -23,20 +24,29 @@ class TodayFollowUpPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("3 Follow ups", style: greenHeading),
-            SizedBox(height: 20),
+            Obx(
+              () => Text(
+                "${controller.followUpSummary.length} Follow ups",
+                style: greenHeading,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
             Expanded(
-              child: ListView.separated(
-                physics: AlwaysScrollableScrollPhysics(),
-                separatorBuilder: (context, index) {
-                  return SizedBox(height: 10);
-                },
-                shrinkWrap: true,
-                itemBuilder: (context, index) {
-                  var item = controller.followUpSummary[index];
-                  return FollowUpCard(item['name'], item['time']);
-                },
-                itemCount: controller.followUpSummary.length,
+              child: Obx(
+                () => ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  separatorBuilder: (context, index) {
+                    return const SizedBox(height: 10);
+                  },
+                  itemBuilder: (context, index) {
+                    final item = controller.followUpSummary[index];
+
+                    return FollowUpCard(item['name'], item['time']);
+                  },
+                  itemCount: controller.followUpSummary.length,
+                ),
               ),
             ),
           ],
