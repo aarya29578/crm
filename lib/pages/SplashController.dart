@@ -1,21 +1,36 @@
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Auth/LoginPage.dart';
+import 'package:crm_flutter/pages/bottom_navigation_bar/BottomNavigationBarPage.dart';
 import 'package:get/get.dart';
 
 class SplashController extends GetxController {
-  final a = 10.obs;
-
   @override
   void onInit() {
     super.onInit();
 
-    Future.delayed(const Duration(seconds: 2), () async {
-      await LocalStorage.sharedPreferences?.remove("token");
-
-      Get.offAll(() => const LoginPage());
-    });
+    checkLogin();
   }
 
+  Future<void> checkLogin() async {
+    // Keep splash screen for 2 seconds
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Get saved token
+    final token = LocalStorage.sharedPreferences?.getString("token");
+
+    print("SAVED TOKEN: $token");
+
+    if (token != null && token.isNotEmpty) {
+      print("User already logged in");
+
+      Get.offAll(() => BottomNavigationBarPage());
+    } else {
+      print("User is not logged in");
+
+      Get.offAll(() => const LoginPage());
+    }
+  }
+}
   // SESSION MANAGEMENT
 
   // void onInit() {
@@ -38,4 +53,3 @@ class SplashController extends GetxController {
   //   // NotificationService.init();
   //   // NotificationService.requestPermission();
   // }
-}

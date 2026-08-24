@@ -6,6 +6,7 @@ import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Auth/LoginPage.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:get/get.dart';
+import 'package:crm_flutter/pages/Auth/AuthController.dart';
 
 class ProfileMenuPage extends StatelessWidget {
   const ProfileMenuPage({super.key});
@@ -262,15 +263,9 @@ class ProfileMenuPage extends StatelessWidget {
                               context,
                               'Logout!',
                               'Are you sure want to logout?',
-
                               () async {
-                                await DioApi().logout();
-
-                                await LocalStorage.sharedPreferences!.clear();
-
-                                await Get.offAll(LoginPage());
+                                await Get.find<AuthController>().logout();
                               },
-
                               Colors.red,
                             );
                           },
