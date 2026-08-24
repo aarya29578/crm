@@ -320,7 +320,8 @@ class ProfileMenuPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+                  ],
+                ),
               ),
             ],
           ),
