@@ -18,9 +18,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final HomeController homeController = Get.put(HomeController());
 
-  // Search controller
-  final TextEditingController searchController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -31,7 +28,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    searchController.dispose();
     super.dispose();
   }
 
@@ -62,31 +58,20 @@ class _HomePageState extends State<HomePage> {
                     PageState.loading) {
                   return SizedBox(
                     height: MediaQuery.of(context).size.height - 250,
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: const Center(child: CircularProgressIndicator()),
                   );
                 }
-
-                if (homeController.dashboardLoading.value ==
-                    PageState.error) {
-                  return const Center(
-                    child: Text("Error loading data"),
-                  );
+                if (homeController.dashboardLoading.value == PageState.error) {
+                  return const Center(child: Text("Error loading data"));
                 }
-
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // -------------------------------------------------------
-                    // TIME RANGE TABS
-                    // -------------------------------------------------------
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
                           SizedBox(width: 10),
-
                           Obx(
                             () => TimeTab(
                               text: 'Today',
@@ -94,42 +79,36 @@ class _HomePageState extends State<HomePage> {
                               isSelected:
                                   homeController.selectedTimeRange.value ==
                                   'Today',
-                              onTap: () =>
-                                  homeController.selectTimeRange(
+                              onTap: () => homeController.selectTimeRange(
                                 'Today',
                                 context,
                               ),
                             ),
                           ),
-
                           Obx(
                             () => TimeTab(
                               text: 'Yesterday',
                               isSelected:
                                   homeController.selectedTimeRange.value ==
                                   'Yesterday',
-                              onTap: () =>
-                                  homeController.selectTimeRange(
+                              onTap: () => homeController.selectTimeRange(
                                 'Yesterday',
                                 context,
                               ),
                             ),
                           ),
-
                           Obx(
                             () => TimeTab(
                               text: 'Last 30 Days',
                               isSelected:
                                   homeController.selectedTimeRange.value ==
                                   'Last 30 Days',
-                              onTap: () =>
-                                  homeController.selectTimeRange(
+                              onTap: () => homeController.selectTimeRange(
                                 'Last 30 Days',
                                 context,
                               ),
                             ),
                           ),
-
                           Obx(
                             () => TimeTab(
                               text: 'Select Range',
@@ -137,8 +116,7 @@ class _HomePageState extends State<HomePage> {
                               isSelected:
                                   homeController.selectedTimeRange.value ==
                                   'Select Range',
-                              onTap: () =>
-                                  homeController.selectTimeRange(
+                              onTap: () => homeController.selectTimeRange(
                                 'Select Range',
                                 context,
                               ),
@@ -148,11 +126,9 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
+                    //
                     const SizedBox(height: 10),
 
-                    // -------------------------------------------------------
-                    // CALL STATS
-                    // -------------------------------------------------------
                     Container(
                       padding: EdgeInsets.symmetric(vertical: 10),
                       color: Colors.white,
@@ -163,53 +139,76 @@ class _HomePageState extends State<HomePage> {
                           horizontal: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: ColorConstants.MainPurpleBackground
-                              .withValues(alpha: 0.06),
+                          color: ColorConstants.MainPurpleBackground.withValues(
+                            alpha: 0.06,
+                          ),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
+                            // Expanded(
+                            //   child: buildTab(
+                            //     "Overall - ${homeController.dashboardData.value.data?.callStats?.overall ?? 0}",
+                            //     1,
+                            //   ),
+                            // ),
                             Expanded(
                               child: _buildStatTab(
                                 context: context,
                                 label: 'Overall',
-                                count: homeController
+                                count:
+                                    homeController
                                         .dashboardData
                                         .value
                                         .data
                                         ?.callStats
                                         ?.overall ??
                                     0,
+                                // index: 1,
                                 isFirst: true,
                                 isLast: false,
                               ),
                             ),
-
+                            // Expanded(
+                            //   child: buildTab(
+                            //     "Outbound -  ${homeController.dashboardData.value.data?.callStats?.outbound ?? 0}",
+                            //     2,
+                            //   ),
+                            // ),
                             _buildStatTab(
                               context: context,
                               label: 'Outbound',
-                              count: homeController
+                              count:
+                                  homeController
                                       .dashboardData
                                       .value
                                       .data
                                       ?.callStats
                                       ?.outbound ??
                                   0,
+                              // index: 2,
                               isFirst: false,
                               isLast: false,
                             ),
-
+                            // Expanded(
+                            //   child: buildTab(
+                            //     "Inbound -  ${homeController.dashboardData.value.data?.callStats?.inbound ?? 0}",
+                            //     3,
+                            //   ),
+                            // ),
                             _buildStatTab(
                               context: context,
                               label: 'Inbound',
-                              count: homeController
+                              count:
+                                  homeController
                                       .dashboardData
                                       .value
                                       .data
                                       ?.callStats
                                       ?.inbound ??
                                   0,
+                              // index: 3,
                               isFirst: false,
                               isLast: true,
                             ),
@@ -218,9 +217,118 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    // -------------------------------------------------------
-                    // TALK TIME
-                    // -------------------------------------------------------
+                    // SizedBox(height: 10),
+
+                    // // Tab Content
+                    // // if (home_controller.selectedTab.value == 1) ...[
+                    // if (homeController
+                    //         .dashboardData
+                    //         .value
+                    //         .data!
+                    //         .leadCountByConnected!
+                    //         .length >
+                    //     0)
+                    //   Padding(
+                    //     padding: const EdgeInsets.symmetric(horizontal: 10),
+                    //     child: Row(
+                    //       children:
+                    //           homeController
+                    //               .dashboardData
+                    //               .value
+                    //               .data!
+                    //               .leadCountByConnected!
+                    //               .expand(
+                    //                 (e) => [
+                    //                   Expanded(
+                    //                     child: CallCountInfo(
+                    //                       count: e.count.toString() ?? "",
+                    //                       percentage:
+                    //                           e.percentage.toString() ?? "",
+                    //                       status: e.connected.toString() ?? "",
+                    //                     ),
+                    //                   ),
+                    //                   const SizedBox(width: 10), // Separator
+                    //                 ],
+                    //               )
+                    //               .toList()
+                    //             ..removeLast(), // Remove the last SizedBox
+                    //     ),
+                    //   ),
+
+                    // ] else if (home_controller.selectedTab.value == 2) ...[
+                    //   Padding(
+                    //     padding: const EdgeInsets.symmetric(horizontal: 10),
+
+                    //     child: Row(
+                    //       children: [
+                    //         Expanded(
+                    //           child: CallCountInfo(
+                    //             count: '15',
+                    //             percentage: '25%',
+                    //             status: 'Connected',
+                    //           ),
+                    //         ),
+                    //         SizedBox(width: 10),
+                    //         Expanded(
+                    //           child: CallCountInfo(
+                    //             count: '15',
+                    //             percentage: '25%',
+                    //             status: 'Connected',
+                    //           ),
+                    //         ),
+                    //         SizedBox(width: 10),
+                    //         Expanded(
+                    //           child: CallCountInfo(
+                    //             count: '15',
+                    //             percentage: '25%',
+                    //             status: 'Connected',
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ] else if (home_controller.selectedTab.value == 3) ...[
+                    //   Padding(
+                    //     padding: const EdgeInsets.symmetric(horizontal: 10),
+
+                    //     child: Row(
+                    //       children: [
+                    //         Expanded(
+                    //           child: CallCountInfo(
+                    //             count: '15',
+                    //             percentage: '25%',
+                    //             status: 'Connected',
+                    //           ),
+                    //         ),
+                    //         SizedBox(width: 10),
+                    //         Expanded(
+                    //           child: CallCountInfo(
+                    //             count: '15',
+                    //             percentage: '25%',
+                    //             status: 'Connected',
+                    //           ),
+                    //         ),
+                    //         SizedBox(width: 10),
+                    //         Expanded(
+                    //           child: CallCountInfo(
+                    //             count: '15',
+                    //             percentage: '25%',
+                    //             status: 'Connected',
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ]
+                    // ,
+
+                    // Talk Time  Description
+                    // if (homeController
+                    //         .dashboardData
+                    //         .value
+                    //         .data!
+                    //         .callStats.
+                    //     0)
                     SizedBox(height: 10),
 
                     Container(
@@ -230,13 +338,19 @@ class _HomePageState extends State<HomePage> {
                         horizontal: 15,
                       ),
                       child: Row(
+                        // crossAxisAlignment: CrossAxisAlignment.end,
+                        // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: ColorConstants.MainPurpleBackground
-                                    .withValues(alpha: 0.1),
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                // Colors.blue.shade50,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Column(
@@ -256,17 +370,21 @@ class _HomePageState extends State<HomePage> {
                           ),
 
                           SizedBox(width: 25),
-
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: ColorConstants.MainPurpleBackground
-                                    .withValues(alpha: 0.1),
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                // Colors.blue.shade50,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
+
                                 children: [
                                   Text(
                                     homeController
@@ -289,10 +407,7 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-
-                    // -------------------------------------------------------
-                    // CALL / FOLLOW-UP CARDS
-                    // -------------------------------------------------------
+                    // Customers Section Data
                     SizedBox(height: 10),
 
                     Container(
@@ -309,14 +424,12 @@ class _HomePageState extends State<HomePage> {
                         crossAxisSpacing: 10,
                         childAspectRatio: 2.2,
                         children: [
-                          // TOTAL CALLS
                           GestureDetector(
                             onTap: () => Get.to(
                               () => CallLogs(
                                 startDate:
                                     homeController.selectedStartDate.value,
-                                endDate:
-                                    homeController.selectedEndDate.value,
+                                endDate: homeController.selectedEndDate.value,
                                 timeRange:
                                     homeController.selectedTimeRange.value,
                               ),
@@ -324,8 +437,11 @@ class _HomePageState extends State<HomePage> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: ColorConstants.MainPurpleBackground
-                                    .withValues(alpha: 0.1),
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
+                                    ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
@@ -363,15 +479,12 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
-
-                          // CONNECTED
                           GestureDetector(
                             onTap: () => Get.to(
                               () => CallLogs(
                                 startDate:
                                     homeController.selectedStartDate.value,
-                                endDate:
-                                    homeController.selectedEndDate.value,
+                                endDate: homeController.selectedEndDate.value,
                                 timeRange:
                                     homeController.selectedTimeRange.value,
                               ),
@@ -379,8 +492,11 @@ class _HomePageState extends State<HomePage> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: ColorConstants.MainPurpleBackground
-                                    .withValues(alpha: 0.1),
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
+                                    ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
@@ -418,16 +534,13 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
-
-                          // REMINDER FOLLOW UP
                           GestureDetector(
                             onTap: () => Get.to(
                               () => MissedFollowupsPage(
                                 initialType: 'All',
                                 startDate:
                                     homeController.selectedStartDate.value,
-                                endDate:
-                                    homeController.selectedEndDate.value,
+                                endDate: homeController.selectedEndDate.value,
                                 timeRange:
                                     homeController.selectedTimeRange.value,
                               ),
@@ -435,8 +548,11 @@ class _HomePageState extends State<HomePage> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: ColorConstants.MainPurpleBackground
-                                    .withValues(alpha: 0.1),
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
+                                    ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
@@ -474,16 +590,13 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                           ),
-
-                          // MISSED
                           GestureDetector(
                             onTap: () => Get.to(
                               () => MissedFollowupsPage(
                                 initialType: 'Missed',
                                 startDate:
                                     homeController.selectedStartDate.value,
-                                endDate:
-                                    homeController.selectedEndDate.value,
+                                endDate: homeController.selectedEndDate.value,
                                 timeRange:
                                     homeController.selectedTimeRange.value,
                               ),
@@ -491,8 +604,11 @@ class _HomePageState extends State<HomePage> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: ColorConstants.MainPurpleBackground
-                                    .withValues(alpha: 0.1),
+                                color:
+                                    ColorConstants
+                                        .MainPurpleBackground.withValues(
+                                      alpha: 0.1,
+                                    ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
@@ -534,14 +650,50 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    // -------------------------------------------------------
-                    // SPACING
-                    // -------------------------------------------------------
+                    // Open ACtions
+                    // SizedBox(height: 10),
+                    // Container(
+                    //   decoration: BoxDecoration(color: Colors.white),
+                    //   padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                    //   child: Column(
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: [
+                    //       Text(
+                    //         'Open Actions',
+                    //         style: TextStyle(
+                    //           fontSize: 12,
+                    //           fontWeight: FontWeight.w500,
+                    //         ),
+                    //       ),
+                    //       Row(
+                    //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    //         children: [
+                    //           OpenActionTab(
+                    //             icon: Icons.file_copy_outlined,
+                    //             count: '15',
+                    //             text: 'Documents',
+                    //             iconColor: Colors.blue,
+                    //           ),
+                    //           OpenActionTab(
+                    //             icon: Icons.task_outlined,
+                    //             count: '8',
+                    //             text: 'Tasks',
+                    //             iconColor: Colors.green,
+                    //           ),
+                    //           OpenActionTab(
+                    //             icon: Icons.calendar_today_outlined,
+                    //             count: '3',
+                    //             text: 'Meetings',
+                    //             iconColor: Colors.orange,
+                    //           ),
+                    //         ],
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                     SizedBox(height: 10),
 
-                    // -------------------------------------------------------
-                    // TOTAL LEADS BREAKDOWN
-                    // -------------------------------------------------------
+                    //  Statuses Section
                     if ((homeController
                             .allLeadStageRes
                             .value
@@ -553,9 +705,7 @@ class _HomePageState extends State<HomePage> {
                           vertical: 10,
                           horizontal: 10,
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                        ),
+                        decoration: BoxDecoration(color: Colors.white),
                         child: Column(
                           children: [
                             Text(
@@ -566,13 +716,13 @@ class _HomePageState extends State<HomePage> {
                                 color: Colors.black87,
                               ),
                             ),
-
                             SizedBox(height: 10),
-
                             ListView.builder(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
                               ),
+                              // separatorBuilder: (context, index) =>
+                                  // Divider(color: Colors.grey.shade500),
                               physics: NeverScrollableScrollPhysics(),
                               itemCount: homeController
                                   .allLeadStageRes
@@ -586,26 +736,32 @@ class _HomePageState extends State<HomePage> {
                                     .value
                                     .data![index];
 
+                                // Hide the "New" stage
+                                // if (data.name?.toLowerCase() == "new") {
+                                //   return const SizedBox.shrink();
+                                // }
+
                                 return Card(
                                   elevation: 0,
                                   surfaceTintColor: Colors.transparent,
                                   margin: const EdgeInsets.symmetric(
                                     vertical: 5,
                                   ),
-                                  color: ColorConstants.MainPurpleBackground
-                                      .withValues(alpha: 0.01),
+                                  color:
+                                      ColorConstants
+                                          .MainPurpleBackground.withValues(
+                                        alpha: 0.01,
+                                      ),
                                   child: GestureDetector(
                                     onTap: () {
                                       homeController.mainSelectedIndices
                                           .clear();
-
                                       homeController.mainSelectedIndices.add(
                                         index + 1,
                                       );
 
                                       final ccontroller =
                                           Get.find<Claimedcontroller>();
-
                                       homeController.loadLeadsForSelectedTab(
                                         ccontroller,
                                       );
@@ -617,11 +773,12 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                       height: 60,
                                       decoration: BoxDecoration(
-                                        color: ColorConstants
-                                            .MainPurpleBackground
-                                            .withValues(alpha: 0.12),
-                                        borderRadius:
-                                            BorderRadius.circular(12),
+                                        color:
+                                            ColorConstants
+                                                .MainPurpleBackground.withValues(
+                                              alpha: 0.12,
+                                            ),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Row(
                                         mainAxisAlignment:
@@ -652,68 +809,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
 
-                    // -------------------------------------------------------
-                    // SEARCH BAR - VERY BOTTOM
-                    // -------------------------------------------------------
-                    const SizedBox(height: 15),
-
-                    Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 12,
-                      ),
-                      child: TextField(
-                        controller: searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search leads...',
-                          hintStyle: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 14,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.grey.shade600,
-                          ),
-                          suffixIcon: searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    searchController.clear();
-                                    setState(() {});
-                                  },
-                                )
-                              : null,
-                          filled: true,
-                          fillColor: Colors.grey.shade100,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 15,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color:
-                                  ColorConstants.MainPurpleBackground,
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                        onChanged: (value) {
-                          setState(() {});
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
+                    //
                   ],
                 );
               }),
@@ -725,56 +821,56 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// -------------------------------------------------------
-// STAT TAB
-// -------------------------------------------------------
-
 Widget _buildStatTab({
   required BuildContext context,
   required String label,
   required int count,
+  // required int index,
   required bool isFirst,
   required bool isLast,
 }) {
   final HomeController homeController = Get.find();
+  // final isSelected = homeController.selectedTab.value == index;
 
   return Container(
-    margin: EdgeInsets.only(
-      left: isFirst ? 0 : 4,
-      right: isLast ? 0 : 4,
-    ),
+    margin: EdgeInsets.only(left: isFirst ? 0 : 4, right: isLast ? 0 : 4),
     child: Material(
+      // color: isSelected ? Theme.of(context).primaryColor : Colors.white,
       color: Colors.white,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
+        // onTap: () => homeController.selectedTab.value = index,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            vertical: 10,
-            horizontal: 4,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Count - emphasized for large numbers
               Text(
                 _formatNumber(count),
                 style: TextStyle(
                   fontSize: _getFontSizeForCount(count),
                   fontWeight: FontWeight.w700,
+                  // color: isSelected
+                  //     ? Colors.white
+                  //     : const Color(0xFF1A237E), //Try it amazing
                   color: const Color(0xFF1A237E),
                   height: 1.2,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-
               const SizedBox(height: 2),
-
+              // Label
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
+                  // color: isSelected
+                  //     ? Colors.white.withOpacity(0.9)
+                  //     : Colors.grey[600],
                   color: Colors.grey[600],
                 ),
                 maxLines: 1,
@@ -788,29 +884,18 @@ Widget _buildStatTab({
   );
 }
 
-// -------------------------------------------------------
-// FORMAT NUMBER
-// -------------------------------------------------------
-
 String _formatNumber(int number) {
   if (number >= 1000000) {
     return '${(number / 1000000).toStringAsFixed(1)}M';
   } else if (number >= 1000) {
     return '${(number / 1000).toStringAsFixed(1)}K';
   }
-
   return number.toString();
 }
 
-// -------------------------------------------------------
-// FONT SIZE
-// -------------------------------------------------------
-
 double _getFontSizeForCount(int count) {
   final digits = count.toString().length;
-
   if (digits >= 4) return 14;
   if (digits >= 3) return 15;
-
   return 16;
 }
