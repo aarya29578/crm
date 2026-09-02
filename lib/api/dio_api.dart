@@ -643,6 +643,30 @@ class DioApi {
     }
   }
 
+  Future syncIncomingCall(Map<String, dynamic> data) async {
+  try {
+    final response = await DioUtil.dio.post(
+      "$link/call/sync-incoming",
+      data: data,
+      options: Options(
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return response.data;
+    } else {
+      throw Exception(
+        'Failed to sync incoming call: ${response.statusCode}',
+      );
+    }
+  } catch (e) {
+    throw Exception(
+      'An error occurred while syncing incoming call: $e',
+    );
+  }
+}
+
   Future createQuote(data) async {
     try {
       final response = await DioUtil.dio.post(
