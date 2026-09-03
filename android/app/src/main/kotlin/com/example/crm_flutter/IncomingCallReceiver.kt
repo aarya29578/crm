@@ -1,6 +1,7 @@
 package com.example.crm_flutter
 
 import android.Manifest
+import android.provider.Settings
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -20,13 +21,19 @@ class IncomingCallReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "IncomingCallReceiver"
-
-        private const val API_URL =
-            "http://192.168.0.104:8010/api/v1/call/sync-incoming"
-
         private const val PREF_NAME = "incoming_call_receiver"
         private const val KEY_INCOMING_NUMBER = "incoming_number"
         private const val KEY_CALL_ACTIVE = "call_active"
+        private const val API_URL =
+            "http://192.168.0.104:8010/api/v1/call/sync-incoming"
+
+    }
+
+    private fun getDeviceId(context: Context): String {
+    return Settings.Secure.getString(
+        context.contentResolver,
+        Settings.Secure.ANDROID_ID
+        ) ?: ""
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -213,6 +220,10 @@ class IncomingCallReceiver : BroadcastReceiver() {
                     data.put("duration", duration)
                     data.put("callType", "incoming")
                     data.put("timestamp", timestamp)
+
+                    val deviceId = getDeviceId(context)
+
+                    data.put("deviceId", deviceId)
 
                     Log.d(TAG, "Sending incoming call: $data")
 
