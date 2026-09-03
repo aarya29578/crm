@@ -98,7 +98,7 @@ class _BottomNavigationBarPageState extends State<BottomNavigationBarPage> {
       ),
       _buildTab(
         3,
-        const ProfileMenuPage(),
+        ProfileMenuPage(),
         Icons.person_outlined,
         Icons.person,
         "Profile",

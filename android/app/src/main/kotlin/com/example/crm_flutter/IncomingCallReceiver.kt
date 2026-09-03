@@ -24,6 +24,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
         private const val PREF_NAME = "incoming_call_receiver"
         private const val KEY_INCOMING_NUMBER = "incoming_number"
         private const val KEY_CALL_ACTIVE = "call_active"
+        private const val KEY_LATEST_CALL = "latest_call"
         private const val API_URL =
             "http://192.168.0.104:8010/api/v1/call/sync-incoming"
 
@@ -214,18 +215,28 @@ class IncomingCallReceiver : BroadcastReceiver() {
                         return@Thread
                     }
 
-                    val data = JSONObject()
+                val data = JSONObject()
 
-                    data.put("number", number)
-                    data.put("duration", duration)
-                    data.put("callType", "incoming")
-                    data.put("timestamp", timestamp)
+                data.put("number", number)
+                data.put("duration", duration)
+                data.put("callType", "incoming")
+                data.put("timestamp", timestamp)
 
-                    val deviceId = getDeviceId(context)
+                val deviceId = getDeviceId(context)
 
-                    data.put("deviceId", deviceId)
+                data.put("deviceId", deviceId)
 
-                    Log.d(TAG, "Sending incoming call: $data")
+                // Save the real call data for Flutter
+                val prefs = context.getSharedPreferences(
+                    PREF_NAME,
+                    Context.MODE_PRIVATE
+                )
+
+                prefs.edit()
+                    .putString(KEY_LATEST_CALL, data.toString())
+                    .apply()
+
+                Log.d(TAG, "Incoming call saved: $data")
 
                     sendToBackend(context, data.toString())
                 }
