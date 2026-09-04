@@ -1,123 +1,217 @@
 package com.example.crm_flutter
 
 import android.Manifest
-import android.provider.Settings
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import android.provider.CallLog
+import android.provider.Settings
 import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 
 class IncomingCallReceiver : BroadcastReceiver() {
 
     companion object {
-        private const val TAG = "IncomingCallReceiver"
-        private const val PREF_NAME = "incoming_call_receiver"
-        private const val KEY_INCOMING_NUMBER = "incoming_number"
-        private const val KEY_CALL_ACTIVE = "call_active"
-        private const val KEY_LATEST_CALL = "latest_call"
-        private const val API_URL =
-            "http://192.168.0.105:8010/api/v1/call/sync-incoming"
 
+        private const val TAG = "IncomingCallReceiver"
+
+        private const val PREF_NAME = "incoming_call_receiver"
+
+        private const val KEY_INCOMING_NUMBER =
+            "incoming_number"
+
+        private const val KEY_CALL_ACTIVE =
+            "call_active"
+
+        // NEW:
+        // Keeps track of whether the call was actually answered.
+        private const val KEY_CALL_ANSWERED =
+            "call_answered"
+
+        private const val KEY_LATEST_CALL =
+            "latest_call"
     }
 
     private fun getDeviceId(context: Context): String {
-    return Settings.Secure.getString(
-        context.contentResolver,
-        Settings.Secure.ANDROID_ID
+
+        return Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID
         ) ?: ""
     }
 
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent
+    ) {
 
-        if (intent.action != TelephonyManager.ACTION_PHONE_STATE_CHANGED) {
+        if (
+            intent.action !=
+            TelephonyManager.ACTION_PHONE_STATE_CHANGED
+        ) {
             return
         }
 
-        val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE)
-            ?: return
+        val state =
+            intent.getStringExtra(
+                TelephonyManager.EXTRA_STATE
+            ) ?: return
 
         Log.d(TAG, "Phone state: $state")
 
         when (state) {
 
+            // --------------------------------
+            // INCOMING CALL
+            // --------------------------------
+
             TelephonyManager.EXTRA_STATE_RINGING -> {
 
                 val incomingNumber =
-                    intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
+                    intent.getStringExtra(
+                        TelephonyManager.EXTRA_INCOMING_NUMBER
+                    )
 
-                Log.d(TAG, "Incoming number: $incomingNumber")
+                Log.d(
+                    TAG,
+                    "Incoming number: $incomingNumber"
+                )
 
                 if (!incomingNumber.isNullOrBlank()) {
 
-                    val prefs = context.getSharedPreferences(
+                    val prefs =
+                        context.getSharedPreferences(
+                            PREF_NAME,
+                            Context.MODE_PRIVATE
+                        )
+
+                    prefs.edit()
+                        .putString(
+                            KEY_INCOMING_NUMBER,
+                            incomingNumber
+                        )
+                        .putBoolean(
+                            KEY_CALL_ACTIVE,
+                            true
+                        )
+                        // IMPORTANT:
+                        // At RINGING stage the call has NOT
+                        // been answered yet.
+                        .putBoolean(
+                            KEY_CALL_ANSWERED,
+                            false
+                        )
+                        .apply()
+
+                    Log.d(
+                        TAG,
+                        "📞 Incoming call started"
+                    )
+                }
+            }
+
+            // --------------------------------
+            // CALL ANSWERED
+            // --------------------------------
+
+            TelephonyManager.EXTRA_STATE_OFFHOOK -> {
+
+                val prefs =
+                    context.getSharedPreferences(
                         PREF_NAME,
                         Context.MODE_PRIVATE
                     )
 
-                    prefs.edit()
-                        .putString(KEY_INCOMING_NUMBER, incomingNumber)
-                        .putBoolean(KEY_CALL_ACTIVE, true)
-                        .apply()
-                }
-            }
-
-            TelephonyManager.EXTRA_STATE_OFFHOOK -> {
-
-                val prefs = context.getSharedPreferences(
-                    PREF_NAME,
-                    Context.MODE_PRIVATE
-                )
-
                 prefs.edit()
-                    .putBoolean(KEY_CALL_ACTIVE, true)
+                    .putBoolean(
+                        KEY_CALL_ACTIVE,
+                        true
+                    )
+                    // IMPORTANT:
+                    // OFFHOOK means the incoming call
+                    // was answered.
+                    .putBoolean(
+                        KEY_CALL_ANSWERED,
+                        true
+                    )
                     .apply()
-
-                Log.d(TAG, "Call connected")
-            }
-
-            TelephonyManager.EXTRA_STATE_IDLE -> {
-
-                val prefs = context.getSharedPreferences(
-                    PREF_NAME,
-                    Context.MODE_PRIVATE
-                )
-
-                val incomingNumber =
-                    prefs.getString(KEY_INCOMING_NUMBER, null)
-
-                val callWasActive =
-                    prefs.getBoolean(KEY_CALL_ACTIVE, false)
 
                 Log.d(
                     TAG,
-                    "Call ended. Number=$incomingNumber active=$callWasActive"
+                    "✅ Call connected / answered"
+                )
+            }
+
+            // --------------------------------
+            // CALL ENDED / MISSED / REJECTED
+            // --------------------------------
+
+            TelephonyManager.EXTRA_STATE_IDLE -> {
+
+                val prefs =
+                    context.getSharedPreferences(
+                        PREF_NAME,
+                        Context.MODE_PRIVATE
+                    )
+
+                val incomingNumber =
+                    prefs.getString(
+                        KEY_INCOMING_NUMBER,
+                        null
+                    )
+
+                val callWasActive =
+                    prefs.getBoolean(
+                        KEY_CALL_ACTIVE,
+                        false
+                    )
+
+                val callWasAnswered =
+                    prefs.getBoolean(
+                        KEY_CALL_ANSWERED,
+                        false
+                    )
+
+                Log.d(
+                    TAG,
+                    "Call ended. " +
+                            "Number=$incomingNumber " +
+                            "active=$callWasActive " +
+                            "answered=$callWasAnswered"
                 )
 
                 if (callWasActive) {
 
-                    Handler(Looper.getMainLooper()).postDelayed({
+                    Handler(
+                        Looper.getMainLooper()
+                    ).postDelayed({
 
                         syncLatestIncomingCall(
                             context.applicationContext,
-                            incomingNumber
+                            incomingNumber,
+                            callWasAnswered
                         )
 
                     }, 1500)
                 }
 
+                // Clear current call state
+
                 prefs.edit()
                     .remove(KEY_INCOMING_NUMBER)
-                    .putBoolean(KEY_CALL_ACTIVE, false)
+                    .putBoolean(
+                        KEY_CALL_ACTIVE,
+                        false
+                    )
+                    .putBoolean(
+                        KEY_CALL_ANSWERED,
+                        false
+                    )
                     .apply()
             }
         }
@@ -125,7 +219,8 @@ class IncomingCallReceiver : BroadcastReceiver() {
 
     private fun syncLatestIncomingCall(
         context: Context,
-        fallbackNumber: String?
+        fallbackNumber: String?,
+        callWasAnswered: Boolean
     ) {
 
         if (
@@ -134,7 +229,12 @@ class IncomingCallReceiver : BroadcastReceiver() {
                 Manifest.permission.READ_CALL_LOG
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.e(TAG, "READ_CALL_LOG permission not granted")
+
+            Log.e(
+                TAG,
+                "READ_CALL_LOG permission not granted"
+            )
+
             return
         }
 
@@ -142,68 +242,104 @@ class IncomingCallReceiver : BroadcastReceiver() {
 
             try {
 
-                val cursor = context.contentResolver.query(
-                    CallLog.Calls.CONTENT_URI,
-                    arrayOf(
-                        CallLog.Calls.NUMBER,
-                        CallLog.Calls.DURATION,
-                        CallLog.Calls.TYPE,
-                        CallLog.Calls.DATE
-                    ),
-                    "${CallLog.Calls.TYPE} = ?",
-                    arrayOf(
-                        CallLog.Calls.INCOMING_TYPE.toString()
-                    ),
-                    "${CallLog.Calls.DATE} DESC"
-                )
+                // --------------------------------
+                // Get latest incoming OR missed call
+                // --------------------------------
+
+                val cursor =
+                    context.contentResolver.query(
+
+                        CallLog.Calls.CONTENT_URI,
+
+                        arrayOf(
+                            CallLog.Calls.NUMBER,
+                            CallLog.Calls.DURATION,
+                            CallLog.Calls.TYPE,
+                            CallLog.Calls.DATE
+                        ),
+
+                        "${CallLog.Calls.TYPE} = ? OR " +
+                                "${CallLog.Calls.TYPE} = ?",
+
+                        arrayOf(
+                            CallLog.Calls.INCOMING_TYPE.toString(),
+                            CallLog.Calls.MISSED_TYPE.toString()
+                        ),
+
+                        "${CallLog.Calls.DATE} DESC"
+                    )
 
                 cursor?.use {
 
                     if (!it.moveToFirst()) {
-                        Log.d(TAG, "No incoming call found")
+
+                        Log.d(
+                            TAG,
+                            "No incoming or missed call found"
+                        )
+
                         return@Thread
                     }
+
+                    // --------------------------------
+                    // Get indexes
+                    // --------------------------------
 
                     val numberIndex =
-                        it.getColumnIndex(CallLog.Calls.NUMBER)
+                        it.getColumnIndex(
+                            CallLog.Calls.NUMBER
+                        )
 
                     val durationIndex =
-                        it.getColumnIndex(CallLog.Calls.DURATION)
+                        it.getColumnIndex(
+                            CallLog.Calls.DURATION
+                        )
 
                     val typeIndex =
-                        it.getColumnIndex(CallLog.Calls.TYPE)
+                        it.getColumnIndex(
+                            CallLog.Calls.TYPE
+                        )
 
                     val dateIndex =
-                        it.getColumnIndex(CallLog.Calls.DATE)
+                        it.getColumnIndex(
+                            CallLog.Calls.DATE
+                        )
+
+                    // --------------------------------
+                    // Get values
+                    // --------------------------------
 
                     val numberFromLog =
-                        if (numberIndex >= 0)
+                        if (numberIndex >= 0) {
                             it.getString(numberIndex)
-                        else
+                        } else {
                             null
+                        }
 
                     val duration =
-                        if (durationIndex >= 0)
+                        if (durationIndex >= 0) {
                             it.getLong(durationIndex)
-                        else
+                        } else {
                             0L
+                        }
 
                     val type =
-                        if (typeIndex >= 0)
+                        if (typeIndex >= 0) {
                             it.getInt(typeIndex)
-                        else
+                        } else {
                             -1
+                        }
 
                     val timestamp =
-                        if (dateIndex >= 0)
+                        if (dateIndex >= 0) {
                             it.getLong(dateIndex)
-                        else
+                        } else {
                             0L
+                        }
 
-                    if (type != CallLog.Calls.INCOMING_TYPE) {
-                        Log.d(TAG, "Latest call is not incoming")
-                        return@Thread
-                    }
+                    // --------------------------------
+                    // Number
+                    // --------------------------------
 
                     val number =
                         numberFromLog
@@ -211,58 +347,170 @@ class IncomingCallReceiver : BroadcastReceiver() {
                             ?: ""
 
                     if (number.isBlank()) {
-                        Log.d(TAG, "Incoming number is empty")
+
+                        Log.d(
+                            TAG,
+                            "Incoming number is empty"
+                        )
+
                         return@Thread
                     }
 
-            val call = JSONObject()
+                    // --------------------------------
+                    // Determine missed / rejected
+                    // --------------------------------
 
-            call.put("phone_number", number)
+                    /*
+                     * IMPORTANT LOGIC:
+                     *
+                     * If OFFHOOK happened:
+                     *     call was answered
+                     *     missed = false
+                     *
+                     * If OFFHOOK did NOT happen:
+                     *     caller hung up OR user rejected
+                     *     missed = true
+                     *
+                     * We also check MISSED_TYPE from CallLog.
+                     */
 
-            val deviceId = getDeviceId(context)
-            val deviceCallId = "${deviceId}_${timestamp}"
+                    val missed =
+                        !callWasAnswered ||
+                                type == CallLog.Calls.MISSED_TYPE
 
-            call.put("device_call_id", deviceCallId)
+                    Log.d(
+                        TAG,
+                        "Call type=$type"
+                    )
 
-            call.put("duration", duration)
-            call.put("missed", duration == 0L)
+                    Log.d(
+                        TAG,
+                        "Duration=$duration"
+                    )
 
-            call.put(
-                "started_at",
-                java.time.Instant.ofEpochMilli(timestamp).toString()
-            )
+                    Log.d(
+                        TAG,
+                        "Call answered=$callWasAnswered"
+                    )
 
-            call.put(
-                "ended_at",
-                java.time.Instant.ofEpochMilli(
-                    timestamp + (duration * 1000)
-                ).toString()
-            )
+                    Log.d(
+                        TAG,
+                        "Missed/Rejected=$missed"
+                    )
 
-            // Backend expects { "calls": [...] }
-            val data = JSONObject()
-            val calls = org.json.JSONArray()
+                    // --------------------------------
+                    // Device ID
+                    // --------------------------------
 
-            calls.put(call)
-            data.put("calls", calls)
+                    val deviceId =
+                        getDeviceId(context)
 
-            Log.d(TAG, "Sending incoming call to backend: $data")
+                    val deviceCallId =
+                        "${deviceId}_${timestamp}"
 
-                // Save the real call data for Flutter
-                val prefs = context.getSharedPreferences(
-                    PREF_NAME,
-                    Context.MODE_PRIVATE
-                )
+                    // --------------------------------
+                    // Create call JSON
+                    // --------------------------------
 
-                prefs.edit()
-                    .putString(KEY_LATEST_CALL, data.toString())
-                    .apply()
+                    val call =
+                        JSONObject()
 
-                Log.d(TAG, "Incoming call saved: $data")
+                    call.put(
+                        "phone_number",
+                        number
+                    )
 
-                MainActivity.sendIncomingCallToFlutter(
-                data.toString()
-                )
+                    call.put(
+                        "device_call_id",
+                        deviceCallId
+                    )
+
+                    call.put(
+                        "duration",
+                        duration
+                    )
+
+                    call.put(
+                        "missed",
+                        missed
+                    )
+
+                    call.put(
+                        "started_at",
+                        java.time.Instant
+                            .ofEpochMilli(timestamp)
+                            .toString()
+                    )
+
+                    call.put(
+                        "ended_at",
+                        java.time.Instant
+                            .ofEpochMilli(
+                                timestamp +
+                                        (duration * 1000)
+                            )
+                            .toString()
+                    )
+
+                    // --------------------------------
+                    // Backend format
+                    // --------------------------------
+
+                    val data =
+                        JSONObject()
+
+                    val calls =
+                        org.json.JSONArray()
+
+                    calls.put(call)
+
+                    data.put(
+                        "calls",
+                        calls
+                    )
+
+                    val callJson =
+                        data.toString()
+
+                    Log.d(
+                        TAG,
+                        "📞 Final call data: $callJson"
+                    )
+
+                    // --------------------------------
+                    // Save call
+                    // --------------------------------
+
+                    val prefs =
+                        context.getSharedPreferences(
+                            PREF_NAME,
+                            Context.MODE_PRIVATE
+                        )
+
+                    prefs.edit()
+                        .putString(
+                            KEY_LATEST_CALL,
+                            callJson
+                        )
+                        .apply()
+
+                    Log.d(
+                        TAG,
+                        "✅ Incoming call saved"
+                    )
+
+                    // --------------------------------
+                    // Send to Flutter
+                    // --------------------------------
+
+                    Log.d(
+                        TAG,
+                        "🚀 Sending call to Flutter"
+                    )
+
+                    MainActivity.sendIncomingCallToFlutter(
+                        callJson
+                    )
                 }
 
             } catch (e: Exception) {
@@ -275,107 +523,5 @@ class IncomingCallReceiver : BroadcastReceiver() {
             }
 
         }.start()
-    }
-
-    private fun sendToBackend(
-        context: Context,
-        jsonBody: String
-    ) {
-
-        var connection: HttpURLConnection? = null
-
-        try {
-
-            /*
-             * Flutter's legacy SharedPreferences Android storage.
-             * The Flutter plugin uses the "flutter." key prefix.
-             */
-            val flutterPrefs =
-                context.getSharedPreferences(
-                    "FlutterSharedPreferences",
-                    Context.MODE_PRIVATE
-                )
-
-            val token =
-                flutterPrefs.getString(
-                    "flutter.token",
-                    null
-                )
-
-            if (token.isNullOrBlank()) {
-
-                Log.e(
-                    TAG,
-                    "No authentication token found"
-                )
-
-                return
-            }
-
-            val url = URL(API_URL)
-
-            connection =
-                url.openConnection() as HttpURLConnection
-
-            connection.requestMethod = "POST"
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
-
-            connection.doOutput = true
-
-            connection.setRequestProperty(
-                "Content-Type",
-                "application/json"
-            )
-
-            connection.setRequestProperty(
-                "Authorization",
-                "Bearer $token"
-            )
-
-            connection.outputStream.use { outputStream ->
-
-                outputStream.write(
-                    jsonBody.toByteArray(Charsets.UTF_8)
-                )
-
-                outputStream.flush()
-            }
-
-            val responseCode =
-                connection.responseCode
-
-            Log.d(
-                TAG,
-                "Incoming call API response: $responseCode"
-            )
-
-            if (responseCode == 200 || responseCode == 201) {
-
-                Log.d(
-                    TAG,
-                    "Incoming call synced successfully"
-                )
-
-            } else {
-
-                Log.e(
-                    TAG,
-                    "Incoming call sync failed: $responseCode"
-                )
-            }
-
-        } catch (e: Exception) {
-
-            Log.e(
-                TAG,
-                "Error sending incoming call",
-                e
-            )
-
-        } finally {
-
-            connection?.disconnect()
-        }
     }
 }
