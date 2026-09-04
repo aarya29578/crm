@@ -153,65 +153,62 @@ class _HomePageState extends State<HomePage> {
                             //     1,
                             //   ),
                             // ),
+
                             Expanded(
-                              child: _buildStatTab(
-                                context: context,
-                                label: 'Overall',
-                                count:
-                                    homeController
-                                        .dashboardData
-                                        .value
-                                        .data
-                                        ?.callStats
-                                        ?.overall ??
-                                    0,
-                                // index: 1,
-                                isFirst: true,
-                                isLast: false,
-                              ),
-                            ),
-                            // Expanded(
-                            //   child: buildTab(
-                            //     "Outbound -  ${homeController.dashboardData.value.data?.callStats?.outbound ?? 0}",
-                            //     2,
-                            //   ),
-                            // ),
-                            _buildStatTab(
-                              context: context,
-                              label: 'Outbound',
-                              count:
-                                  homeController
-                                      .dashboardData
-                                      .value
-                                      .data
-                                      ?.callStats
-                                      ?.outbound ??
-                                  0,
-                              // index: 2,
-                              isFirst: false,
-                              isLast: false,
-                            ),
-                            // Expanded(
-                            //   child: buildTab(
-                            //     "Inbound -  ${homeController.dashboardData.value.data?.callStats?.inbound ?? 0}",
-                            //     3,
-                            //   ),
-                            // ),
-                            _buildStatTab(
-                              context: context,
-                              label: 'Inbound',
-                              count:
-                                  homeController
-                                      .dashboardData
-                                      .value
-                                      .data
-                                      ?.callStats
-                                      ?.inbound ??
-                                  0,
-                              // index: 3,
-                              isFirst: false,
-                              isLast: true,
-                            ),
+  child: _buildStatTab(
+    context: context,
+    label: 'Overall',
+    count:
+        homeController
+            .dashboardData
+            .value
+            .data
+            ?.callStats
+            ?.overall ??
+        0,
+    isFirst: true,
+    isLast: false,
+  ),
+),
+
+Expanded(
+  child: _buildStatTab(
+    context: context,
+    label: 'Outbound',
+    count:
+        homeController
+            .dashboardData
+            .value
+            .data
+            ?.callStats
+            ?.outbound ??
+        0,
+    isFirst: false,
+    isLast: false,
+  ),
+),
+
+Expanded(
+  child: _buildStatTab(
+    context: context,
+    label: 'Inbound',
+    count:
+        homeController
+            .dashboardData
+            .value
+            .data
+            ?.callStats
+            ?.inbound ??
+        0,
+    isFirst: false,
+    isLast: true,
+  ),
+),
+                           
+                           
+
+
+
                           ],
                         ),
                       ),
