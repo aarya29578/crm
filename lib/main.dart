@@ -6,6 +6,7 @@ import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
 import 'package:crm_flutter/pages/Auth/AuthController.dart';
 import 'package:crm_flutter/pages/SplashController.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
+import 'package:crm_flutter/services/incoming_call_service.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_flutter/api/dio_util.dart';
 import 'package:crm_flutter/pages/SplashPage.dart';
@@ -14,28 +15,23 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await DioUtil.init();
+
   LocalStorage.sharedPreferences = await SharedPreferences.getInstance();
 
   await NotificationService.init();
   await NotificationService.requestPermission();
 
-  await SystemChrome.setPreferredOrientations([
-    ///Lock app to Portrait only
-    DeviceOrientation.portraitUp,
-    // DeviceOrientation.portraitDown,
+  IncomingCallService.initialize();
 
-    ///Lock app to Landscape only
-    // DeviceOrientation.landscapeLeft,
-    // DeviceOrientation.landscapeRight,
-  ]);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

@@ -26,7 +26,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
         private const val KEY_CALL_ACTIVE = "call_active"
         private const val KEY_LATEST_CALL = "latest_call"
         private const val API_URL =
-            "http://192.168.0.104:8010/api/v1/call/sync-incoming"
+            "http://192.168.0.105:8010/api/v1/call/sync-incoming"
 
     }
 
@@ -215,16 +215,38 @@ class IncomingCallReceiver : BroadcastReceiver() {
                         return@Thread
                     }
 
-                val data = JSONObject()
+            val call = JSONObject()
 
-                data.put("number", number)
-                data.put("duration", duration)
-                data.put("callType", "incoming")
-                data.put("timestamp", timestamp)
+            call.put("phone_number", number)
 
-                val deviceId = getDeviceId(context)
+            val deviceId = getDeviceId(context)
+            val deviceCallId = "${deviceId}_${timestamp}"
 
-                data.put("deviceId", deviceId)
+            call.put("device_call_id", deviceCallId)
+
+            call.put("duration", duration)
+            call.put("missed", duration == 0L)
+
+            call.put(
+                "started_at",
+                java.time.Instant.ofEpochMilli(timestamp).toString()
+            )
+
+            call.put(
+                "ended_at",
+                java.time.Instant.ofEpochMilli(
+                    timestamp + (duration * 1000)
+                ).toString()
+            )
+
+            // Backend expects { "calls": [...] }
+            val data = JSONObject()
+            val calls = org.json.JSONArray()
+
+            calls.put(call)
+            data.put("calls", calls)
+
+            Log.d(TAG, "Sending incoming call to backend: $data")
 
                 // Save the real call data for Flutter
                 val prefs = context.getSharedPreferences(
@@ -238,7 +260,9 @@ class IncomingCallReceiver : BroadcastReceiver() {
 
                 Log.d(TAG, "Incoming call saved: $data")
 
-                    sendToBackend(context, data.toString())
+                MainActivity.sendIncomingCallToFlutter(
+                data.toString()
+                )
                 }
 
             } catch (e: Exception) {

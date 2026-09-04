@@ -26,6 +26,7 @@ import 'package:crm_flutter/api/response/all_types_response.dart';
 import 'package:crm_flutter/api/response/getLeadByStage.dart';
 import 'package:crm_flutter/constants.dart';
 import 'package:crm_flutter/api/response/location_response.dart';
+import 'package:flutter/services.dart';
 
 class DioApi {
   Future register(data) async {
@@ -643,29 +644,80 @@ class DioApi {
     }
   }
 
-  Future syncIncomingCall(Map<String, dynamic> data) async {
-  try {
-    final response = await DioUtil.dio.post(
-      "$link/call/sync-incoming",
-      data: data,
-      options: Options(
-        headers: {'Content-Type': 'application/json'},
-      ),
-    );
+  // Future<void> syncLatestIncomingCall() async {
+  //   try {
+  //     const channel = MethodChannel('com.example.crm_flutter/call');
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return response.data;
-    } else {
-      throw Exception(
-        'Failed to sync incoming call: ${response.statusCode}',
+  //     final callData = await channel.invokeMethod('getLatestIncomingCall');
+
+  //     if (callData == null) {
+  //       print("No incoming call data found");
+  //       return;
+  //     }
+
+  //     print("CALL DATA FROM ANDROID: $callData");
+
+  //     final int duration = callData["duration"] ?? 0;
+
+  //     final DateTime startedAt = DateTime.fromMillisecondsSinceEpoch(
+  //       callData["timestamp"],
+  //     );
+
+  //     final DateTime endedAt = startedAt.add(Duration(seconds: duration));
+
+  //     final data = {
+  //       "calls": [
+  //         {
+  //           "phone_number": callData["number"],
+  //           "device_call_id": callData["deviceId"],
+  //           "duration": duration,
+  //           "missed": duration == 0,
+  //           "started_at": startedAt.toIso8601String(),
+  //           "ended_at": endedAt.toIso8601String(),
+  //         },
+  //       ],
+  //     };
+
+  //     print("SYNCING CALL: $data");
+
+  //     final response = await syncIncomingCall(data);
+
+  //     print("CALL SYNC RESPONSE: $response");
+  //   } catch (e) {
+  //     print("CALL SYNC ERROR: $e");
+  //   }
+  // }
+
+  Future<dynamic> syncIncomingCall(Map<String, dynamic> data) async {
+    print("🔥 syncIncomingCall() CALLED");
+    print("🔥 API DATA: $data");
+    try {
+      final response = await DioUtil.dio.post(
+        "$link/call/sync-incoming",
+        data: data,
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print("Incoming call synced successfully: ${response.data}");
+        return response.data;
+      }
+
+      throw Exception('Failed to sync incoming call: ${response.statusCode}');
+    } on DioException catch (e) {
+      print(
+        "Incoming call sync failed: "
+        "${e.response?.statusCode} - ${e.response?.data}",
+      );
+
+      throw Exception(
+        'Incoming call sync failed: ${e.response?.data ?? e.message}',
+      );
+    } catch (e) {
+      print("Incoming call sync error: $e");
+      throw Exception('An error occurred while syncing incoming call: $e');
     }
-  } catch (e) {
-    throw Exception(
-      'An error occurred while syncing incoming call: $e',
-    );
   }
-}
 
   Future createQuote(data) async {
     try {
@@ -910,15 +962,14 @@ class DioApi {
     }
   }
 
- Future<AllLeadsResponse> getAllLeads({
-  int page = 1,
-  DateTime? startDate,
-  DateTime? endDate,
-  List<String>? statusIds,
-  String? campaignId,
-  String? leadSourceId,
-})
-  async {
+  Future<AllLeadsResponse> getAllLeads({
+    int page = 1,
+    DateTime? startDate,
+    DateTime? endDate,
+    List<String>? statusIds,
+    String? campaignId,
+    String? leadSourceId,
+  }) async {
     try {
       // Build query parameters
       Map<String, dynamic> queryParams = {};
@@ -956,8 +1007,8 @@ class DioApi {
       }
 
       if (leadSourceId != null && leadSourceId.isNotEmpty) {
-  queryParams['lead_source_id'] = leadSourceId;
-}
+        queryParams['lead_source_id'] = leadSourceId;
+      }
 
       final response = await DioUtil.dio.get(
         "$link/lead/all?page=$page",
