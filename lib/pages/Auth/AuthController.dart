@@ -44,9 +44,12 @@ class AuthController extends GetxController {
   // ============================================================
 
   Future login(data, context) async {
+     print("🔥 LOGIN BUTTON CALLED");
+print("🔥 LOGIN DATA: $data");
     try {
+     print("🔥 CALLING LOGIN API...");
       final response = await DioApi().login(data);
-
+print("🔥 LOGIN API RESPONSE: $response");
       // ========================================================
       // LOGIN SUCCESS
       // ========================================================
