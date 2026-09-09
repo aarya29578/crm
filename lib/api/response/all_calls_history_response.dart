@@ -18,8 +18,10 @@ class AllCallHistoryResponse {
     total = json['total'];
     page = json['page'];
     limit = json['limit'];
+
     if (json['data'] != null) {
       data = <CallHistoryGroup>[];
+
       json['data'].forEach((v) {
         data!.add(CallHistoryGroup.fromJson(v));
       });
@@ -28,13 +30,16 @@ class AllCallHistoryResponse {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
+
     data['success'] = success;
     data['total'] = total;
     data['page'] = page;
     data['limit'] = limit;
+
     if (this.data != null) {
       data['data'] = this.data!.map((v) => v.toJson()).toList();
     }
+
     return data;
   }
 }
@@ -45,6 +50,7 @@ class CallHistoryGroup {
   String? lastCallAt;
   CalledBy? calledBy;
   Lead? lead;
+  CallLog? callLog;
 
   CallHistoryGroup({
     this.date,
@@ -52,29 +58,74 @@ class CallHistoryGroup {
     this.lastCallAt,
     this.calledBy,
     this.lead,
+    this.callLog,
   });
 
   CallHistoryGroup.fromJson(Map<String, dynamic> json) {
     date = json['date'];
     callCount = json['callCount'];
     lastCallAt = json['lastCallAt'];
-    calledBy = (json['calledBy'] != null && json['calledBy'] is Map) 
-        ? CalledBy.fromJson(json['calledBy']) : null;
-    lead = (json['lead'] != null && json['lead'] is Map) 
-        ? Lead.fromJson(json['lead']) : null;
+
+    calledBy = (json['calledBy'] != null && json['calledBy'] is Map)
+        ? CalledBy.fromJson(json['calledBy'])
+        : null;
+
+    lead = (json['lead'] != null && json['lead'] is Map)
+        ? Lead.fromJson(json['lead'])
+        : null;
+
+    callLog = (json['call_log'] != null && json['call_log'] is Map)
+        ? CallLog.fromJson(json['call_log'])
+        : null;
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
+
     data['date'] = date;
     data['callCount'] = callCount;
     data['lastCallAt'] = lastCallAt;
+
     if (calledBy != null) {
       data['calledBy'] = calledBy!.toJson();
     }
+
     if (lead != null) {
       data['lead'] = lead!.toJson();
     }
+
+    if (callLog != null) {
+      data['call_log'] = callLog!.toJson();
+    }
+
+    return data;
+  }
+}
+
+class CallLog {
+  String? direction;
+  int? duration;
+  String? status;
+
+  CallLog({
+    this.direction,
+    this.duration,
+    this.status,
+  });
+
+  CallLog.fromJson(Map<String, dynamic> json) {
+    direction = json['direction'];
+    duration = json['duration'];
+    status = json['status'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+
+    data['direction'] = direction;
+    data['duration'] = duration;
+    data['status'] = status;
+
     return data;
   }
 }
@@ -84,7 +135,11 @@ class CalledBy {
   String? name;
   String? email;
 
-  CalledBy({this.sId, this.name, this.email});
+  CalledBy({
+    this.sId,
+    this.name,
+    this.email,
+  });
 
   CalledBy.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];
@@ -94,9 +149,11 @@ class CalledBy {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
+
     data['_id'] = sId;
     data['name'] = name;
     data['email'] = email;
+
     return data;
   }
 }
@@ -120,27 +177,40 @@ class Lead {
 
   Lead.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];
-    name = (json['name'] != null && json['name'] is Map) 
-        ? LeadName.fromJson(json['name']) : null;
+
+    name = (json['name'] != null && json['name'] is Map)
+        ? LeadName.fromJson(json['name'])
+        : null;
+
     phone = json['phone'];
     email = json['email'];
-    leadStage = (json['lead_stage_id'] != null && json['lead_stage_id'] is Map) 
-        ? LeadStage.fromJson(json['lead_stage_id']) : null;
+
+    leadStage =
+        (json['lead_stage_id'] != null && json['lead_stage_id'] is Map)
+            ? LeadStage.fromJson(json['lead_stage_id'])
+            : null;
+
     priority = json['priority'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
+
     data['_id'] = sId;
+
     if (name != null) {
       data['name'] = name!.toJson();
     }
+
     data['phone'] = phone;
     data['email'] = email;
+
     if (leadStage != null) {
       data['lead_stage_id'] = leadStage!.toJson();
     }
+
     data['priority'] = priority;
+
     return data;
   }
 }
@@ -150,7 +220,11 @@ class LeadName {
   String? last;
   String? middle;
 
-  LeadName({this.first, this.last, this.middle});
+  LeadName({
+    this.first,
+    this.last,
+    this.middle,
+  });
 
   LeadName.fromJson(Map<String, dynamic> json) {
     first = json['first'];
@@ -160,9 +234,11 @@ class LeadName {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
+
     data['first'] = first;
     data['last'] = last;
     data['middle'] = middle;
+
     return data;
   }
 }
@@ -173,7 +249,12 @@ class LeadStage {
   String? color;
   String? connected;
 
-  LeadStage({this.sId, this.name, this.color, this.connected});
+  LeadStage({
+    this.sId,
+    this.name,
+    this.color,
+    this.connected,
+  });
 
   LeadStage.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];
@@ -184,10 +265,12 @@ class LeadStage {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
+
     data['_id'] = sId;
     data['name'] = name;
     data['color'] = color;
     data['connected'] = connected;
+
     return data;
   }
 }

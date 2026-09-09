@@ -3,12 +3,12 @@ import 'package:crm_flutter/api/response/all_calls_history_response.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/home/components/date_range_picker_dialog.dart';
 import 'package:get/get.dart';
-import 'package:call_log/call_log.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/material.dart';
+import 'package:call_log/call_log.dart' as device_call_log;
 
 class CallLogController extends GetxController {
-  var callLogs = <CallLogEntry>[].obs;
+  var callLogs = <device_call_log.CallLogEntry>[].obs;
   var isLoading = true.obs;
 
   Rx<AllCallHistoryResponse> callLogsResponse = AllCallHistoryResponse().obs;
@@ -114,7 +114,8 @@ class CallLogController extends GetxController {
       // Check and request permission
       if (await Permission.phone.request().isGranted) {
         // Get call logs
-        Iterable<CallLogEntry> entries = await CallLog.get();
+        Iterable<device_call_log.CallLogEntry> entries =
+    await device_call_log.CallLog.get();
         callLogs.assignAll(entries);
         print('Name: ${callLogs[0].name}');
         print('Number: ${callLogs[0].number}');

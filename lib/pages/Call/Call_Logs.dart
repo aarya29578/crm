@@ -211,7 +211,25 @@ class _CallLogsState extends State<CallLogs> {
         ? "${lead?.name?.first ?? ""} ${lead?.name?.last ?? ""}".trim()
         : (lead != null ? "Unnamed Lead" : "External Contact");
     final phone = lead?.phone?.toString() ?? "No Contact Number";
-    final isMissed = lead?.leadStage?.connected?.toLowerCase() == 'not connected';
+
+
+final direction = callGroup.callLog?.direction?.toLowerCase() ?? '';
+final status = callGroup.callLog?.status?.toLowerCase() ?? '';
+
+final String callType;
+
+if (status == 'missed') {
+  callType = 'Missed';
+} else if (direction == 'inbound') {
+  callType = 'Inbound';
+} else if (direction == 'outbound') {
+  callType = 'Outbound';
+} else {
+  callType = '';
+}
+
+final isMissed = callType == 'Missed';
+
     final agentName = callGroup.calledBy?.name ?? "Unknown Agent";
 
     return Card(
@@ -256,21 +274,52 @@ class _CallLogsState extends State<CallLogs> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                leadName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+
+                       Row(
+  children: [
+    Expanded(
+      child: Text(
+        leadName,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+    if (callType.isNotEmpty) ...[
+      const SizedBox(width: 8),
+      Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 4,
+        ),
+        decoration: BoxDecoration(
+          color: isMissed
+              ? Colors.red.shade50
+              : callType == 'Inbound'
+                  ? Colors.green.shade50
+                  : Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          callType,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: isMissed
+                ? Colors.red.shade700
+                : callType == 'Inbound'
+                    ? Colors.green.shade700
+                    : Colors.blue.shade700,
+          ),
+        ),
+      ),
+    ],
+  ],
+),
+
                         const SizedBox(height: 2),
                         Text(
                           callGroup.lastCallAt != null
