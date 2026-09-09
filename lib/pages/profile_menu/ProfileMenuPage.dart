@@ -149,6 +149,7 @@ class ProfileMenuPage extends StatelessWidget {
 
                 child: Column(
                   children: [
+                    // Templates
                     Container(
                       width: double.infinity,
                       height: 75,
@@ -174,7 +175,9 @@ class ProfileMenuPage extends StatelessWidget {
                           },
 
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 18),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                            ),
 
                             child: Row(
                               children: [
@@ -200,7 +203,8 @@ class ProfileMenuPage extends StatelessWidget {
                                 // Template Text
                                 const Expanded(
                                   child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
 
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -243,6 +247,7 @@ class ProfileMenuPage extends StatelessWidget {
 
                     const SizedBox(height: 10),
 
+                    // Logout
                     Container(
                       width: double.infinity,
                       height: 60,
@@ -251,7 +256,9 @@ class ProfileMenuPage extends StatelessWidget {
                         color: Colors.red.shade50,
                         borderRadius: BorderRadius.circular(14),
 
-                        border: Border.all(color: Colors.red.shade100),
+                        border: Border.all(
+                          color: Colors.red.shade100,
+                        ),
                       ),
 
                       child: Material(
@@ -273,7 +280,9 @@ class ProfileMenuPage extends StatelessWidget {
                           },
 
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 18),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                            ),
 
                             child: Row(
                               children: [
@@ -310,6 +319,80 @@ class ProfileMenuPage extends StatelessWidget {
                                   Icons.arrow_forward_ios_rounded,
                                   size: 16,
                                   color: Colors.red,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // Blocked Number
+                    Container(
+                      width: double.infinity,
+                      height: 60,
+
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(14),
+
+                        border: Border.all(
+                          color: Colors.orange.shade100,
+                        ),
+                      ),
+
+                      child: Material(
+                        color: Colors.transparent,
+
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+
+                          onTap: () {
+                            // TODO: Open Blocked Number page
+                          },
+
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                            ),
+
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.shade100,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+
+                                  child: Icon(
+                                    Icons.block_rounded,
+                                    color: Colors.orange.shade700,
+                                    size: 22,
+                                  ),
+                                ),
+
+                                const SizedBox(width: 15),
+
+                                const Expanded(
+                                  child: Text(
+                                    "Blocked Number",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFFEA580C),
+                                    ),
+                                  ),
+                                ),
+
+                                Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 16,
+                                  color: Colors.orange,
                                 ),
                               ],
                             ),
