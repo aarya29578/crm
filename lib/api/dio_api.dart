@@ -981,7 +981,7 @@ class DioApi {
           startDate.month,
           startDate.day,
         );
-        queryParams['startDate'] = startDateTime.toUtc().toIso8601String();
+        queryParams['startDate'] = startDateTime.toIso8601String();
       }
 
       if (endDate != null) {
@@ -995,7 +995,7 @@ class DioApi {
           59,
           999,
         );
-        queryParams['endDate'] = endDateTime.toUtc().toIso8601String();
+        queryParams['endDate'] = endDateTime.toIso8601String();
       }
 
       if (statusIds != null && statusIds.isNotEmpty) {
@@ -1033,21 +1033,25 @@ class DioApi {
     String? campaignId,
   }) async {
     try {
-      // Build query parameters
-      Map<String, dynamic> queryParams = {};
+      final Map<String, dynamic> queryParams = {};
 
       if (startDate != null) {
-        // Format start date to include time (start of day)
+        // Start of selected day in local time (IST)
         final startDateTime = DateTime(
           startDate.year,
           startDate.month,
           startDate.day,
+          0,
+          0,
+          0,
+          0,
         );
-        queryParams['startDate'] = startDateTime.toUtc().toIso8601String();
+
+        queryParams['startDate'] = startDateTime.toIso8601String();
       }
 
       if (endDate != null) {
-        // Format end date to include time (end of day)
+        // End of selected day in local time (IST)
         final endDateTime = DateTime(
           endDate.year,
           endDate.month,
@@ -1057,7 +1061,8 @@ class DioApi {
           59,
           999,
         );
-        queryParams['endDate'] = endDateTime.toUtc().toIso8601String();
+
+        queryParams['endDate'] = endDateTime.toIso8601String();
       }
 
       if (statusIds != null && statusIds.isNotEmpty) {
