@@ -1,6 +1,6 @@
 import 'package:call_log/call_log.dart';
 import 'package:crm_flutter/api/dio_api.dart';
-import 'package:crm_flutter/api/response/all_calls_history_response.dart';
+import 'package:crm_flutter/api/response/all_calls_history_response.dart' hide CallLog;
 import 'package:get/get.dart';
 
 class CallsHistoryController extends GetxController {
