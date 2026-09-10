@@ -85,9 +85,22 @@ class _MainPageState extends State<MainPage> {
           fontWeight: FontWeight.w700,
         ),
         backgroundColor: ColorConstants.MainPurpleBackground,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+      actions: [
+  // Notification Button
+  IconButton(
+    icon: const Icon(
+      Icons.notifications_none,
+      color: Colors.white,
+    ),
+    onPressed: () {
+      // TODO: Open notifications
+    },
+    tooltip: 'Notifications',
+  ),
+
+  // Refresh Button
+  IconButton(
+    icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () async {
               try {
                 await homeController.getAllLeadStage();
