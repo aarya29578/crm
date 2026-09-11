@@ -49,7 +49,7 @@ class AuthController extends GetxController {
   // ============================================================
 
   Future login(data, context) async {
-    print("🔥 LOGIN BUTTON CALLED");
+    print("🔥 LOGIN BUTTON HAS CALLED SUCCESSFULLY");
     print("🔥 LOGIN DATA: $data");
 
     try {
