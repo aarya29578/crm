@@ -6,6 +6,7 @@ import 'package:crm_flutter/api/response/all_templates_response.dart';
 import 'package:crm_flutter/api/response/call_log_response.dart';
 import 'package:crm_flutter/api/response/dashboard_res.dart';
 import 'package:crm_flutter/api/response/get_whatsappSms_response.dart';
+import 'package:crm_flutter/api/response/notification_model.dart';
 import 'package:crm_flutter/api/response/substatus_lead_stage_response.dart';
 import 'package:crm_flutter/api/response/template_response.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
@@ -26,7 +27,6 @@ import 'package:crm_flutter/api/response/all_types_response.dart';
 import 'package:crm_flutter/api/response/getLeadByStage.dart';
 import 'package:crm_flutter/constants.dart';
 import 'package:crm_flutter/api/response/location_response.dart';
-import 'package:flutter/services.dart';
 
 class DioApi {
   Future register(data) async {
@@ -1312,14 +1312,7 @@ class DioApi {
       } else {
         throw Exception("Failed to create lead: ${response.statusCode}");
       }
-    } on DioException catch (e) {
-      print("======================================");
-      print("CREATE LEAD ERROR");
-      print("======================================");
-      print("Status: ${e.response?.statusCode}");
-      print("Response: ${e.response?.data}");
-      print("======================================");
-
+    } on DioException {
       rethrow;
     } catch (e) {
       throw Exception("An error occurred while creating lead: $e");
@@ -1439,6 +1432,29 @@ class DioApi {
       rethrow;
     } catch (e) {
       throw Exception("Failed to load users: $e");
+    }
+  }
+
+  Future<NotificationsResponse> getNotifications({
+    String? startDate,
+    String? endDate,
+  }) async {
+    try {
+      final response = await DioUtil.dio.get(
+        "$link/notifications",
+        queryParameters: {
+          if (startDate != null) 'startDate': startDate,
+          if (endDate != null) 'endDate': endDate,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return NotificationsResponse.fromJson(response.data);
+      } else {
+        throw Exception('Failed to load notifications: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('An error occurred while fetching notifications: $e');
     }
   }
 }

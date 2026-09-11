@@ -1,3 +1,5 @@
+import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/common_widgets/notificationService.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Allocations/components/custom_chip.dart';
 import 'package:crm_flutter/pages/home/components/campaign_multiselect_dialog.dart';
@@ -24,6 +26,7 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   final HomeController homeController = Get.put(HomeController());
   final Claimedcontroller controller = Get.put(Claimedcontroller());
+  final DioApi dioApi = DioApi();
 
   @override
   void initState() {
@@ -85,22 +88,67 @@ class _MainPageState extends State<MainPage> {
           fontWeight: FontWeight.w700,
         ),
         backgroundColor: ColorConstants.MainPurpleBackground,
-      actions: [
-  // Notification Button
-  IconButton(
-    icon: const Icon(
-      Icons.notifications_none,
-      color: Colors.white,
-    ),
-    onPressed: () {
-      // TODO: Open notifications
-    },
-    tooltip: 'Notifications',
-  ),
+        actions: [
+          // Notification Button
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Colors.white),
+            onPressed: () async {
+              try {
+                final response = await dioApi.getNotifications();
 
-  // Refresh Button
-  IconButton(
-    icon: const Icon(Icons.refresh, color: Colors.white),
+                if (!context.mounted) return;
+
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) {
+                    return SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.7,
+                      child: response.notifications.isEmpty
+                          ? const Center(child: Text('No notifications'))
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: response.notifications.length,
+                              itemBuilder: (context, index) {
+                                final notification =
+                                    response.notifications[index];
+
+                                return Card(
+                                  child: ListTile(
+                                    leading: Icon(
+                                      notification.isRead
+                                          ? Icons.notifications_none
+                                          : Icons.notifications,
+                                    ),
+                                    title: Text(
+                                      notification.title,
+                                      style: TextStyle(
+                                        fontWeight: notification.isRead
+                                            ? FontWeight.normal
+                                            : FontWeight.bold,
+                                      ),
+                                    ),
+                                    subtitle: Text(notification.message),
+                                  ),
+                                );
+                              },
+                            ),
+                    );
+                  },
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Failed to load notifications')),
+                );
+              }
+            },
+            tooltip: 'Notifications',
+          ),
+          // Refresh Button
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () async {
               try {
                 await homeController.getAllLeadStage();
@@ -332,8 +380,7 @@ class _MainPageState extends State<MainPage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount:
-                    controller.getLeadByStageRes.value.leadDetails?.length ??
-                    0,
+                    controller.getLeadByStageRes.value.leadDetails?.length ?? 0,
                 itemBuilder: (context, index) {
                   final data =
                       controller.getLeadByStageRes.value.leadDetails![index];
