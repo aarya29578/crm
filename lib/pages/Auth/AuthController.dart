@@ -173,7 +173,7 @@ class AuthController extends GetxController {
 
           Get.find<NotificationController>().startNotificationPolling();
         } else {
-          print("❌ NotificationController is not registered");
+          print("❌ NOTIFICATION CONTROLLER NOT REGISTERED.");
         }
 
         // ------------------------------------------------------
