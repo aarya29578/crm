@@ -1,4 +1,5 @@
 import 'package:crm_flutter/local_storage/local_storage.dart';
+import 'package:crm_flutter/notifications/notifications_controller.dart';
 import 'package:crm_flutter/pages/Auth/LoginPage.dart';
 import 'package:crm_flutter/pages/bottom_navigation_bar/BottomNavigationBarPage.dart';
 import 'package:get/get.dart';
@@ -12,44 +13,32 @@ class SplashController extends GetxController {
   }
 
   Future<void> checkLogin() async {
-    // Keep splash screen for 2 seconds
     await Future.delayed(const Duration(seconds: 2));
 
-    // Get saved token
     final token = LocalStorage.sharedPreferences?.getString("token");
 
-    print("SAVED TOKEN: $token");
+    print(
+      "🔐 Saved token exists: "
+      "${token != null && token.isNotEmpty}",
+    );
 
     if (token != null && token.isNotEmpty) {
-      print("User already logged in");
+      print("✅ User already logged in");
+
+      // Start notifications for restored session.
+      if (Get.isRegistered<NotificationController>()) {
+        print("🔔 Starting notification polling...");
+
+        Get.find<NotificationController>().startNotificationPolling();
+      } else {
+        print("❌ NotificationController is not registered");
+      }
 
       Get.offAll(() => BottomNavigationBarPage());
     } else {
-      print("User is not logged in");
+      print("❌ User is not logged in");
 
       Get.offAll(() => const LoginPage());
     }
   }
 }
-  // SESSION MANAGEMENT
-
-  // void onInit() {
-  //   super.onInit();
-
-  //   Future.delayed(Duration(seconds: 2), () {
-  //     String token = LocalStorage.sharedPreferences?.getString("token") ?? "";
-  //     print(token);
-  //     if (token == "") {
-  //       Get.offAll(LoginPage());
-  //     } else {
-  //       Get.off(BottomNavigationBarPage());
-  //     }
-  //     // Get.off(
-  //     // () => const BottomNavigationBarPage(),
-  //     //() => const LoginPage(),
-  //     // ); // Replaces the splash with MainPage
-  //   });
-
-  //   // NotificationService.init();
-  //   // NotificationService.requestPermission();
-  // }

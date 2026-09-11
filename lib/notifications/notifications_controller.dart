@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/notification_model.dart';
 import 'package:crm_flutter/common_widgets/notificationService.dart';
@@ -9,6 +8,7 @@ class NotificationController extends GetxController {
   final DioApi _service = DioApi();
 
   final RxBool isLoading = false.obs;
+
   final RxString errorMessage = ''.obs;
 
   final RxList<NotificationModel> notifications = <NotificationModel>[].obs;
@@ -17,96 +17,101 @@ class NotificationController extends GetxController {
 
   Timer? _notificationTimer;
 
-  // Notifications that are already known to the app
+  // Prevent overlapping API calls.
+  bool _isCheckingNotifications = false;
+
   final Set<String> _knownNotificationIds = {};
 
-  // ============================================================
-  // INIT
-  // ============================================================
-
-  @override
-  void onInit() {
-    super.onInit();
-
-    // First API call
-    getNotifications(isInitialLoad: true);
-
-    // Start checking for new notifications
-    startNotificationPolling();
-  }
-
-  // ============================================================
-
   Future<void> getNotifications({bool isInitialLoad = false}) async {
+    // Prevent duplicate requests.
+    if (_isCheckingNotifications) {
+      print('⚠️ Notification API call already running');
+      return;
+    }
+
     try {
-      // Don't show the full screen loader for every 30-second poll
+      _isCheckingNotifications = true;
+
       if (isInitialLoad) {
         isLoading.value = true;
       }
 
       errorMessage.value = '';
 
+      print('==========================================');
+      print('🔄 CHECKING NOTIFICATIONS');
+      print('==========================================');
+
       final response = await _service.getNotifications();
 
-      // Update notification list
       notifications.assignAll(response.notifications);
 
-      // Update unread count
       unreadCount.value = response.unreadCount;
 
       if (isInitialLoad) {
-        // Just remember existing notifications.
-        // DO NOT show them as phone notifications.
+        print('📌 Registering existing notifications...');
+
         for (final notification in response.notifications) {
-          _knownNotificationIds.add(notification.id);
+          if (notification.id.isNotEmpty) {
+            _knownNotificationIds.add(notification.id);
+          }
         }
 
         print(
-          '🔔 Initial notifications loaded: '
-          '${response.notifications.length}',
+          '✅ Existing notification IDs: '
+          '${_knownNotificationIds.length}',
         );
+
+        print('==========================================');
 
         return;
       }
 
       for (final notification in response.notifications) {
-        // New notification found
-        if (!_knownNotificationIds.contains(notification.id)) {
-          print(
-            '🆕 New notification received: '
-            '${notification.title}',
-          );
-
-          await _showLocalNotification(notification);
-
-          // Remember notification
-          _knownNotificationIds.add(notification.id);
+        if (notification.id.isEmpty) {
+          continue;
         }
+
+        // Already processed.
+        if (_knownNotificationIds.contains(notification.id)) {
+          continue;
+        }
+
+        print('🔔 NEW NOTIFICATION FOUND');
+        print('🆔 ID: ${notification.id}');
+        print('📌 TYPE: ${notification.type}');
+        print('💬 MESSAGE: ${notification.message}');
+        print('🕐 CREATED AT: ${notification.createdAt}');
+
+        await NotificationService().showNotification(
+          id: notification.id.hashCode,
+          title: notification.title,
+          body: notification.message,
+        );
+
+        // Mark as known.
+        _knownNotificationIds.add(notification.id);
+
+        print('✅ Notification processed');
       }
+
+      print('==========================================');
     } catch (e) {
       errorMessage.value = e.toString();
 
       print('❌ Error fetching notifications: $e');
     } finally {
+      _isCheckingNotifications = false;
+
       if (isInitialLoad) {
         isLoading.value = false;
       }
     }
   }
 
-  Future<void> _showLocalNotification(NotificationModel notification) async {
-    try {
-      await NotificationService().showNotification(
-        id: notification.id.hashCode,
-        title: notification.title,
-        body: notification.message,
-      );
-
-      print('🔔 Local notification shown: ${notification.title}');
-    } catch (e) {
-      print('❌ Failed to show local notification: $e');
-    }
-  }
+  // ============================================================
+  // START POLLING
+  // ============================================================
 
   void startNotificationPolling() {
     if (_notificationTimer != null) {
@@ -114,19 +119,26 @@ class NotificationController extends GetxController {
       return;
     }
 
-    print('🔄 Notification polling started');
+    print('');
+    print('==========================================');
+    print('🚀 NOTIFICATION POLLING STARTED');
+    print('==========================================');
 
-    // Get current notifications first
+    // First API call.
     getNotifications(isInitialLoad: true);
 
-    // Then check every 30 seconds
+    // Every 30 seconds.
     _notificationTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      print('');
+      print('⏰ 30 seconds completed');
+
       getNotifications();
     });
   }
 
   void stopNotificationPolling() {
     _notificationTimer?.cancel();
+
     _notificationTimer = null;
 
     print('🛑 Notification polling stopped');
@@ -134,6 +146,12 @@ class NotificationController extends GetxController {
 
   Future<void> refreshNotifications() async {
     await getNotifications();
+  }
+
+  void clearKnownNotificationIds() {
+    _knownNotificationIds.clear();
+
+    print('🧹 Known notification IDs cleared');
   }
 
   @override

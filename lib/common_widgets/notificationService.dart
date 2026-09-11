@@ -32,6 +32,22 @@ class NotificationService {
     );
 
     await _notifications.initialize(settings: settings);
+
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'crm_channel',
+      'CRM Notifications',
+      description: 'Notifications from CRM',
+      importance: Importance.max,
+    );
+
+    final androidPlugin = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+
+    await androidPlugin?.createNotificationChannel(channel);
+
+    print('✅ NotificationService initialized');
   }
 
   // ============================================================
@@ -52,6 +68,69 @@ class NotificationService {
         >();
 
     await iosPlugin?.requestPermissions(alert: true, badge: true, sound: true);
+
+    print('✅ Notification permission requested');
+  }
+
+  // ============================================================
+  // SHOW LOCAL NOTIFICATION
+  // ============================================================
+
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    // ----------------------------------------------------------
+    // CHECK LOGIN
+    // ----------------------------------------------------------
+
+    if (!isUserLoggedIn()) {
+      print(
+        '🔕 Instant notification blocked - '
+        'user is logged out',
+      );
+      return;
+    }
+
+    // ----------------------------------------------------------
+    // SHOW NOTIFICATION
+    // ----------------------------------------------------------
+
+    try {
+      print('------------------------------------------');
+      print('🔔 SHOWING LOCAL NOTIFICATION');
+      print('🆔 ID: $id');
+      print('📌 TITLE: $title');
+      print('💬 BODY: $body');
+
+      await _notifications.show(
+        id: id,
+        title: title,
+        body: body,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'crm_channel',
+            'CRM Notifications',
+            channelDescription: 'Notifications from CRM',
+            importance: Importance.max,
+            priority: Priority.high,
+            autoCancel: true,
+            ongoing: false,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+      );
+
+      print('✅ LOCAL NOTIFICATION SHOWN');
+      print('------------------------------------------');
+    } catch (e) {
+      print('❌ Failed to show local notification: $e');
+    }
   }
 
   // ============================================================
@@ -64,46 +143,69 @@ class NotificationService {
     required String body,
     required DateTime scheduledDate,
   }) async {
-    // IMPORTANT:
-    // Don't schedule anything if user is logged out.
     if (!isUserLoggedIn()) {
-      print("🔕 Notification blocked - user is logged out");
+      print(
+        '🔕 Scheduled notification blocked - '
+        'user is logged out',
+      );
       return;
     }
 
+    final localDate = scheduledDate.toLocal();
     final now = DateTime.now();
 
-    print("⏰ NOW: $now");
-    print("📅 SCHEDULED: $scheduledDate");
+    print('------------------------------------------');
+    print('⏰ SCHEDULING NOTIFICATION');
+    print('🆔 ID: $id');
+    print('📌 TITLE: $title');
+    print('💬 BODY: $body');
+    print('🌍 Original: $scheduledDate');
+    print('📱 Local: $localDate');
+    print('⏰ Now: $now');
 
-    if (scheduledDate.isBefore(now)) {
-      print("❌ Skipped: Time already passed");
+    if (localDate.isBefore(now)) {
+      print('⏭️ Scheduled time already passed');
+      print('------------------------------------------');
       return;
     }
 
-    print("✅ User is logged in");
-    print("🔔 Scheduling notification...");
-
-    await _notifications.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'crm_channel',
-          'CRM Notifications',
-          importance: Importance.max,
-          priority: Priority.high,
-          ongoing: true,
-          autoCancel: false,
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    final tz.TZDateTime tzScheduledDate = tz.TZDateTime.from(
+      localDate,
+      tz.local,
     );
 
-    print("🎯 Scheduled SUCCESS");
+    try {
+      await _notifications.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: tzScheduledDate,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'crm_channel',
+            'CRM Notifications',
+            channelDescription: 'Notifications from CRM',
+            importance: Importance.max,
+            priority: Priority.high,
+            autoCancel: true,
+            ongoing: false,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: null,
+      );
+
+      print('🎯 Notification scheduled successfully');
+    } catch (e) {
+      print('❌ Failed to schedule notification: $e');
+    }
+
+    print('------------------------------------------');
   }
 
   // ============================================================
@@ -111,9 +213,17 @@ class NotificationService {
   // ============================================================
 
   static Future<void> cancelNotification(int id) async {
+    print('');
+    print('==========================================');
+    print('🔕 CANCEL NOTIFICATION CALLED');
+    print('🆔 ID: $id');
+    print('📍 CALL STACK:');
+    print(StackTrace.current);
+    print('==========================================');
+
     await _notifications.cancel(id: id);
 
-    print("🔕 Notification $id cancelled");
+    print('✅ Notification $id cancelled');
   }
 
   // ============================================================
@@ -121,42 +231,10 @@ class NotificationService {
   // ============================================================
 
   static Future<void> cancelAllScheduledNotifications() async {
+    print('🔕 Cancelling all notifications...');
+
     await _notifications.cancelAll();
 
-    print("🔕 All scheduled notifications cancelled");
-  }
-
-  // ============================================================
-  // SHOW INSTANT NOTIFICATION
-  // ============================================================
-
-  Future<void> showNotification({
-    required int id,
-    required String title,
-    required String body,
-  }) async {
-    // IMPORTANT:
-    // Prevent instant notifications when logged out.
-    if (!isUserLoggedIn()) {
-      print("🔕 Instant notification blocked - user is logged out");
-      return;
-    }
-
-    await _notifications.show(
-      id: id,
-      title: title,
-      body: body,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'crm_channel',
-          'CRM Notifications',
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
-    );
-
-    print("🔔 Instant notification shown");
+    print('✅ All notifications cancelled');
   }
 }

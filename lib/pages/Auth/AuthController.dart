@@ -1,10 +1,11 @@
 import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/common_widgets/notificationService.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
+import 'package:crm_flutter/notifications/notifications_controller.dart';
 import 'package:crm_flutter/pages/Auth/LoginPage.dart';
 import 'package:crm_flutter/pages/bottom_navigation_bar/BottomNavigationBarPage.dart';
 import 'package:crm_flutter/widgets/poppups/poppups.dart';
-import 'package:crm_flutter/common_widgets/notificationService.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,10 @@ import 'package:get/get.dart';
 class AuthController extends GetxController {
   RxBool isLogin = true.obs;
   RxBool showPass = true.obs;
+
+  // ============================================================
+  // CHECK LOGIN STATUS
+  // ============================================================
 
   Future<bool> isLoggedIn() async {
     final token = LocalStorage.sharedPreferences?.getString('token');
@@ -46,10 +51,14 @@ class AuthController extends GetxController {
   Future login(data, context) async {
     print("🔥 LOGIN BUTTON CALLED");
     print("🔥 LOGIN DATA: $data");
+
     try {
       print("🔥 CALLING LOGIN API...");
+
       final response = await DioApi().login(data);
+
       print("🔥 LOGIN API RESPONSE: $response");
+
       // ========================================================
       // LOGIN SUCCESS
       // ========================================================
@@ -140,29 +149,31 @@ class AuthController extends GetxController {
         );
 
         // ------------------------------------------------------
-        // Give Password Manager time to process autofill
+        // Password Manager
         // ------------------------------------------------------
 
         await Future.delayed(const Duration(milliseconds: 800));
 
-        // ------------------------------------------------------
-        // Finish Autofill Context
-        // This allows Android/iOS password manager to
-        // offer saving the email/password.
-        // ------------------------------------------------------
-
         TextInput.finishAutofillContext();
 
         // ------------------------------------------------------
-        // Re-init follow-up reminders for this (freshly logged-in) user.
-        // FollowUpController may be a permanent/singleton controller, so
-        // onInit() won't fire again on its own after the first app launch.
-        // Calling init() explicitly here ensures it doesn't show stale
-        // data left over from a previous account and starts fresh timers.
+        // Re-init Follow-up Reminders
         // ------------------------------------------------------
 
         if (Get.isRegistered<FollowUpController>()) {
           await Get.find<FollowUpController>().init();
+        }
+
+        // ======================================================
+        // START NOTIFICATION POLLING
+        // ======================================================
+
+        if (Get.isRegistered<NotificationController>()) {
+          print("🔔 Starting notification polling after login...");
+
+          Get.find<NotificationController>().startNotificationPolling();
+        } else {
+          print("❌ NotificationController is not registered");
         }
 
         // ------------------------------------------------------
@@ -221,37 +232,52 @@ class AuthController extends GetxController {
     try {
       print("Starting Logout...");
 
-      // 1. Call backend logout API
+      // ========================================================
+      // BACKEND LOGOUT
+      // ========================================================
+
       try {
         final response = await DioApi().logout();
+
         print("Logout API Response: $response");
       } on DioException catch (e) {
         print("Logout API Error: ${e.response?.data}");
-        // Continue clearing local session even if API fails
+
+        // Continue local logout even if API fails.
       }
 
-      // 2. Cancel scheduled (OS-level) notifications
+      // ========================================================
+      // STOP NOTIFICATION POLLING
+      // ========================================================
+
+      if (Get.isRegistered<NotificationController>()) {
+        print("🛑 Stopping notification polling...");
+
+        Get.find<NotificationController>().stopNotificationPolling();
+
+        Get.find<NotificationController>().clearKnownNotificationIds();
+      }
+
       await NotificationService.cancelAllScheduledNotifications();
 
-      // 2b. Stop in-memory follow-up timers/dialogs so nothing fires
-      // after this point (e.g. the "Follow-ups" popup on the login page)
       if (Get.isRegistered<FollowUpController>()) {
         await Get.find<FollowUpController>().stop();
       }
 
-      // 3. Remove login/session data
       await LocalStorage.sharedPreferences?.remove('token');
+
       await LocalStorage.sharedPreferences?.remove('user_name');
+
       await LocalStorage.sharedPreferences?.remove('user_Id');
+
       await LocalStorage.sharedPreferences?.remove('user_campaign');
+
       await LocalStorage.sharedPreferences?.remove('phone_number');
 
-      // 4. Verify token was removed
       final token = LocalStorage.sharedPreferences?.getString('token');
 
       print("TOKEN AFTER LOGOUT: $token");
 
-      // 5. Go to login
       Get.offAll(() => const LoginPage());
 
       print("Logout completed");
