@@ -1,5 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+
 import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/common_widgets/popup_after_call_ui.dart';
 
 class IncomingCallService {
   static const MethodChannel _channel = MethodChannel(
@@ -22,6 +26,10 @@ class IncomingCallService {
           print("📞 Incoming call received from Android");
           print(data);
 
+          // ============================================
+          // EXISTING SYNC API - DO NOT CHANGE
+          // ============================================
+
           final payload = {
             "calls": [data],
           };
@@ -32,11 +40,194 @@ class IncomingCallService {
           final response = await _dioApi.syncIncomingCall(payload);
 
           print("✅ API RESPONSE: $response");
+
+          // ============================================
+          // GET PHONE NUMBER
+          // ============================================
+
+          final phoneNumber = data['phone_number']?.toString() ?? '';
+
+          if (phoneNumber.isEmpty) {
+            print("❌ Phone number is empty");
+            return;
+          }
+
+          print("📱 Incoming phone number: $phoneNumber");
+
+          // ============================================
+          // GET FLUTTER CONTEXT
+          // ============================================
+
+          final context = Get.context;
+
+          if (context == null) {
+            print("❌ Flutter context is not available");
+            return;
+          }
+
+          // ============================================
+          // NEW SMALL POPUP
+          // ============================================
+
+          final isWorkRelated = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) {
+              return AlertDialog(
+                title: const Text(
+                  "Call Related?",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                content: Text(
+                  "Was this call work related?\n\n$phoneNumber",
+                  style: const TextStyle(
+                    fontSize: 15,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop(false);
+                    },
+                    child: const Text(
+                      "NO",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop(true);
+                    },
+                    child: const Text(
+                      "YES",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+
+          // ============================================
+          // NO → CLOSE
+          // ============================================
+
+          if (isWorkRelated != true) {
+            print("❌ Call marked as NOT work related");
+            return;
+          }
+
+          print("✅ Call marked as WORK RELATED");
+
+          // ============================================
+          // YES → FIND EXISTING LEAD
+          // ============================================
+
+final leadsResponse = await _dioApi.getAllLeads(page: 1);
+          final leads = leadsResponse.data ?? [];
+
+          print("🔎 Leads found: ${leads.length}");
+
+          dynamic matchedLead;
+
+          final incomingPhone = _normalizePhone(phoneNumber);
+
+          for (final lead in leads) {
+            final leadPhone = _normalizePhone(
+              lead.phone?.toString() ?? '',
+            );
+
+            print(
+              "🔍 Comparing incoming: $incomingPhone "
+              "with lead: $leadPhone",
+            );
+
+            if (incomingPhone == leadPhone) {
+              matchedLead = lead;
+              break;
+            }
+          }
+
+          // ============================================
+          // NO LEAD → DON'T OPEN CRM POPUP
+          // ============================================
+
+          if (matchedLead == null) {
+            print(
+              "❌ No lead found for phone number: $phoneNumber",
+            );
+            return;
+          }
+
+          if (matchedLead.sId == null) {
+            print("❌ Matched lead does not have an ID");
+            return;
+          }
+
+          print("✅ Lead matched");
+          print("🆔 Lead ID: ${matchedLead.sId}");
+          print("📌 Stage: ${matchedLead.leadStageId?.name}");
+
+          // ============================================
+          // YES → EXISTING CRM POPUP
+          // ============================================
+
+          final latestContext = Get.context;
+
+          if (latestContext == null) {
+            print("❌ Context unavailable for CRM popup");
+            return;
+          }
+
+          await showDialog(
+            context: latestContext,
+            barrierDismissible: false,
+            builder: (dialogContext) {
+              return PopScope(
+                canPop: false,
+                child: Dialog(
+                  insetPadding: const EdgeInsets.all(20),
+                  child: PopupAfterCallUi(
+                    leadId: matchedLead.sId!,
+                    stageName: matchedLead.leadStageId?.name,
+                  ),
+                ),
+              );
+            },
+          );
+
+          print("✅ Existing PopupAfterCallUi closed");
         } catch (e, stackTrace) {
           print("❌ Incoming call processing failed: $e");
           print(stackTrace);
         }
       }
     });
+  }
+
+  // ============================================
+  // NORMALIZE PHONE NUMBER
+  // ============================================
+
+  static String _normalizePhone(String phone) {
+    String normalized = phone.replaceAll(
+      RegExp(r'\D'),
+      '',
+    );
+
+    if (normalized.length > 10) {
+      normalized = normalized.substring(
+        normalized.length - 10,
+      );
+    }
+
+    return normalized;
   }
 }
