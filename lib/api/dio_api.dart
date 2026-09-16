@@ -688,36 +688,36 @@ class DioApi {
   //   }
   // }
 
-  Future<dynamic> syncIncomingCall(Map<String, dynamic> data) async {
-    print("🔥 syncIncomingCall() CALLED");
-    print("🔥 API DATA: $data");
-    try {
-      final response = await DioUtil.dio.post(
-        "$link/call/sync-incoming",
-        data: data,
-        options: Options(headers: {'Content-Type': 'application/json'}),
-      );
+  // Future<dynamic> syncIncomingCall(Map<String, dynamic> data) async {
+  //   print("🔥 syncIncomingCall() CALLED");
+  //   print("🔥 API DATA: $data");
+  //   try {
+  //     final response = await DioUtil.dio.post(
+  //       "$link/call/sync-incoming",
+  //       data: data,
+  //       options: Options(headers: {'Content-Type': 'application/json'}),
+  //     );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        print("Incoming call synced successfully: ${response.data}");
-        return response.data;
-      }
+  //     if (response.statusCode == 200 || response.statusCode == 201) {
+  //       print("Incoming call synced successfully: ${response.data}");
+  //       return response.data;
+  //     }
 
-      throw Exception('Failed to sync incoming call: ${response.statusCode}');
-    } on DioException catch (e) {
-      print(
-        "Incoming call sync failed: "
-        "${e.response?.statusCode} - ${e.response?.data}",
-      );
+  //     throw Exception('Failed to sync incoming call: ${response.statusCode}');
+  //   } on DioException catch (e) {
+  //     print(
+  //       "Incoming call sync failed: "
+  //       "${e.response?.statusCode} - ${e.response?.data}",
+  //     );
 
-      throw Exception(
-        'Incoming call sync failed: ${e.response?.data ?? e.message}',
-      );
-    } catch (e) {
-      print("Incoming call sync error: $e");
-      throw Exception('An error occurred while syncing incoming call: $e');
-    }
-  }
+  //     throw Exception(
+  //       'Incoming call sync failed: ${e.response?.data ?? e.message}',
+  //     );
+  //   } catch (e) {
+  //     print("Incoming call sync error: $e");
+  //     throw Exception('An error occurred while syncing incoming call: $e');
+  //   }
+  // }
 
   Future createQuote(data) async {
     try {
@@ -1090,6 +1090,58 @@ class DioApi {
     }
   }
 
+  // POST INCOMING CALL
+ // POST INCOMING CALL
+// POST INCOMING CALL
+Future postIncomingCall(Map<String, dynamic> data) async {
+  print("🔥 postIncomingCall() CALLED");
+  print("🔥 API DATA: $data");
+
+  final incomingCallUrl =
+  "$link/call/incoming";
+  print("🌐 Incoming Call URL: $incomingCallUrl");
+
+  try {
+    final response = await DioUtil.dio.post(
+      incomingCallUrl,
+      data: data,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
+
+    print("📥 Incoming call response status: ${response.statusCode}");
+    print("📥 Incoming call response data: ${response.data}");
+
+    if (response.statusCode == 200 ||
+        response.statusCode == 201) {
+      print(
+        "✅ Incoming call posted successfully: ${response.data}",
+      );
+      return response.data;
+    }
+
+    throw Exception(
+      'Failed to post incoming call: ${response.statusCode}',
+    );
+  } on DioException catch (e) {
+    print("❌ Incoming call Dio error");
+    print("❌ URL: $incomingCallUrl");
+    print("❌ Status: ${e.response?.statusCode}");
+    print("❌ Response: ${e.response?.data}");
+    print("❌ Message: ${e.message}");
+
+    throw Exception(
+      'Incoming call post failed: '
+      '${e.response?.data ?? e.message}',
+    );
+  } catch (e) {
+    print("❌ Incoming call post error: $e");
+    rethrow;
+  }
+}
   // POST PHONE CALL
   Future postPhoneCall(data) async {
     try {

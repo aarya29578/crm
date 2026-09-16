@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/common_widgets/call_storage.dart';
 import 'package:crm_flutter/common_widgets/popup_after_call_ui.dart';
 
 class IncomingCallService {
@@ -37,9 +38,9 @@ class IncomingCallService {
           print("🚀 ABOUT TO HIT API");
           print("🚀 Payload: $payload");
 
-          final response = await _dioApi.syncIncomingCall(payload);
+         // final response = await _dioApi.syncIncomingCall(payload);
 
-          print("✅ API RESPONSE: $response");
+          //print("✅ API RESPONSE: $response");
 
           // ============================================
           // GET PHONE NUMBER
@@ -66,7 +67,7 @@ class IncomingCallService {
           }
 
           // ============================================
-          // NEW SMALL POPUP
+          // FIRST POPUP
           // ============================================
 
           final isWorkRelated = await showDialog<bool>(
@@ -130,34 +131,73 @@ class IncomingCallService {
           // YES → FIND EXISTING LEAD
           // ============================================
 
-final leadsResponse = await _dioApi.getAllLeads(page: 1);
-          final leads = leadsResponse.data ?? [];
-
-          print("🔎 Leads found: ${leads.length}");
+          print("🟡 YES pressed - starting lead search");
+          print("📱 Searching lead for: $phoneNumber");
 
           dynamic matchedLead;
 
           final incomingPhone = _normalizePhone(phoneNumber);
 
-          for (final lead in leads) {
-            final leadPhone = _normalizePhone(
-              lead.phone?.toString() ?? '',
+          print("📱 Normalized incoming phone: $incomingPhone");
+
+          // ============================================
+          // GET ALL LEADS PAGE BY PAGE
+          // ============================================
+
+          int page = 1;
+          int totalPages = 1;
+
+          while (page <= totalPages && matchedLead == null) {
+            print("📄 Fetching leads page: $page");
+
+            final leadsResponse = await _dioApi.getAllLeads(
+              page: page,
             );
+
+            final leads = leadsResponse.data ?? [];
 
             print(
-              "🔍 Comparing incoming: $incomingPhone "
-              "with lead: $leadPhone",
+              "🔎 Leads found on page $page: ${leads.length}",
             );
 
-            if (incomingPhone == leadPhone) {
-              matchedLead = lead;
-              break;
+            // Get total pages from API response
+            totalPages = leadsResponse.totalPages ?? 1;
+
+            print("📚 Total pages: $totalPages");
+
+            // ============================================
+            // COMPARE PHONE NUMBERS
+            // ============================================
+
+            for (final lead in leads) {
+              final leadPhone = _normalizePhone(
+                lead.phone?.toString() ?? '',
+              );
+
+              print(
+                "🔍 Comparing incoming: $incomingPhone "
+                "with lead: $leadPhone",
+              );
+
+              if (incomingPhone == leadPhone) {
+                matchedLead = lead;
+
+                print(
+                  "✅ MATCH FOUND: ${lead.sId}",
+                );
+
+                break;
+              }
             }
+
+            page++;
           }
 
           // ============================================
-          // NO LEAD → DON'T OPEN CRM POPUP
+          // CHECK MATCHED LEAD
           // ============================================
+
+          print("🟣 Matched lead: $matchedLead");
 
           if (matchedLead == null) {
             print(
@@ -173,7 +213,22 @@ final leadsResponse = await _dioApi.getAllLeads(page: 1);
 
           print("✅ Lead matched");
           print("🆔 Lead ID: ${matchedLead.sId}");
-          print("📌 Stage: ${matchedLead.leadStageId?.name}");
+          print(
+            "📌 Stage: ${matchedLead.leadStageId?.name}",
+          );
+
+          // ============================================
+          // PENDING CALL DATA
+          // ============================================
+
+          PendingCallData.data = {
+            ...data,
+            "lead_id": matchedLead.sId,
+          };
+
+          print(
+            "💾 PendingCallData saved: ${PendingCallData.data}",
+          );
 
           // ============================================
           // YES → EXISTING CRM POPUP
@@ -182,9 +237,13 @@ final leadsResponse = await _dioApi.getAllLeads(page: 1);
           final latestContext = Get.context;
 
           if (latestContext == null) {
-            print("❌ Context unavailable for CRM popup");
+            print(
+              "❌ Context unavailable for CRM popup",
+            );
             return;
           }
+
+          print("🚀 Opening existing CRM popup");
 
           await showDialog(
             context: latestContext,
@@ -197,15 +256,20 @@ final leadsResponse = await _dioApi.getAllLeads(page: 1);
                   child: PopupAfterCallUi(
                     leadId: matchedLead.sId!,
                     stageName: matchedLead.leadStageId?.name,
+                    isIncoming: true,
                   ),
                 ),
               );
             },
           );
 
-          print("✅ Existing PopupAfterCallUi closed");
+          print(
+            "✅ Existing PopupAfterCallUi closed",
+          );
         } catch (e, stackTrace) {
-          print("❌ Incoming call processing failed: $e");
+          print(
+            "❌ Incoming call processing failed: $e",
+          );
           print(stackTrace);
         }
       }

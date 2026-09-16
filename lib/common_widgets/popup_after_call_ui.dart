@@ -15,7 +15,13 @@ import 'package:velocity_x/velocity_x.dart';
 class PopupAfterCallUi extends StatefulWidget {
   final String leadId;
   final String? stageName;
-  const PopupAfterCallUi({super.key, required this.leadId, this.stageName});
+  final bool isIncoming;
+  const PopupAfterCallUi({
+    super.key,
+    required this.leadId,
+    this.stageName,
+    this.isIncoming = false,
+  });
 
   @override
   State<PopupAfterCallUi> createState() => _PopupAfterCallUiState();
@@ -908,7 +914,12 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
                             print("Hitting API...");
 
                             try {
-                              await DioApi().postPhoneCall(callData);
+                              if (widget.isIncoming ||
+                                  callData["device_call_id"] != null) {
+                                await DioApi().postIncomingCall(callData);
+                              } else {
+                                await DioApi().postPhoneCall(callData);
+                              }
                               print("API SUCCESS");
 
                               PendingCallData.data = null;
