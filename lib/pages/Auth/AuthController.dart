@@ -6,7 +6,7 @@ import 'package:crm_flutter/notifications/notifications_controller.dart';
 import 'package:crm_flutter/pages/Auth/LoginPage.dart';
 import 'package:crm_flutter/pages/bottom_navigation_bar/BottomNavigationBarPage.dart';
 import 'package:crm_flutter/widgets/poppups/poppups.dart';
-
+import 'package:permission_handler/permission_handler.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +15,7 @@ import 'package:get/get.dart';
 class AuthController extends GetxController {
   RxBool isLogin = true.obs;
   RxBool showPass = true.obs;
+
 
   // ============================================================
   // CHECK LOGIN STATUS
@@ -26,6 +27,23 @@ class AuthController extends GetxController {
     return token != null && token.isNotEmpty;
   }
 
+  // ============================================================
+  // REQUEST REQUIRED PERMISSIONS AFTER LOGIN
+  // ============================================================
+
+  Future<void> requestRequiredPermissions() async {
+    print("🔐 Requesting required permissions...");
+
+    final statuses = await [
+      Permission.phone,
+      Permission.contacts,
+    ].request();
+
+    print("📱 Phone permission: ${statuses[Permission.phone]}");
+    print("👤 Contacts permission: ${statuses[Permission.contacts]}");
+
+    print("✅ Permission request completed");
+  }
   // ============================================================
   // REGISTER
   // ============================================================
@@ -175,6 +193,13 @@ class AuthController extends GetxController {
         } else {
           print("❌ NOTIFICATION CONTROLLER NOT REGISTERED.");
         }
+
+        // ------------------------------------------------------
+              // ------------------------------------------------------
+        // REQUEST REQUIRED PERMISSIONS
+        // ------------------------------------------------------
+
+        await requestRequiredPermissions();
 
         // ------------------------------------------------------
         // Navigate to Main App
