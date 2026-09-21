@@ -199,12 +199,21 @@ class IncomingCallService {
 
           print("🟣 Matched lead: $matchedLead");
 
-          if (matchedLead == null) {
-            print(
-              "❌ No lead found for phone number: $phoneNumber",
-            );
-            return;
-          }
+         if (matchedLead == null) {
+  print("❌ No lead found for phone number: $phoneNumber");
+
+  if (context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("This number is not in the leads."),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  return;
+}
 
           if (matchedLead.sId == null) {
             print("❌ Matched lead does not have an ID");
