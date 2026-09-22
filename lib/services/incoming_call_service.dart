@@ -121,6 +121,7 @@ class IncomingCallService {
           // ============================================
 
           if (isWorkRelated != true) {
+
             print("❌ Call marked as NOT work related");
             return;
           }
@@ -148,6 +149,7 @@ class IncomingCallService {
           int totalPages = 1;
 
           while (page <= totalPages && matchedLead == null) {
+            print("fetching");
             print("📄 Fetching leads page: $page");
 
             final leadsResponse = await _dioApi.getAllLeads(
