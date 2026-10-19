@@ -17,6 +17,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:velocity_x/velocity_x.dart';
 
+
 class CallLogCard extends StatelessWidget {
   final context;
   final bool? isMissedFUps;
@@ -193,9 +194,11 @@ class CallLogCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final String isoTime = time;
-    final dateTime = DateTime.parse(isoTime).toLocal();
-    final formattedTime = DateFormat('hh:mm a, dd MMM').format(dateTime);
+    final DateTime? parsedTime = DateTime.tryParse(time);
+
+final String formattedTime = parsedTime != null
+    ? DateFormat('hh:mm a, dd MMM').format(parsedTime.toLocal())
+    : '';
 
     showModalBottomSheet(
       context: context,

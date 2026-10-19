@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:crm_flutter/pages/Call/call_controller.dart';
 import 'package:intl/intl.dart';
+import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
+import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
+
 
 class CallLogs extends StatefulWidget {
   final DateTime? startDate;
@@ -244,7 +247,47 @@ final isMissed = callType == 'Missed';
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _showCallDetails(callGroup, context),
+
+        
+ 
+onTap: () {
+  final lead = callGroup.lead;
+
+  if (lead == null || lead.sId == null) {
+    Get.snackbar('Error', 'Lead details are unavailable');
+    return;
+  }
+
+  // Find the lead and its timeline from Allocation data.
+  final AllocationController? allocationController =
+      Get.isRegistered<AllocationController>()
+          ? Get.find<AllocationController>()
+          : null;
+
+  final allocationLead =
+      allocationController?.leads.firstWhereOrNull(
+        (item) => item.sId == lead.sId,
+      ) ??
+      allocationController?.searchResults.firstWhereOrNull(
+        (item) => item.sId == lead.sId,
+      );
+
+  final detailsCard = CallLogCard(
+    name: leadName,
+    leadId: lead.sId,
+    tag: lead.leadStage?.name ?? '',
+    timelineData: allocationLead?.timeline,
+  );
+
+  detailsCard.openBottomSheet(
+    context,
+    allocationLead?.timeline,
+    lead.sId,
+  );
+},
+        
+
+
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

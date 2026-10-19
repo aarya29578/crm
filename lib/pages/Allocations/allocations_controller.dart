@@ -162,6 +162,13 @@ class AllocationController extends GetxController {
           isMoreDataAvailable.value = false;
         } else {
           leads.addAll(responseData);
+          for (final lead in responseData) {
+  debugPrint(
+    'ALLOCATION TIMELINE CHECK: '
+    'leadId=${lead.sId}, '
+    'timelineCount=${lead.timeline?.length ?? 0}',
+  );
+}
           currentPage++;
         }
       }
