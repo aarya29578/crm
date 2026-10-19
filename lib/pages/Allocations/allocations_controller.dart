@@ -91,6 +91,58 @@ class AllocationController extends GetxController {
     }
   }
 
+  Future<Data?> getLeadWithTimeline(String leadId) async {
+    for (final lead in [...leads, ...searchResults]) {
+      if (lead.sId == leadId && (lead.timeline?.isNotEmpty ?? false)) {
+        debugPrint(
+          'CALL LOG TIMELINE: leadId=$leadId '
+          'timelineCount=${lead.timeline!.length} source=allocation-cache',
+        );
+        return lead;
+      }
+    }
+
+    final firstPage = await DioApi().getAllLeads(page: 1);
+    if (firstPage.success != true) {
+      throw Exception(
+        'Failed to load leads while resolving timeline for $leadId',
+      );
+    }
+
+    final totalPages = firstPage.totalPages;
+    for (var page = 1;
+        totalPages == null || page <= totalPages;
+        page++) {
+      final response = page == 1
+          ? firstPage
+          : await DioApi().getAllLeads(page: page);
+      if (response.success != true) {
+        throw Exception(
+          'Failed to load lead page $page while resolving timeline for $leadId',
+        );
+      }
+
+      for (final lead in response.data ?? <Data>[]) {
+        if (lead.sId == leadId) {
+          debugPrint(
+            'CALL LOG TIMELINE: leadId=$leadId '
+            'timelineCount=${lead.timeline?.length ?? 0} source=lead/all',
+          );
+          return lead;
+        }
+      }
+
+      if (response.data == null || response.data!.isEmpty) {
+        break;
+      }
+    }
+
+    debugPrint(
+      'CALL LOG TIMELINE: leadId=$leadId timelineCount=0 source=not-found',
+    );
+    return null;
+  }
+
   void clearSearch() {
     _debounce?.cancel();
 

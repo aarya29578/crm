@@ -1,4 +1,5 @@
 import 'package:crm_flutter/api/response/all_calls_history_response.dart';
+import 'package:crm_flutter/api/response/all_leads_response.dart' as leads;
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
@@ -247,47 +248,45 @@ final isMissed = callType == 'Missed';
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          final lead = callGroup.lead;
 
-        
- 
-onTap: () {
-  final lead = callGroup.lead;
+          if (lead == null || lead.sId == null) {
+            Get.snackbar('Error', 'Lead details are unavailable');
+            return;
+          }
 
-  if (lead == null || lead.sId == null) {
-    Get.snackbar('Error', 'Lead details are unavailable');
-    return;
-  }
+          List<leads.Timeline>? timeline;
+          try {
+            final allocationLead = await Get.find<AllocationController>()
+                .getLeadWithTimeline(lead.sId!);
+            timeline = allocationLead?.timeline;
+          } catch (error) {
+            debugPrint(
+              'CALL LOG TIMELINE ERROR: leadId=${lead.sId} error=$error',
+            );
+            Get.snackbar(
+              'Timeline unavailable',
+              'Could not load timeline details for this lead.',
+            );
+          }
 
-  // Find the lead and its timeline from Allocation data.
-  final AllocationController? allocationController =
-      Get.isRegistered<AllocationController>()
-          ? Get.find<AllocationController>()
-          : null;
+          debugPrint(
+            'CALL LOG TIMELINE: leadId=${lead.sId} '
+            'timelineCount=${timeline?.length ?? 0} source=bottom-sheet',
+          );
 
-  final allocationLead =
-      allocationController?.leads.firstWhereOrNull(
-        (item) => item.sId == lead.sId,
-      ) ??
-      allocationController?.searchResults.firstWhereOrNull(
-        (item) => item.sId == lead.sId,
-      );
+          if (!context.mounted) return;
 
-  final detailsCard = CallLogCard(
-    name: leadName,
-    leadId: lead.sId,
-    tag: lead.leadStage?.name ?? '',
-    timelineData: allocationLead?.timeline,
-  );
+          final detailsCard = CallLogCard(
+            name: leadName,
+            leadId: lead.sId,
+            tag: lead.leadStage?.name ?? '',
+            timelineData: timeline,
+          );
 
-  detailsCard.openBottomSheet(
-    context,
-    allocationLead?.timeline,
-    lead.sId,
-  );
-},
-        
-
-
+          detailsCard.openBottomSheet(context, timeline, lead.sId);
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
