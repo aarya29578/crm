@@ -1,3 +1,5 @@
+import 'all_leads_response.dart' as all_leads;
+
 // class AllLeadDetailResponse {
 //   bool? success;
 //   Data? data;
@@ -232,6 +234,7 @@ class Data {
   String? followUpDate;
   List<dynamic>? stageFieldValues;
   LeadSubStatusId? subStatusId;
+  List<all_leads.Timeline>? timeline;
 
   Data();
 
@@ -323,6 +326,17 @@ class Data {
     if (json['stageFieldValues'] is List) {
       stageFieldValues = json['stageFieldValues'];
     }
+    if (json['timeline'] is List) {
+      timeline = (json['timeline'] as List)
+          .map(
+            (item) => all_leads.Timeline.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList();
+    } else {
+      timeline = [];
+    }
     final subStatusJson = json['sub_status_id'] ?? json['subStatusId'];
     if (subStatusJson is Map<String, dynamic>) {
       subStatusId = LeadSubStatusId.fromJson(subStatusJson);
@@ -364,6 +378,7 @@ class Data {
       'followUpDate': followUpDate,
       'stageFieldValues': stageFieldValues,
       'sub_status_id': subStatusId?.toJson(),
+      'timeline': timeline?.map((item) => item.toJson()).toList(),
     };
   }
 }
@@ -542,4 +557,3 @@ class LeadSubStatusId {
     return data;
   }
 }
-  

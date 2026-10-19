@@ -17,7 +17,6 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:velocity_x/velocity_x.dart';
 
-
 class CallLogCard extends StatelessWidget {
   final context;
   final bool? isMissedFUps;
@@ -96,6 +95,14 @@ class CallLogCard extends StatelessWidget {
     await leadDetailsController.getAllLeadDetails(context, leadID);
 
     final leadData = leadDetailsController.allLeadDetailRes.value.data;
+    if (data == null || data.isEmpty) {
+      updatedTimeline.assignAll(leadData?.timeline ?? []);
+    }
+    final remarksController = TextEditingController(
+      text: leadData?.remarks ?? '',
+    );
+    final RxBool isSavingRemarks = false.obs;
+    final String? remarksLeadId = leadID?.toString();
     final currentStageId = leadData?.leadStageId?.sId;
     final stages = homeController.allLeadStageRes.value.data ?? [];
     final selectedStageObj =
@@ -112,6 +119,9 @@ class CallLogCard extends StatelessWidget {
     final RxMap<String, DateTime> dynamicDates = <String, DateTime>{}.obs;
     final RxMap<String, TextEditingController> textControllers =
         <String, TextEditingController>{}.obs;
+    var isBottomSheetOpen = true;
+    BuildContext? bottomSheetContext;
+    ModalRoute<dynamic>? bottomSheetRoute;
 
     Future<void> fetchStageFields(String stageId) async {
       isLoadingFields.value = true;
@@ -119,7 +129,9 @@ class CallLogCard extends StatelessWidget {
 
       try {
         final res = await DioApi().getLeadStageById(stageId);
-        if (res['success'] == true) {
+        if (isBottomSheetOpen &&
+            (bottomSheetContext?.mounted ?? true) &&
+            res['success'] == true) {
           final List<dynamic> fields = res['data']['fields'] ?? [];
           stageFields.assignAll(fields);
 
@@ -146,13 +158,12 @@ class CallLogCard extends StatelessWidget {
                   (f) => f['fieldId'] == fieldId,
                   orElse: () => null,
                 );
-                if (savedValue != null) {
-                  textControllers[fieldId] = TextEditingController(
-                    text: savedValue['value']?.toString() ?? '',
-                  );
-                } else {
-                  textControllers[fieldId] = TextEditingController();
-                }
+                textControllers.putIfAbsent(
+                  fieldId,
+                  () => TextEditingController(
+                    text: savedValue?['value']?.toString() ?? '',
+                  ),
+                );
               }
             }
           }
@@ -194,18 +205,113 @@ class CallLogCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    Future<void> saveRemarks() async {
+      if (isSavingRemarks.value) return;
+      if (remarksLeadId == null || remarksLeadId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Unable to save remarks: lead ID is missing"),
+          ),
+        );
+        return;
+      }
+
+      final sheetContext = bottomSheetContext;
+      if (sheetContext == null || !sheetContext.mounted) return;
+
+      final remarks = remarksController.text.trim();
+      isSavingRemarks.value = true;
+      try {
+        await DioApi().patchLead(remarksLeadId, {"remarks": remarks});
+        if (!sheetContext.mounted) return;
+        await leadDetailsController.getAllLeadDetails(
+          sheetContext,
+          remarksLeadId,
+        );
+        if (!sheetContext.mounted) return;
+        remarksController.text =
+            leadDetailsController.allLeadDetailRes.value.data?.remarks ??
+            remarks;
+        ScaffoldMessenger.of(sheetContext).showSnackBar(
+          const SnackBar(content: Text("Remarks & Notes saved successfully")),
+        );
+      } catch (e) {
+        if (sheetContext.mounted) {
+          ScaffoldMessenger.of(sheetContext).showSnackBar(
+            SnackBar(content: Text("Failed to save Remarks & Notes: $e")),
+          );
+        }
+      } finally {
+        isSavingRemarks.value = false;
+      }
+    }
+
+    Widget buildRemarksField() => Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Obx(
+        () => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: remarksController,
+                enabled: !isSavingRemarks.value,
+                minLines: 3,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  labelText: "Remarks & Notes",
+                  alignLabelWithHint: true,
+                  prefixIcon: const Icon(
+                    Icons.edit_note_rounded,
+                    color: Colors.blue,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.blue, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: isDark ? Colors.grey[900] : Colors.grey.shade50,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: "Save remarks",
+              onPressed: isSavingRemarks.value ? null : saveRemarks,
+              icon: isSavingRemarks.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_rounded, color: Colors.blue),
+            ),
+          ],
+        ),
+      ),
+    );
+
     final DateTime? parsedTime = DateTime.tryParse(time);
 
-final String formattedTime = parsedTime != null
-    ? DateFormat('hh:mm a, dd MMM').format(parsedTime.toLocal())
-    : '';
+    final String formattedTime = parsedTime != null
+        ? DateFormat('hh:mm a, dd MMM').format(parsedTime.toLocal())
+        : '';
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
+        bottomSheetContext = context;
+        bottomSheetRoute = ModalRoute.of(context);
         return DraggableScrollableSheet(
           initialChildSize: 1.0,
           minChildSize: 0.7,
@@ -217,6 +323,19 @@ final String formattedTime = parsedTime != null
               onRefresh: () async {
                 await Future.delayed(Duration(seconds: 1));
                 await leadDetailsController.getAllLeadDetails(context, leadID);
+                if (!context.mounted) return;
+                final refreshedTimeline =
+                    leadDetailsController.allLeadDetailRes.value.data?.timeline;
+                if (refreshedTimeline?.isNotEmpty == true) {
+                  updatedTimeline.assignAll(refreshedTimeline!);
+                }
+                remarksController.text =
+                    leadDetailsController
+                        .allLeadDetailRes
+                        .value
+                        .data
+                        ?.remarks ??
+                    '';
 
                 // documents.assignAll(
                 //   leadDetailsController
@@ -420,6 +539,12 @@ final String formattedTime = parsedTime != null
                                 : null;
                             final hasSubStatus =
                                 selectedStageObj?.hasSubStatus == true;
+                            final firstDateTimeField = stageFields.firstWhere(
+                              (field) => field['fieldType'] == 'datetime',
+                              orElse: () => null,
+                            );
+                            final firstDateTimeFieldId =
+                                firstDateTimeField?['_id'];
 
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -482,6 +607,10 @@ final String formattedTime = parsedTime != null
                                           "lead_stage_id": value,
                                           "sub_status_id": null,
                                         });
+                                        if (!context.mounted ||
+                                            !isBottomSheetOpen) {
+                                          return;
+                                        }
 
                                         if (newHasSubStatus) {
                                           await homeController
@@ -489,9 +618,17 @@ final String formattedTime = parsedTime != null
                                                 selectedStageId: value,
                                               );
                                         }
+                                        if (!context.mounted ||
+                                            !isBottomSheetOpen) {
+                                          return;
+                                        }
 
                                         // Fetch new stage fields
                                         await fetchStageFields(value);
+                                        if (!context.mounted ||
+                                            !isBottomSheetOpen) {
+                                          return;
+                                        }
 
                                         // Refresh details
                                         await leadDetailsController
@@ -672,7 +809,7 @@ final String formattedTime = parsedTime != null
 
                                     if (fieldType == 'datetime') {
                                       final dateValue = dynamicDates[fieldId];
-                                      return Padding(
+                                      final dateTimeWidget = Padding(
                                         padding: const EdgeInsets.only(top: 20),
                                         child: Column(
                                           crossAxisAlignment:
@@ -837,6 +974,14 @@ final String formattedTime = parsedTime != null
                                           ],
                                         ),
                                       );
+                                      return fieldId == firstDateTimeFieldId
+                                          ? Column(
+                                              children: [
+                                                dateTimeWidget,
+                                                buildRemarksField(),
+                                              ],
+                                            )
+                                          : dateTimeWidget;
                                     } else if (fieldType == 'text') {
                                       if (!textControllers.containsKey(
                                         fieldId,
@@ -1029,6 +1174,19 @@ final String formattedTime = parsedTime != null
                             );
                           }),
                         ),
+
+                        Obx(() {
+                          if (isLoadingFields.value ||
+                              stageFields.any(
+                                (field) => field['fieldType'] == 'datetime',
+                              )) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: buildRemarksField(),
+                          );
+                        }),
 
                         const SizedBox(height: 20),
 
@@ -1728,7 +1886,15 @@ final String formattedTime = parsedTime != null
           },
         );
       },
-    );
+    ).whenComplete(() async {
+      await bottomSheetRoute?.completed;
+      isBottomSheetOpen = false;
+      for (final controller in textControllers.values) {
+        controller.dispose();
+      }
+      textControllers.clear();
+      remarksController.dispose();
+    });
   }
 
   Future<void> uploadFile(BuildContext context) async {
