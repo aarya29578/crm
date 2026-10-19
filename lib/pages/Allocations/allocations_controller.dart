@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:crm_flutter/local_storage/local_storage.dart';
+
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/all_lead_stage_response.dart' as stage;
 import 'package:crm_flutter/api/response/all_leads_response.dart';
@@ -52,29 +52,7 @@ class AllocationController extends GetxController {
   RxBool isSearchLoading = false.obs;
   RxBool isSearchMode = false.obs;
 
-
-Timer? _debounce;
-
-// ADD THIS FUNCTION HERE
-List<Data> _filterLeadsForCurrentUser(List<Data> allLeads) {
-  final currentUserId =
-      LocalStorage.sharedPreferences?.getString('user_Id');
-
-  if (currentUserId == null || currentUserId.isEmpty) {
-    debugPrint(
-      'Cannot filter leads: logged-in user ID is missing.',
-    );
-    return [];
-  }
-
-  return allLeads.where((lead) {
-    final assignedUserId = lead.assignedTo?.sId;
-    return assignedUserId == currentUserId;
-  }).toList();
-}
-
-// EXISTING FUNCTION BELOW
-
+  Timer? _debounce;
 
   Future<void> onSearchChanged(String query) async {
     _debounce?.cancel();
@@ -104,8 +82,7 @@ List<Data> _filterLeadsForCurrentUser(List<Data> allLeads) {
       final response = await DioApi().searchLeads(query);
 
       if (response.success == true) {
-        final responseData = response.data ?? [];
-searchResults.assignAll(_filterLeadsForCurrentUser(responseData));
+        searchResults.assignAll(response.data ?? []);
       }
     } catch (e) {
       print("Search error: $e");
@@ -184,7 +161,7 @@ searchResults.assignAll(_filterLeadsForCurrentUser(responseData));
         if (responseData == null || responseData.isEmpty) {
           isMoreDataAvailable.value = false;
         } else {
-          leads.addAll(_filterLeadsForCurrentUser(responseData));
+          leads.addAll(responseData);
           currentPage++;
         }
       }
