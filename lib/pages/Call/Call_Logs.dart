@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:crm_flutter/pages/Call/call_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
+import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
 
 class CallLogs extends StatefulWidget {
   final DateTime? startDate;
@@ -388,7 +389,13 @@ class _CallLogsState extends State<CallLogs> {
                         'Call $leadName',
                         'Are you sure want to call to $phone number?',
                         () async {
-                          await CallHelper.callAndTrack(phone, lead?.sId, '');
+                          await CallHelper.callAndTrack(
+                            phone,
+                            lead?.sId,
+                            '',
+                            leadName: leadName,
+                            leadNumber: phone,
+                          );
                         },
                         Colors.blue,
                       );

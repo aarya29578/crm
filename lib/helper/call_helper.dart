@@ -36,8 +36,10 @@ class CallHelper {
   static Future<void> callAndTrack(
     String number,
     String? leadId,
-    String? stageName,
-  ) async {
+    String? stageName, {
+    String? leadName = 'Unavailable',
+    String? leadNumber = 'Unavailable',
+  }) async {
     _isCallInProgress = false;
     _startApiSent = false;
 
@@ -292,6 +294,8 @@ class CallHelper {
                         child: PopupAfterCallUi(
                           leadId: leadId!,
                           stageName: stageName,
+                          leadName:leadName,
+                          leadNumber:leadNumber,
                         ),
                       ),
                     );

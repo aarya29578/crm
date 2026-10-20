@@ -38,7 +38,7 @@ class IncomingCallService {
           print("🚀 ABOUT TO HIT API");
           print("🚀 Payload: $payload");
 
-         // final response = await _dioApi.syncIncomingCall(payload);
+          // final response = await _dioApi.syncIncomingCall(payload);
 
           //print("✅ API RESPONSE: $response");
 
@@ -122,11 +122,11 @@ class IncomingCallService {
 
           //if (isWorkRelated != true) {
 
-            //print("❌ Call marked as NOT work related");
-            //return;
-         // }
+          //print("❌ Call marked as NOT work related");
+          //return;
+          // }
 
-         // print("✅ Call marked as WORK RELATED");
+          // print("✅ Call marked as WORK RELATED");
 
           // ============================================
           // YES → FIND EXISTING LEAD
@@ -152,15 +152,11 @@ class IncomingCallService {
             print("fetching");
             print("📄 Fetching leads page: $page");
 
-            final leadsResponse = await _dioApi.getAllLeads(
-              page: page,
-            );
+            final leadsResponse = await _dioApi.getAllLeads(page: page);
 
             final leads = leadsResponse.data ?? [];
 
-            print(
-              "🔎 Leads found on page $page: ${leads.length}",
-            );
+            print("🔎 Leads found on page $page: ${leads.length}");
 
             // Get total pages from API response
             totalPages = leadsResponse.totalPages ?? 1;
@@ -172,9 +168,7 @@ class IncomingCallService {
             // ============================================
 
             for (final lead in leads) {
-              final leadPhone = _normalizePhone(
-                lead.phone?.toString() ?? '',
-              );
+              final leadPhone = _normalizePhone(lead.phone?.toString() ?? '');
 
               print(
                 "🔍 Comparing incoming: $incomingPhone "
@@ -184,9 +178,7 @@ class IncomingCallService {
               if (incomingPhone == leadPhone) {
                 matchedLead = lead;
 
-                print(
-                  "✅ MATCH FOUND: ${lead.sId}",
-                );
+                print("✅ MATCH FOUND: ${lead.sId}");
 
                 break;
               }
@@ -201,45 +193,48 @@ class IncomingCallService {
 
           print("🟣 Matched lead: $matchedLead");
 
-         if (matchedLead == null) {
-  print("❌ No lead found for phone number: $phoneNumber");
+          if (matchedLead == null) {
+            print("❌ No lead found for phone number: $phoneNumber");
 
-  if (context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("This number is not in the leads."),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("This number is not in the leads."),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
 
-  return;
-}
+            return;
+          }
 
           if (matchedLead.sId == null) {
             print("❌ Matched lead does not have an ID");
             return;
           }
 
+          final leadName =
+              (matchedLead.name?.first != null ||
+                  matchedLead.name?.last != null)
+              ? '${matchedLead.name?.first ?? ''} '
+                        '${matchedLead.name?.last ?? ''}'
+                    .trim()
+              : 'Unnamed Lead';
+
+          final leadNumber = matchedLead.phone?.toString() ?? phoneNumber;
+
           print("✅ Lead matched");
           print("🆔 Lead ID: ${matchedLead.sId}");
-          print(
-            "📌 Stage: ${matchedLead.leadStageId?.name}",
-          );
+          print("📌 Stage: ${matchedLead.leadStageId?.name}");
 
           // ============================================
           // PENDING CALL DATA
           // ============================================
 
-          PendingCallData.data = {
-            ...data,
-            "lead_id": matchedLead.sId,
-          };
+          PendingCallData.data = {...data, "lead_id": matchedLead.sId};
 
-          print(
-            "💾 PendingCallData saved: ${PendingCallData.data}",
-          );
+          print("💾 PendingCallData saved: ${PendingCallData.data}");
 
           // ============================================
           // YES → EXISTING CRM POPUP
@@ -248,9 +243,7 @@ class IncomingCallService {
           final latestContext = Get.context;
 
           if (latestContext == null) {
-            print(
-              "❌ Context unavailable for CRM popup",
-            );
+            print("❌ Context unavailable for CRM popup");
             return;
           }
 
@@ -268,19 +261,17 @@ class IncomingCallService {
                     leadId: matchedLead.sId!,
                     stageName: matchedLead.leadStageId?.name,
                     isIncoming: true,
+                    leadName: leadName,
+                    leadNumber: leadNumber,
                   ),
                 ),
               );
             },
           );
 
-          print(
-            "✅ Existing PopupAfterCallUi closed",
-          );
+          print("✅ Existing PopupAfterCallUi closed");
         } catch (e, stackTrace) {
-          print(
-            "❌ Incoming call processing failed: $e",
-          );
+          print("❌ Incoming call processing failed: $e");
           print(stackTrace);
         }
       }
@@ -292,15 +283,10 @@ class IncomingCallService {
   // ============================================
 
   static String _normalizePhone(String phone) {
-    String normalized = phone.replaceAll(
-      RegExp(r'\D'),
-      '',
-    );
+    String normalized = phone.replaceAll(RegExp(r'\D'), '');
 
     if (normalized.length > 10) {
-      normalized = normalized.substring(
-        normalized.length - 10,
-      );
+      normalized = normalized.substring(normalized.length - 10);
     }
 
     return normalized;

@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/api/response/all_calls_history_response.dart';
 import 'package:crm_flutter/common_widgets/call_storage.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:crm_flutter/models/enums.dart';
@@ -16,11 +18,15 @@ class PopupAfterCallUi extends StatefulWidget {
   final String leadId;
   final String? stageName;
   final bool isIncoming;
+  final String? leadName;
+  final String? leadNumber;
   const PopupAfterCallUi({
     super.key,
     required this.leadId,
     this.stageName,
     this.isIncoming = false,
+     this.leadName='Unavailable',
+     this.leadNumber='Unavailable',
   });
 
   @override
@@ -443,6 +449,33 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
+                      ),
+                      Spacer(),
+
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AutoSizeText(
+                            widget.leadName??'Unavailable',
+                            maxLines: 2,
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          AutoSizeText(
+                            widget.leadNumber??'unavailable',
+                            maxLines: 2,
+                            style: TextStyle(
+                              color: Colors.blue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
