@@ -12,7 +12,13 @@ class MissedFollowupsPage extends StatefulWidget {
   final DateTime? startDate;
   final DateTime? endDate;
   final String? timeRange;
-  const MissedFollowupsPage({super.key, this.initialType = 'Missed', this.startDate, this.endDate, this.timeRange});
+  const MissedFollowupsPage({
+    super.key,
+    this.initialType = 'Missed',
+    this.startDate,
+    this.endDate,
+    this.timeRange,
+  });
 
   @override
   State<MissedFollowupsPage> createState() => _MissedFollowupsPageState();
@@ -33,7 +39,8 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
       if (widget.startDate != null && widget.endDate != null) {
         _allMissFUpsController.selectedStartDate.value = widget.startDate;
         _allMissFUpsController.selectedEndDate.value = widget.endDate;
-        _allMissFUpsController.selectedTimeRange.value = widget.timeRange ?? 'Today';
+        _allMissFUpsController.selectedTimeRange.value =
+            widget.timeRange ?? 'Today';
       }
 
       _allMissFUpsController.fetchData(isRefresh: true);
@@ -60,14 +67,16 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
           },
           icon: Icon(Icons.arrow_back, color: Colors.white),
         ),
-        title: Obx(() => Text(
-          "${_allMissFUpsController.followUpType.value} FollowUp's",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
+        title: Obx(
+          () => Text(
+            "${_allMissFUpsController.followUpType.value} FollowUp's",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 20,
+            ),
           ),
-        )),
+        ),
         centerTitle: true,
         backgroundColor: ColorConstants.MainPurpleBackground,
         actions: [
@@ -92,15 +101,19 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _allMissFUpsController.followUpType.value == 'All'
+                          backgroundColor:
+                              _allMissFUpsController.followUpType.value == 'All'
                               ? ColorConstants.MainPurpleBackground
                               : Colors.white,
-                          foregroundColor: _allMissFUpsController.followUpType.value == 'All'
+                          foregroundColor:
+                              _allMissFUpsController.followUpType.value == 'All'
                               ? Colors.white
                               : Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(color: ColorConstants.MainPurpleBackground),
+                            side: BorderSide(
+                              color: ColorConstants.MainPurpleBackground,
+                            ),
                           ),
                         ),
                         onPressed: () {
@@ -114,15 +127,21 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _allMissFUpsController.followUpType.value == 'Missed'
+                          backgroundColor:
+                              _allMissFUpsController.followUpType.value ==
+                                  'Missed'
                               ? ColorConstants.MainPurpleBackground
                               : Colors.white,
-                          foregroundColor: _allMissFUpsController.followUpType.value == 'Missed'
+                          foregroundColor:
+                              _allMissFUpsController.followUpType.value ==
+                                  'Missed'
                               ? Colors.white
                               : Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(color: ColorConstants.MainPurpleBackground),
+                            side: BorderSide(
+                              color: ColorConstants.MainPurpleBackground,
+                            ),
                           ),
                         ),
                         onPressed: () {
@@ -146,24 +165,44 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                       TimeTab(
                         text: 'Today',
                         first: true,
-                        isSelected: _allMissFUpsController.selectedTimeRange.value == 'Today',
-                        onTap: () => _allMissFUpsController.selectTimeRange('Today', context),
+                        isSelected:
+                            _allMissFUpsController.selectedTimeRange.value ==
+                            'Today',
+                        onTap: () => _allMissFUpsController.selectTimeRange(
+                          'Today',
+                          context,
+                        ),
                       ),
                       TimeTab(
                         text: 'Yesterday',
-                        isSelected: _allMissFUpsController.selectedTimeRange.value == 'Yesterday',
-                        onTap: () => _allMissFUpsController.selectTimeRange('Yesterday', context),
+                        isSelected:
+                            _allMissFUpsController.selectedTimeRange.value ==
+                            'Yesterday',
+                        onTap: () => _allMissFUpsController.selectTimeRange(
+                          'Yesterday',
+                          context,
+                        ),
                       ),
                       TimeTab(
                         text: 'Last 30 Days',
-                        isSelected: _allMissFUpsController.selectedTimeRange.value == 'Last 30 Days',
-                        onTap: () => _allMissFUpsController.selectTimeRange('Last 30 Days', context),
+                        isSelected:
+                            _allMissFUpsController.selectedTimeRange.value ==
+                            'Last 30 Days',
+                        onTap: () => _allMissFUpsController.selectTimeRange(
+                          'Last 30 Days',
+                          context,
+                        ),
                       ),
                       TimeTab(
                         text: 'Select Range',
                         last: true,
-                        isSelected: _allMissFUpsController.selectedTimeRange.value == 'Select Range',
-                        onTap: () => _allMissFUpsController.selectTimeRange('Select Range', context),
+                        isSelected:
+                            _allMissFUpsController.selectedTimeRange.value ==
+                            'Select Range',
+                        onTap: () => _allMissFUpsController.selectTimeRange(
+                          'Select Range',
+                          context,
+                        ),
                       ),
                     ],
                   ),
@@ -189,33 +228,33 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                         ),
                       )
                     : RefreshIndicator(
-                        onRefresh: () => _allMissFUpsController
-                            .fetchData(isRefresh: true),
+                        onRefresh: () =>
+                            _allMissFUpsController.fetchData(isRefresh: true),
                         child: ListView.builder(
                           controller: _scrollController,
                           physics: const AlwaysScrollableScrollPhysics(),
                           itemCount: leads.length,
                           itemBuilder: (context, index) {
                             final data = leads[index];
-                            final name = data.name is String 
-                                ? data.name 
+                            final name = data.name is String
+                                ? data.name
                                 : "${data.name?.first ?? ''} ${data.name?.last ?? ''}";
-                            
+
                             return Container(
                               child: CallLogCard(
                                 isMissedFUps: true,
                                 name: name,
                                 leadId: data.sId,
-                                timelineData: data.timeline,
-                                campaign: data.compaignName is String 
-                                    ? data.compaignName 
-                                    : (data.compaignName?.name ?? 'no campaign'),
-                                tag: data.leadStageId is String 
-                                    ? data.leadStageId 
+                                campaign: data.compaignName is String
+                                    ? data.compaignName
+                                    : (data.compaignName?.name ??
+                                          'no campaign'),
+                                tag: data.leadStageId is String
+                                    ? data.leadStageId
                                     : (data.leadStageId?.name ?? ''),
                                 time: data.updatedAt ?? '',
-                                followUp: data.followUpDate is String 
-                                    ? DateTime.tryParse(data.followUpDate) 
+                                followUp: data.followUpDate is String
+                                    ? DateTime.tryParse(data.followUpDate)
                                     : data.followUpDate,
                                 phone: data.phone ?? 0,
                                 stageFieldValues: data.stageFieldValues,
@@ -224,12 +263,14 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                                   if (phone.isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text("Phone number not available"),
+                                        content: Text(
+                                          "Phone number not available",
+                                        ),
                                       ),
                                     );
                                     return;
                                   }
-                                  
+
                                   showCallAlertDialog(
                                     context,
                                     'Call $name',
@@ -238,7 +279,10 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                                       await CallHelper.callAndTrack(
                                         phone,
                                         data.sId ?? '',
-                                        (data.leadStageId is String ? data.leadStageId : data.leadStageId?.name) ?? '',
+                                        (data.leadStageId is String
+                                                ? data.leadStageId
+                                                : data.leadStageId?.name) ??
+                                            '',
                                       );
                                     },
                                     Colors.blue,

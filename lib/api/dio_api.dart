@@ -3,6 +3,7 @@ import 'package:crm_flutter/api/response/all_campaigns_response.dart';
 import 'package:crm_flutter/api/response/all_follow_up_response.dart';
 import 'package:crm_flutter/api/response/all_missed_followups_response.dart';
 import 'package:crm_flutter/api/response/all_templates_response.dart';
+import 'package:crm_flutter/api/response/history_timeline_response.dart';
 import 'package:crm_flutter/api/response/call_log_response.dart';
 import 'package:crm_flutter/api/response/dashboard_res.dart';
 import 'package:crm_flutter/api/response/get_whatsappSms_response.dart';
@@ -257,6 +258,30 @@ class DioApi {
       }
     } catch (e) {
       throw Exception('An error occurred while fetching lead id details: $e');
+    }
+  }
+
+  Future<HistoryTimelineResponse> getLeadTimeline(String leadId) async {
+    try {
+      final response = await DioUtil.dio.get(
+        "$link/history/timeline/${Uri.encodeComponent(leadId)}",
+      );
+      if (response.statusCode == 200) {
+        if (response.data is! Map) {
+          throw const FormatException(
+            'Invalid lead timeline response: expected an object',
+          );
+        }
+        return HistoryTimelineResponse.fromJson(
+          Map<String, dynamic>.from(response.data as Map),
+        );
+      } else {
+        throw Exception('Failed to load lead timeline: ${response.statusCode}');
+      }
+    } on DioException {
+      rethrow;
+    } catch (e) {
+      throw Exception('An error occurred while fetching lead timeline: $e');
     }
   }
 
@@ -1090,8 +1115,8 @@ class DioApi {
     }
   }
 
-  // POST INCOMING CALL
  // POST INCOMING CALL
+// POST INCOMING CALL
 // POST INCOMING CALL
 Future postIncomingCall(Map<String, dynamic> data) async {
   print("🔥 postIncomingCall() CALLED");
@@ -1142,6 +1167,7 @@ Future postIncomingCall(Map<String, dynamic> data) async {
     rethrow;
   }
 }
+
   // POST PHONE CALL
   Future postPhoneCall(data) async {
     try {

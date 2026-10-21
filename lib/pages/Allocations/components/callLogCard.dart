@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/all_lead_details_response.dart';
 import 'package:crm_flutter/api/response/all_leads_response.dart';
+import 'package:crm_flutter/api/response/history_timeline_response.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/Allocations/WhatsappSMS/whatsapp_sms_controller.dart';
@@ -20,7 +22,6 @@ import 'package:velocity_x/velocity_x.dart';
 class CallLogCard extends StatelessWidget {
   final context;
   final bool? isMissedFUps;
-  final List<Timeline>? timelineData;
   final String name;
   final String? leadId;
   final String? campaignId;
@@ -43,7 +44,6 @@ class CallLogCard extends StatelessWidget {
     super.key,
     this.context,
     this.isMissedFUps = false,
-    this.timelineData,
     required this.name,
     this.leadId,
     this.campaignId,
@@ -78,26 +78,53 @@ class CallLogCard extends StatelessWidget {
   RxList<PlatformFile> selectedFiles = <PlatformFile>[].obs;
   RxList<String> removedFiles = <String>[].obs;
   final RxBool isSavingField = false.obs;
-  final RxList<Timeline> updatedTimeline = <Timeline>[].obs;
+  final RxList<HistoryTimelineEntry> updatedTimeline =
+      <HistoryTimelineEntry>[].obs;
+  final RxBool isTimelineLoading = false.obs;
+  final RxnString timelineError = RxnString();
+  final RxInt _timelineRequestToken = 0.obs;
 
-  void openBottomSheet(
-    BuildContext context,
-    List<Timeline>? data,
-    leadID,
-  ) async {
+  Future<void> _loadTimeline(String leadId) async {
+    final requestToken = _timelineRequestToken.value + 1;
+    _timelineRequestToken.value = requestToken;
+    updatedTimeline.clear();
+    timelineError.value = null;
+    isTimelineLoading.value = true;
+
+    try {
+      final response = await DioApi().getLeadTimeline(leadId);
+      if (requestToken == _timelineRequestToken.value) {
+        updatedTimeline.assignAll(response.data);
+      }
+    } catch (error) {
+      if (requestToken == _timelineRequestToken.value) {
+        timelineError.value = error.toString();
+      }
+    } finally {
+      if (requestToken == _timelineRequestToken.value) {
+        isTimelineLoading.value = false;
+      }
+    }
+  }
+
+  void openBottomSheet(BuildContext context, String? leadID) async {
     selectedFiles.clear();
     removedFiles.clear();
 
-    // Use the class-level timeline
-    updatedTimeline.assignAll(data ?? []);
+    if (leadID == null || leadID.isEmpty) {
+      Get.snackbar(
+        "Error",
+        "Lead ID is not available",
+        snackPosition: SnackPosition.TOP,
+      );
+      return;
+    }
 
+    unawaited(_loadTimeline(leadID));
     await homeController.getAllLeadStage();
     await leadDetailsController.getAllLeadDetails(context, leadID);
 
     final leadData = leadDetailsController.allLeadDetailRes.value.data;
-    if (data == null || data.isEmpty) {
-      updatedTimeline.assignAll(leadData?.timeline ?? []);
-    }
     final remarksController = TextEditingController(
       text: leadData?.remarks ?? '',
     );
@@ -324,11 +351,7 @@ class CallLogCard extends StatelessWidget {
                 await Future.delayed(Duration(seconds: 1));
                 await leadDetailsController.getAllLeadDetails(context, leadID);
                 if (!context.mounted) return;
-                final refreshedTimeline =
-                    leadDetailsController.allLeadDetailRes.value.data?.timeline;
-                if (refreshedTimeline?.isNotEmpty == true) {
-                  updatedTimeline.assignAll(refreshedTimeline!);
-                }
+                await _loadTimeline(leadID.toString());
                 remarksController.text =
                     leadDetailsController
                         .allLeadDetailRes
@@ -1709,6 +1732,34 @@ class CallLogCard extends StatelessWidget {
                           ),
 
                         Obx(() {
+                          if (isTimelineLoading.value) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 40),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+
+                          if (timelineError.value != null) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      "Unable to load timeline: "
+                                      "${timelineError.value}",
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    TextButton(
+                                      onPressed: () => _loadTimeline(leadID),
+                                      child: const Text("Retry"),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+
                           if (updatedTimeline.isEmpty) {
                             return const Padding(
                               padding: EdgeInsets.symmetric(vertical: 40),
@@ -1809,7 +1860,9 @@ class CallLogCard extends StatelessWidget {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  item.stage ?? '',
+                                                  item.action?.isNotEmpty == true
+                                                      ? item.action!
+                                                      : 'Activity',
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 16,
@@ -1820,7 +1873,9 @@ class CallLogCard extends StatelessWidget {
 
                                                 Text(
                                                   formatTimelineDate(
-                                                    item.date ?? '',
+                                                    (item.createdAt ??
+                                                            item.updatedAt)
+                                                        ?.toIso8601String(),
                                                   ),
                                                   style: TextStyle(
                                                     fontSize: 12,
@@ -1830,38 +1885,64 @@ class CallLogCard extends StatelessWidget {
 
                                                 const SizedBox(height: 8),
 
-                                                const Text(
-                                                  "Agent: ",
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w500,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-
                                                 Text(
-                                                  item.agent ?? '',
+                                                  'Agent: '
+                                                  '${item.changedBy?.name?.trim().isNotEmpty == true ? item.changedBy!.name!.trim() : 'Unknown agent'}',
                                                   style: const TextStyle(
                                                     fontSize: 13,
                                                   ),
                                                 ),
 
-                                                if (item.note != null &&
-                                                    item.note!.isNotEmpty) ...[
-                                                  const SizedBox(height: 3),
-
+                                                if (item.changeDetails
+                                                    .isNotEmpty) ...[
+                                                  const SizedBox(height: 8),
                                                   const Text(
-                                                    "Notes: ",
+                                                    'Lead changes',
                                                     style: TextStyle(
                                                       fontWeight:
                                                           FontWeight.w500,
                                                       fontSize: 14,
                                                     ),
                                                   ),
+                                                  ...item.changeDetails.map(
+                                                    (detail) => Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            top: 3,
+                                                          ),
+                                                      child: Text(
+                                                        detail,
+                                                        style: const TextStyle(
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
 
-                                                  Text(
-                                                    item.note ?? '',
-                                                    style: const TextStyle(
-                                                      fontSize: 13,
+                                                if (item.callDetails
+                                                    .isNotEmpty) ...[
+                                                  const SizedBox(height: 8),
+                                                  const Text(
+                                                    'Call details',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                  ...item.callDetails.map(
+                                                    (detail) => Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            top: 3,
+                                                          ),
+                                                      child: Text(
+                                                        detail,
+                                                        style: const TextStyle(
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ],
@@ -2087,22 +2168,7 @@ class CallLogCard extends StatelessWidget {
                           // Refresh allocation data and wait for it to finish
                           await allocationController.refreshData();
 
-                          // Find the updated lead
-                          final updatedLead = allocationController.leads
-                              .firstWhereOrNull((lead) => lead.sId == leadId);
-
-                          // Update the timeline shown in the bottom sheet
-                          if (updatedLead != null) {
-                            updatedTimeline.assignAll(
-                              updatedLead.timeline ?? [],
-                            );
-
-                            print("========== UPDATED TIMELINE ==========");
-                            print("Timeline count: ${updatedTimeline.length}");
-                            print("======================================");
-                          } else {
-                            print("Updated lead not found");
-                          }
+                          await _loadTimeline(leadId!);
 
                           // Close template dialog
                           Navigator.pop(dialogContext);
@@ -2357,24 +2423,7 @@ class CallLogCard extends StatelessWidget {
                           );
                           await allocationController.refreshData();
 
-                          // Find the updated lead
-                          final updatedLead = allocationController.leads
-                              .firstWhereOrNull((lead) => lead.sId == leadId);
-
-                          // Update the timeline shown in the bottom sheet
-                          if (updatedLead != null) {
-                            updatedTimeline.assignAll(
-                              updatedLead.timeline ?? [],
-                            );
-
-                            print("========== UPDATED SMS TIMELINE ==========");
-                            print("Timeline count: ${updatedTimeline.length}");
-                            print("==========================================");
-                          } else {
-                            print(
-                              "Updated lead not found after SMS template usage",
-                            );
-                          }
+                          await _loadTimeline(leadId!);
 
                           // Close template dialog
                           Navigator.pop(dialogContext);
@@ -2556,7 +2605,7 @@ class CallLogCard extends StatelessWidget {
                   highlightColor: Colors.transparent,
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                   onTap: (assignedTo != null || isMissedFUps == true)
-                      ? () => openBottomSheet(context, timelineData, leadId)
+                      ? () => openBottomSheet(context, leadId)
                       : null,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

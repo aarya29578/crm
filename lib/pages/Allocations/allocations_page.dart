@@ -379,7 +379,6 @@ class _AllocationPageState extends State<AllocationPage> {
           return CallLogCard(
             name: "${data.name?.first ?? ''} ${data.name?.last ?? ''}",
             leadId: data.sId,
-            timelineData: data.timeline,
             campaignId: data.compaignName?.sId ?? '',
             campaign: data.compaignName?.name ?? 'no campaign',
             tag: data.leadStageId?.name ?? '',
@@ -504,24 +503,23 @@ class _AllocationPageState extends State<AllocationPage> {
         backgroundColor: ColorConstants.MainPurpleBackground,
 
         actions: [
-
-// Lead Source Filter Button
-Obx(
-  () => IconButton(
-    onPressed: () {
-      allocationController.showLeadSourceFilter(context);
-    },
-    tooltip: 'Filter by Lead Source',
-    icon: Icon(
-      allocationController.selectedLeadSource.value != null
-          ? Icons.filter_alt
-          : Icons.filter_alt_outlined,
-      color: allocationController.selectedLeadSource.value != null
-          ? Colors.orange.shade200
-          : Colors.white,
-    ),
-  ),
-),
+          // Lead Source Filter Button
+          Obx(
+            () => IconButton(
+              onPressed: () {
+                allocationController.showLeadSourceFilter(context);
+              },
+              tooltip: 'Filter by Lead Source',
+              icon: Icon(
+                allocationController.selectedLeadSource.value != null
+                    ? Icons.filter_alt
+                    : Icons.filter_alt_outlined,
+                color: allocationController.selectedLeadSource.value != null
+                    ? Colors.orange.shade200
+                    : Colors.white,
+              ),
+            ),
+          ),
 
           // Plus Button
           AddButton(

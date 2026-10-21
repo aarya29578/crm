@@ -1,5 +1,4 @@
 import 'package:crm_flutter/api/response/all_calls_history_response.dart';
-import 'package:crm_flutter/api/response/all_leads_response.dart' as leads;
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
@@ -10,8 +9,6 @@ import 'package:get/get.dart';
 import 'package:crm_flutter/pages/Call/call_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
-import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
-
 
 class CallLogs extends StatefulWidget {
   final DateTime? startDate;
@@ -111,33 +108,45 @@ class _CallLogsState extends State<CallLogs> {
               padding: const EdgeInsets.only(top: 10.0, bottom: 6.0),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: Obx(() => Row(
-                  children: [
-                    const SizedBox(width: 10),
-                    TimeTab(
-                      text: 'Today',
-                      first: true,
-                      isSelected: controller.selectedTimeRange.value == 'Today',
-                      onTap: () => controller.selectTimeRange('Today', context),
-                    ),
-                    TimeTab(
-                      text: 'Yesterday',
-                      isSelected: controller.selectedTimeRange.value == 'Yesterday',
-                      onTap: () => controller.selectTimeRange('Yesterday', context),
-                    ),
-                    TimeTab(
-                      text: 'Last 30 Days',
-                      isSelected: controller.selectedTimeRange.value == 'Last 30 Days',
-                      onTap: () => controller.selectTimeRange('Last 30 Days', context),
-                    ),
-                    TimeTab(
-                      text: 'Select Range',
-                      last: true,
-                      isSelected: controller.selectedTimeRange.value == 'Select Range',
-                      onTap: () => controller.selectTimeRange('Select Range', context),
-                    ),
-                  ],
-                )),
+                child: Obx(
+                  () => Row(
+                    children: [
+                      const SizedBox(width: 10),
+                      TimeTab(
+                        text: 'Today',
+                        first: true,
+                        isSelected:
+                            controller.selectedTimeRange.value == 'Today',
+                        onTap: () =>
+                            controller.selectTimeRange('Today', context),
+                      ),
+                      TimeTab(
+                        text: 'Yesterday',
+                        isSelected:
+                            controller.selectedTimeRange.value == 'Yesterday',
+                        onTap: () =>
+                            controller.selectTimeRange('Yesterday', context),
+                      ),
+                      TimeTab(
+                        text: 'Last 30 Days',
+                        isSelected:
+                            controller.selectedTimeRange.value ==
+                            'Last 30 Days',
+                        onTap: () =>
+                            controller.selectTimeRange('Last 30 Days', context),
+                      ),
+                      TimeTab(
+                        text: 'Select Range',
+                        last: true,
+                        isSelected:
+                            controller.selectedTimeRange.value ==
+                            'Select Range',
+                        onTap: () =>
+                            controller.selectTimeRange('Select Range', context),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             // Call Logs List
@@ -172,11 +181,18 @@ class _CallLogsState extends State<CallLogs> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 60, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.search_off,
+                          size: 60,
+                          color: Colors.grey.shade400,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'No matching call logs',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
                         ),
                       ],
                     ),
@@ -216,23 +232,22 @@ class _CallLogsState extends State<CallLogs> {
         : (lead != null ? "Unnamed Lead" : "External Contact");
     final phone = lead?.phone?.toString() ?? "No Contact Number";
 
+    final direction = callGroup.callLog?.direction?.toLowerCase() ?? '';
+    final status = callGroup.callLog?.status?.toLowerCase() ?? '';
 
-final direction = callGroup.callLog?.direction?.toLowerCase() ?? '';
-final status = callGroup.callLog?.status?.toLowerCase() ?? '';
+    final String callType;
 
-final String callType;
+    if (status == 'missed') {
+      callType = 'Missed';
+    } else if (direction == 'inbound') {
+      callType = 'Inbound';
+    } else if (direction == 'outbound') {
+      callType = 'Outbound';
+    } else {
+      callType = '';
+    }
 
-if (status == 'missed') {
-  callType = 'Missed';
-} else if (direction == 'inbound') {
-  callType = 'Inbound';
-} else if (direction == 'outbound') {
-  callType = 'Outbound';
-} else {
-  callType = '';
-}
-
-final isMissed = callType == 'Missed';
+    final isMissed = callType == 'Missed';
 
     final agentName = callGroup.calledBy?.name ?? "Unknown Agent";
 
@@ -256,36 +271,15 @@ final isMissed = callType == 'Missed';
             return;
           }
 
-          List<leads.Timeline>? timeline;
-          try {
-            final allocationLead = await Get.find<AllocationController>()
-                .getLeadWithTimeline(lead.sId!);
-            timeline = allocationLead?.timeline;
-          } catch (error) {
-            debugPrint(
-              'CALL LOG TIMELINE ERROR: leadId=${lead.sId} error=$error',
-            );
-            Get.snackbar(
-              'Timeline unavailable',
-              'Could not load timeline details for this lead.',
-            );
-          }
-
-          debugPrint(
-            'CALL LOG TIMELINE: leadId=${lead.sId} '
-            'timelineCount=${timeline?.length ?? 0} source=bottom-sheet',
-          );
-
           if (!context.mounted) return;
 
           final detailsCard = CallLogCard(
             name: leadName,
             leadId: lead.sId,
             tag: lead.leadStage?.name ?? '',
-            timelineData: timeline,
           );
 
-          detailsCard.openBottomSheet(context, timeline, lead.sId);
+          detailsCard.openBottomSheet(context, lead.sId);
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -316,56 +310,57 @@ final isMissed = callType == 'Missed';
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
-                       Row(
-  children: [
-    Expanded(
-      child: Text(
-        leadName,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-    ),
-    if (callType.isNotEmpty) ...[
-      const SizedBox(width: 8),
-      Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 4,
-        ),
-        decoration: BoxDecoration(
-          color: isMissed
-              ? Colors.red.shade50
-              : callType == 'Inbound'
-                  ? Colors.green.shade50
-                  : Colors.blue.shade50,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          callType,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: isMissed
-                ? Colors.red.shade700
-                : callType == 'Inbound'
-                    ? Colors.green.shade700
-                    : Colors.blue.shade700,
-          ),
-        ),
-      ),
-    ],
-  ],
-),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                leadName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (callType.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isMissed
+                                      ? Colors.red.shade50
+                                      : callType == 'Inbound'
+                                      ? Colors.green.shade50
+                                      : Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  callType,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: isMissed
+                                        ? Colors.red.shade700
+                                        : callType == 'Inbound'
+                                        ? Colors.green.shade700
+                                        : Colors.blue.shade700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
 
                         const SizedBox(height: 2),
                         Text(
                           callGroup.lastCallAt != null
-                              ? _formatRelativeTime(callGroup.lastCallAt.toString())
+                              ? _formatRelativeTime(
+                                  callGroup.lastCallAt.toString(),
+                                )
                               : 'Time unknown',
                           style: TextStyle(
                             color: Colors.grey.shade600,
@@ -393,11 +388,7 @@ final isMissed = callType == 'Missed';
                         'Call $leadName',
                         'Are you sure want to call to $phone number?',
                         () async {
-                          await CallHelper.callAndTrack(
-                            phone,
-                            lead?.sId,
-                            '',
-                          );
+                          await CallHelper.callAndTrack(phone, lead?.sId, '');
                         },
                         Colors.blue,
                       );
@@ -408,10 +399,7 @@ final isMissed = callType == 'Missed';
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
-                          colors: [
-                            Colors.blue.shade100,
-                            Colors.green.shade200,
-                          ],
+                          colors: [Colors.blue.shade100, Colors.green.shade200],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -462,7 +450,10 @@ final isMissed = callType == 'Missed';
                   Expanded(
                     flex: 1,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.orange.shade600,
                         borderRadius: BorderRadius.circular(20),
@@ -477,7 +468,11 @@ final isMissed = callType == 'Missed';
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.repeat, size: 12, color: Colors.white),
+                          const Icon(
+                            Icons.repeat,
+                            size: 12,
+                            color: Colors.white,
+                          ),
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
@@ -534,7 +529,6 @@ final isMissed = callType == 'Missed';
     );
   }
 
-
   // Helper Methods
   String formatDateTime(String timestamp) {
     if (timestamp.isEmpty) return 'Unknown';
@@ -584,7 +578,8 @@ final isMissed = callType == 'Missed';
     final leadName = (lead?.name?.first != null || lead?.name?.last != null)
         ? "${lead?.name?.first ?? ""} ${lead?.name?.last ?? ""}".trim()
         : (lead != null ? "Unnamed Lead" : "External Contact");
-    final isMissed = lead?.leadStage?.connected?.toLowerCase() == 'not connected';
+    final isMissed =
+        lead?.leadStage?.connected?.toLowerCase() == 'not connected';
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,

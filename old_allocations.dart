@@ -280,7 +280,6 @@ class _AllocationPageState extends State<AllocationPage> {
                                 name:
                                     "${data.name?.first ?? ''} ${data.name?.last ?? ''}",
                                 leadId: data.sId,
-                                timelineData: data.timeline,
                                 campaignId: data.compaignName?.sId ?? '',
                                 campaign:
                                     data.compaignName?.name ?? 'no campaign',
