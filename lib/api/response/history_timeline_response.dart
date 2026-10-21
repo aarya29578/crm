@@ -42,6 +42,7 @@ class HistoryTimelineEntry {
   DateTime? updatedAt;
   Map<String, dynamic> changes = {};
   HistoryTimelineCall? callLog;
+  HistoryTimelineTemplateUsage? templateUsage;
 
   HistoryTimelineEntry({
     this.id,
@@ -51,6 +52,7 @@ class HistoryTimelineEntry {
     this.updatedAt,
     Map<String, dynamic>? changes,
     this.callLog,
+    this.templateUsage,
   }) : changes = changes ?? {};
 
   HistoryTimelineEntry.fromJson(Map<String, dynamic> json) {
@@ -72,6 +74,25 @@ class HistoryTimelineEntry {
     callLog = callLogJson == null
         ? null
         : HistoryTimelineCall.fromJson(callLogJson);
+
+    final templateUsageJson = _asStringKeyedMap(json['template_usage']);
+    templateUsage = templateUsageJson == null
+        ? null
+        : HistoryTimelineTemplateUsage.fromJson(templateUsageJson);
+  }
+
+  bool get isWhatsAppTemplate {
+    if (templateUsage == null) return false;
+    final channels = [
+      templateUsage?.template?.channel,
+      templateUsage?.usedBy?.channel,
+    ].whereType<String>();
+    return channels.any((channel) {
+          final normalizedChannel = channel.toLowerCase();
+          return normalizedChannel.contains('whatsapp') ||
+              normalizedChannel == 'wa';
+        }) ||
+        action?.toLowerCase().contains('whatsapp') == true;
   }
 
   List<String> get changeDetails {
@@ -184,6 +205,51 @@ class HistoryTimelineCall {
     direction = json['direction']?.toString();
     duration = json['duration'];
     status = json['status']?.toString();
+  }
+}
+
+class HistoryTimelineTemplateUsage {
+  HistoryTimelineTemplate? template;
+  HistoryTimelineTemplateSender? usedBy;
+
+  HistoryTimelineTemplateUsage({this.template, this.usedBy});
+
+  HistoryTimelineTemplateUsage.fromJson(Map<String, dynamic> json) {
+    final templateJson = _asStringKeyedMap(json['template_id']);
+    template = templateJson == null
+        ? null
+        : HistoryTimelineTemplate.fromJson(templateJson);
+
+    final usedByJson = _asStringKeyedMap(json['used_by']);
+    usedBy = usedByJson == null
+        ? null
+        : HistoryTimelineTemplateSender.fromJson(usedByJson);
+  }
+}
+
+class HistoryTimelineTemplate {
+  String? name;
+  String? channel;
+  String? body;
+
+  HistoryTimelineTemplate({this.name, this.channel, this.body});
+
+  HistoryTimelineTemplate.fromJson(Map<String, dynamic> json) {
+    name = json['name'] is String ? json['name'] as String : null;
+    channel = json['channel'] is String ? json['channel'] as String : null;
+    body = json['body'] is String ? json['body'] as String : null;
+  }
+}
+
+class HistoryTimelineTemplateSender {
+  String? name;
+  String? channel;
+
+  HistoryTimelineTemplateSender({this.name, this.channel});
+
+  HistoryTimelineTemplateSender.fromJson(Map<String, dynamic> json) {
+    name = json['name'] is String ? json['name'] as String : null;
+    channel = json['channel'] is String ? json['channel'] as String : null;
   }
 }
 
