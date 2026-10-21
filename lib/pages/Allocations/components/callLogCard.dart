@@ -573,6 +573,7 @@ class CallLogCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 DropdownButtonFormField<String>(
+                                  isExpanded: true,
                                   initialValue:
                                       stages.any((s) => s.sId == currentStageId)
                                       ? currentStageId
@@ -609,6 +610,8 @@ class CallLogCard extends StatelessWidget {
                                       value: stage.sId,
                                       child: Text(
                                         stage.name ?? '',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           color: isDark
                                               ? Colors.white
@@ -718,6 +721,7 @@ class CallLogCard extends StatelessWidget {
                                       }
 
                                       return DropdownButtonFormField<String>(
+                                        isExpanded: true,
                                         initialValue:
                                             subStatuses.any(
                                               (sub) =>
@@ -764,6 +768,8 @@ class CallLogCard extends StatelessWidget {
                                             value: sub.id,
                                             child: Text(
                                               sub.name ?? '',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
                                                 color: isDark
                                                     ? Colors.white
