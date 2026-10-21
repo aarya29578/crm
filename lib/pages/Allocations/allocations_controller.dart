@@ -152,6 +152,21 @@ class AllocationController extends GetxController {
     isSearchLoading.value = false;
   }
 
+  void updateLeadInLists(Data updatedLead) {
+    final leadId = updatedLead.sId;
+    if (leadId == null) return;
+
+    final leadIndex = leads.indexWhere((lead) => lead.sId == leadId);
+    if (leadIndex != -1) {
+      leads[leadIndex] = updatedLead;
+    }
+
+    final searchIndex = searchResults.indexWhere((lead) => lead.sId == leadId);
+    if (searchIndex != -1) {
+      searchResults[searchIndex] = updatedLead;
+    }
+  }
+
   @override
   void onClose() {
     _debounce?.cancel();

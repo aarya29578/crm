@@ -30,6 +30,7 @@ class CallLogCard extends StatelessWidget {
   final AssignedTo? assignedTo;
   final VoidCallback? accept;
   final VoidCallback? decline;
+  final VoidCallback? onEdit;
   final DateTime? followUp;
   final String time;
   final int? phone;
@@ -52,6 +53,7 @@ class CallLogCard extends StatelessWidget {
     this.assignedTo,
     this.accept,
     this.decline,
+    this.onEdit,
     this.followUp,
     this.time = "no time found",
     this.onTap,
@@ -3063,6 +3065,12 @@ class CallLogCard extends StatelessWidget {
               if (assignedTo == null && isMissedFUps == false) ...[
                 Column(
                   children: [
+                    if (onEdit != null)
+                      IconButton(
+                        tooltip: 'Edit lead',
+                        onPressed: onEdit,
+                        icon: const Icon(Icons.edit_outlined),
+                      ),
                     // ACCEPT BUTTON
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -3098,6 +3106,13 @@ class CallLogCard extends StatelessWidget {
               if (assignedTo != null || isMissedFUps == true) ...[
                 Column(
                   children: [
+                    if (onEdit != null)
+                      IconButton(
+                        tooltip: 'Edit lead',
+                        onPressed: onEdit,
+                        icon: const Icon(Icons.edit_outlined),
+                      ),
+
                     ///Phone
                     InkWell(
                       borderRadius: const BorderRadius.only(

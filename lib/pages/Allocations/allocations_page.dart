@@ -1,7 +1,9 @@
 import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
 import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
+import 'package:crm_flutter/pages/Allocations/components/edit_allocation_lead_dialog.dart';
 import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_page.dart';
 import 'package:crm_flutter/pages/Allocations/components/custom_chip.dart';
+import 'package:crm_flutter/api/response/all_leads_response.dart' as lead_model;
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
@@ -415,6 +417,20 @@ class _AllocationPageState extends State<AllocationPage> {
             followUp: data.followUpDate,
             stageFieldValues: data.stageFieldValues,
             phone: data.phone ?? 0,
+            onEdit: () async {
+              final updatedLead = await showDialog<lead_model.Data>(
+                context: context,
+                builder: (_) => EditAllocationLeadDialog(lead: data),
+              );
+              if (updatedLead != null) {
+                allocationController.updateLeadInLists(updatedLead);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lead updated successfully')),
+                  );
+                }
+              }
+            },
             onCallBack: () async {
               final phone = data.phone?.toString() ?? '';
               if (phone.isEmpty) {
