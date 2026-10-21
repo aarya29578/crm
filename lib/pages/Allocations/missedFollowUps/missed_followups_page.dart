@@ -46,15 +46,25 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
       _allMissFUpsController.fetchData(isRefresh: true);
     });
 
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200) {
-        if (_allMissFUpsController.isMoreDataAvailable.value &&
-            !_allMissFUpsController.isLoading.value) {
-          _allMissFUpsController.fetchData();
-        }
+    _scrollController.addListener(_loadMore);
+  }
+
+  void _loadMore() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      if (_allMissFUpsController.isMoreDataAvailable.value &&
+          !_allMissFUpsController.isInitialLoading.value &&
+          !_allMissFUpsController.isLoadingMore.value) {
+        _allMissFUpsController.fetchData();
       }
-    });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -117,6 +127,10 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                           ),
                         ),
                         onPressed: () {
+                          if (_allMissFUpsController.followUpType.value ==
+                              'All') {
+                            return;
+                          }
                           _allMissFUpsController.followUpType.value = 'All';
                           _allMissFUpsController.fetchData(isRefresh: true);
                         },
@@ -145,6 +159,10 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                           ),
                         ),
                         onPressed: () {
+                          if (_allMissFUpsController.followUpType.value ==
+                              'Missed') {
+                            return;
+                          }
                           _allMissFUpsController.followUpType.value = 'Missed';
                           _allMissFUpsController.fetchData(isRefresh: true);
                         },
@@ -209,7 +227,9 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                 ),
               ),
               Expanded(
-                child: _allMissFUpsController.isLoading.value == true
+                child:
+                    _allMissFUpsController.isInitialLoading.value &&
+                        leads.isEmpty
                     ? const Center(
                         child: CircularProgressIndicator(
                           color: Colors.black87,
@@ -217,15 +237,23 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                         ),
                       )
                     : leads.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "No Follow-up found",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey,
-                          ),
-                        ),
+                    ? Center(
+                        child: _allMissFUpsController.hasMoreError.value
+                            ? TextButton(
+                                onPressed: () =>
+                                    _allMissFUpsController.fetchData(),
+                                child: const Text(
+                                  'Could not load follow-ups. Retry',
+                                ),
+                              )
+                            : const Text(
+                                "No Follow-up found",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey,
+                                ),
+                              ),
                       )
                     : RefreshIndicator(
                         onRefresh: () =>
@@ -233,8 +261,39 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                         child: ListView.builder(
                           controller: _scrollController,
                           physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: leads.length,
+                          itemCount:
+                              leads.length +
+                              (_allMissFUpsController.isLoadingMore.value ||
+                                      _allMissFUpsController.hasMoreError.value
+                                  ? 1
+                                  : 0),
                           itemBuilder: (context, index) {
+                            if (index == leads.length) {
+                              if (_allMissFUpsController.hasMoreError.value) {
+                                return Center(
+                                  child: TextButton(
+                                    onPressed: () =>
+                                        _allMissFUpsController.fetchData(),
+                                    child: const Text(
+                                      'Could not load more. Retry',
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
                             final data = leads[index];
                             final name = data.name is String
                                 ? data.name

@@ -1,6 +1,4 @@
 import 'package:crm_flutter/api/dio_api.dart';
-import 'package:crm_flutter/api/response/all_leads_response.dart';
-import 'package:crm_flutter/api/response/all_missed_followups_response.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,10 +6,14 @@ import 'package:crm_flutter/pages/home/components/date_range_picker_dialog.dart'
 
 class AllMissFUpsController extends GetxController {
   RxList<dynamic> leads = <dynamic>[].obs;
-  RxBool isLoading = false.obs;
+  RxBool isInitialLoading = false.obs;
+  RxBool isLoadingMore = false.obs;
+  RxBool hasMoreError = false.obs;
   RxBool isMoreDataAvailable = true.obs;
   int currentPage = 1;
-  
+  static const int _pageSize = 50;
+  int _requestGeneration = 0;
+
   RxString followUpType = 'Missed'.obs; // 'All' or 'Missed'
 
   // Date Filter State
@@ -31,15 +33,22 @@ class AllMissFUpsController extends GetxController {
         break;
       case 'Yesterday':
         final yesterday = now.subtract(Duration(days: 1));
-        selectedStartDate.value = DateTime(yesterday.year, yesterday.month, yesterday.day);
-        selectedEndDate.value = DateTime(now.year, now.month, now.day).subtract(Duration(seconds: 1));
+        selectedStartDate.value = DateTime(
+          yesterday.year,
+          yesterday.month,
+          yesterday.day,
+        );
+        selectedEndDate.value = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(Duration(seconds: 1));
         break;
       case 'Last 30 Days':
         selectedStartDate.value = now.subtract(Duration(days: 30));
         selectedEndDate.value = now;
         break;
       case 'Select Range':
-        // Show DatePicker dialog here. Assuming DateRangePickerDialogg is available or similar
         final result = await showDialog(
           context: context,
           builder: (context) => DateRangePickerDialogg(
@@ -55,91 +64,96 @@ class AllMissFUpsController extends GetxController {
         }
         break;
     }
-    
-    // Refresh Data
+
     fetchData(isRefresh: true);
   }
 
   Future<void> fetchData({bool isRefresh = false}) async {
-    if (followUpType.value == 'Missed') {
-      await getAllMissedFUps(isRefresh: isRefresh);
+    if (isRefresh) {
+      _requestGeneration++;
+      currentPage = 1;
+      leads.clear();
+      isMoreDataAvailable.value = true;
+      hasMoreError.value = false;
+      isLoadingMore.value = false;
+      isInitialLoading.value = true;
     } else {
-      await getAllFollowUps(isRefresh: isRefresh);
+      if (isInitialLoading.value ||
+          isLoadingMore.value ||
+          !isMoreDataAvailable.value) {
+        return;
+      }
+      if (leads.isEmpty) {
+        isInitialLoading.value = true;
+      } else {
+        isLoadingMore.value = true;
+      }
+      hasMoreError.value = false;
     }
-  }
 
-  Future<void> getAllMissedFUps({bool isRefresh = false}) async {
-    if (isLoading.value) return;
-
-    if (isRefresh) {
-      currentPage = 1;
-      leads.clear();
-      isMoreDataAvailable.value = true;
-    }
-
-    isLoading.value = true;
+    final generation = _requestGeneration;
+    final requestedPage = currentPage;
+    final isMissed = followUpType.value == 'Missed';
+    final startDate = selectedStartDate.value;
+    final endDate = selectedEndDate.value;
 
     try {
-      String currentTime = DateTime.now().toUtc().toIso8601String();
+      final List<dynamic>? responseData;
+      final int? responseCurrentPage;
+      final int? totalPages;
 
-      await Get.find<FollowUpController>().syncWithApi();
-      await Future.delayed(const Duration(milliseconds: 50));
-
-      final response = await DioApi().getMissedFUps(
-        currentDateTime: currentTime,
-        startDate: selectedStartDate.value,
-        endDate: selectedEndDate.value,
-      );
-
-      if (response.success == true) {
-        final List<MissedFUpsData>? responseData = response.data;
-
-        if (responseData == null || responseData.isEmpty) {
-          isMoreDataAvailable.value = false;
-        } else {
-          leads.addAll(responseData);
-          currentPage++;
+      if (isMissed) {
+        if (requestedPage == 1) {
+          await Get.find<FollowUpController>().syncWithApi();
         }
-      }
-    } catch (e) {
-      print("Error loading missed follow-ups: $e");
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  Future<void> getAllFollowUps({bool isRefresh = false}) async {
-    if (isLoading.value) return;
-
-    if (isRefresh) {
-      currentPage = 1;
-      leads.clear();
-      isMoreDataAvailable.value = true;
-    }
-
-    isLoading.value = true;
-
-    try {
-      final response = await DioApi().getAllFollowUps(
-        page: currentPage,
-        startDate: selectedStartDate.value,
-        endDate: selectedEndDate.value,
-      );
-
-      if (response.success == true) {
-        final List<Data>? responseData = response.data;
-
-        if (responseData == null || responseData.isEmpty) {
-          isMoreDataAvailable.value = false;
-        } else {
-          leads.addAll(responseData);
-          currentPage++;
+        final response = await DioApi().getMissedFUps(
+          currentDateTime: DateTime.now().toUtc().toIso8601String(),
+          page: requestedPage,
+          limit: _pageSize,
+          startDate: startDate,
+          endDate: endDate,
+        );
+        if (response.success != true) {
+          throw StateError('Missed follow-ups request was unsuccessful');
         }
+        responseData = response.data;
+        responseCurrentPage = response.currentPage;
+        totalPages = response.totalPages;
+      } else {
+        final response = await DioApi().getAllFollowUps(
+          page: requestedPage,
+          limit: _pageSize,
+          startDate: startDate,
+          endDate: endDate,
+        );
+        if (response.success != true) {
+          throw StateError('All follow-ups request was unsuccessful');
+        }
+        responseData = response.data;
+        responseCurrentPage = response.currentPage;
+        totalPages = response.totalPages;
       }
+
+      if (generation != _requestGeneration) return;
+
+      final records = responseData ?? const [];
+      leads.addAll(records);
+      final loadedPage = responseCurrentPage ?? requestedPage;
+      currentPage = loadedPage + 1;
+      isMoreDataAvailable.value = records.isNotEmpty &&
+          (totalPages != null
+              ? loadedPage < totalPages
+              : records.length >= _pageSize);
     } catch (e) {
-      print("Error loading all follow-ups: $e");
+      debugPrint('Error loading follow-ups: $e');
+      if (generation == _requestGeneration) {
+        hasMoreError.value = true;
+      }
     } finally {
-      isLoading.value = false;
+      if (generation == _requestGeneration) {
+        isInitialLoading.value = false;
+        isLoadingMore.value = false;
+      }
     }
   }
 }
