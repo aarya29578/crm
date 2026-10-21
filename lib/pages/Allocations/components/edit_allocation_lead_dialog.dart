@@ -763,6 +763,7 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
                     ),
                     const SizedBox(height: 12),
                     _textField('Company Name', _company),
+                    const SizedBox(height: 12),
                     _textField(
                       'Age',
                       _age,
