@@ -7,7 +7,6 @@ import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_storage_service.dart';
 import 'package:crm_flutter/pages/bottom_navigation_bar/LeadDetailsBottomNavigationBarPage.dart';
-import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -226,32 +225,24 @@ class FollowUpController extends GetxController {
 
                                 ElevatedButton(
                                   onPressed: () async {
-                                    showCallAlertDialog(
-                                      context,
-                                      'Call $name',
-                                      'Are you sure want to call $phone?',
-                                      () async {
-                                        await CallHelper.callAndTrack(
-                                          phone.toString(),
-                                          item.id,
-                                          '',
-                                        );
-
-                                        // REMOVE ITEM AFTER CALL
-                                        setState(() {
-                                          tempList.removeAt(index);
-                                        });
-
-                                        // optional: close dialog if empty
-                                        if (tempList.isEmpty) {
-                                          Get.back();
-                                        }
-
-                                        /// VERY IMPORTANT
-                                        await syncWithApi();
-                                      },
-                                      Colors.blue,
+                                    await CallHelper.callAndTrack(
+                                      phone.toString(),
+                                      item.id,
+                                      '',
                                     );
+
+                                    // REMOVE ITEM AFTER CALL
+                                    setState(() {
+                                      tempList.removeAt(index);
+                                    });
+
+                                    // optional: close dialog if empty
+                                    if (tempList.isEmpty) {
+                                      Get.back();
+                                    }
+
+                                    /// VERY IMPORTANT
+                                    await syncWithApi();
                                   },
                                   child: const Icon(Icons.phone),
                                 ),

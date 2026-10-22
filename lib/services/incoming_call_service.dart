@@ -70,63 +70,63 @@ class IncomingCallService {
           // FIRST POPUP
           // ============================================
 
-          // final isWorkRelated = await showDialog<bool>(
-          //   context: context,
-          //   barrierDismissible: false,
-          //   builder: (dialogContext) {
-          //     return AlertDialog(
-          //       title: const Text(
-          //         "Call Related?",
-          //         style: TextStyle(
-          //           fontWeight: FontWeight.bold,
-          //         ),
-          //       ),
-          //       content: Text(
-          //         "Was this call work related?\n\n$phoneNumber",
-          //         style: const TextStyle(
-          //           fontSize: 15,
-          //         ),
-          //       ),
-          //       actions: [
-          //         TextButton(
-          //           onPressed: () {
-          //             Navigator.of(dialogContext).pop(false);
-          //           },
-          //           child: const Text(
-          //             "NO",
-          //             style: TextStyle(
-          //               color: Colors.red,
-          //               fontWeight: FontWeight.bold,
-          //             ),
-          //           ),
-          //         ),
-          //         ElevatedButton(
-          //           onPressed: () {
-          //             Navigator.of(dialogContext).pop(true);
-          //           },
-          //           child: const Text(
-          //             "YES",
-          //             style: TextStyle(
-          //               fontWeight: FontWeight.bold,
-          //             ),
-          //           ),
-          //         ),
-          //       ],
-          //     );
-          //   },
-          // );
+          final isWorkRelated = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) {
+              return AlertDialog(
+                title: const Text(
+                  "Call Related?",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                content: Text(
+                  "Was this call work related?\n\n$phoneNumber",
+                  style: const TextStyle(
+                    fontSize: 15,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop(false);
+                    },
+                    child: const Text(
+                      "NO",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop(true);
+                    },
+                    child: const Text(
+                      "YES",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
 
           // ============================================
           // NO → CLOSE
           // ============================================
 
-          //if (isWorkRelated != true) {
+          if (isWorkRelated != true) {
 
-            //print("❌ Call marked as NOT work related");
-            //return;
-         // }
+            print("❌ Call marked as NOT work related");
+            return;
+         }
 
-         // print("✅ Call marked as WORK RELATED");
+         print("✅ Call marked as WORK RELATED");
 
           // ============================================
           // YES → FIND EXISTING LEAD

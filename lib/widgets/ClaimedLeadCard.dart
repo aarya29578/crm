@@ -1,5 +1,4 @@
 import 'package:crm_flutter/helper/call_helper.dart';
-import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -430,20 +429,11 @@ ClaimedLeads(
                           backgroundColor: Colors.blue,
                         ),
                         onPressed: () async {
-                          showCallAlertDialog(
-                            context,
-                            'Call ${name ?? ''}',
-                            'Are you sure want to call ${phone.toString()}?',
-                            () async {
-                              print("numberto$phone");
-                              await CallHelper.callAndTrack(
-                                phone.toString(),
-                                id,
-                                '',
-                              );
-                              // Navigator.pop(context);
-                            },
-                            Colors.blue,
+                          print("numberto$phone");
+                          await CallHelper.callAndTrack(
+                            phone.toString(),
+                            id,
+                            '',
                           );
                         },
                         icon: Icon(Icons.phone, color: Colors.white),

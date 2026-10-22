@@ -2,7 +2,6 @@ import 'package:crm_flutter/api/response/all_calls_history_response.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
-import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -383,15 +382,7 @@ class _CallLogsState extends State<CallLogs> {
                         return;
                       }
 
-                      showCallAlertDialog(
-                        context,
-                        'Call $leadName',
-                        'Are you sure want to call to $phone number?',
-                        () async {
-                          await CallHelper.callAndTrack(phone, lead?.sId, '');
-                        },
-                        Colors.blue,
-                      );
+                      await CallHelper.callAndTrack(phone, lead?.sId, '');
                     },
                     icon: Container(
                       width: 44,
