@@ -138,9 +138,58 @@ void main() {
     expect(response.total, 1);
     expect(response.data.single.changedBy, isNull);
     expect(response.data.single.callLog, isNull);
+    expect(response.data.single.templateUsage, isNull);
     expect(response.data.single.createdAt, isNull);
     expect(response.data.single.changeDetails, isEmpty);
     expect(response.data.single.callDetails, isEmpty);
+  });
+
+  test('parses WhatsApp template usage and preserves message formatting', () {
+    const messageBody =
+        'Hello, {{name}}!\n\n'
+        'Here are the details:\n'
+        '• First item\n'
+        '• Second item';
+    final response = HistoryTimelineResponse.fromJson({
+      'success': true,
+      'data': [
+        {
+          'action': 'WHATSAPP_TEMPLATE',
+          'template_usage': {
+            'template_id': {
+              'name': 'Property follow-up',
+              'channel': 'WhatsApp',
+              'body': messageBody,
+            },
+            'used_by': {'name': 'Agent One', 'channel': 'WhatsApp'},
+          },
+        },
+      ],
+    });
+
+    final entry = response.data.single;
+    expect(entry.isWhatsAppTemplate, isTrue);
+    expect(entry.templateUsage?.template?.name, 'Property follow-up');
+    expect(entry.templateUsage?.template?.channel, 'WhatsApp');
+    expect(entry.templateUsage?.template?.body, messageBody);
+    expect(entry.templateUsage?.usedBy?.name, 'Agent One');
+    expect(entry.templateUsage?.usedBy?.channel, 'WhatsApp');
+  });
+
+  test('handles partial template usage without throwing', () {
+    final response = HistoryTimelineResponse.fromJson({
+      'success': true,
+      'data': [
+        {
+          'action': 'WHATSAPP_TEMPLATE',
+          'template_usage': {'template_id': null, 'used_by': null},
+        },
+      ],
+    });
+
+    expect(response.data.single.isWhatsAppTemplate, isTrue);
+    expect(response.data.single.templateUsage?.template, isNull);
+    expect(response.data.single.templateUsage?.usedBy, isNull);
   });
 
   test('rejects a response without a data list', () {

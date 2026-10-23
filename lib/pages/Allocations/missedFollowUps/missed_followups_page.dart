@@ -2,7 +2,6 @@ import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
 import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_controller.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
-import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -330,21 +329,13 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                                     return;
                                   }
 
-                                  showCallAlertDialog(
-                                    context,
-                                    'Call $name',
-                                    'Are you sure want to call to $phone number?',
-                                    () async {
-                                      await CallHelper.callAndTrack(
-                                        phone,
-                                        data.sId ?? '',
-                                        (data.leadStageId is String
-                                                ? data.leadStageId
-                                                : data.leadStageId?.name) ??
-                                            '',
-                                      );
-                                    },
-                                    Colors.blue,
+                                  await CallHelper.callAndTrack(
+                                    phone,
+                                    data.sId ?? '',
+                                    (data.leadStageId is String
+                                            ? data.leadStageId
+                                            : data.leadStageId?.name) ??
+                                        '',
                                   );
                                 },
                               ),

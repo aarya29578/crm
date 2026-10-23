@@ -1,17 +1,17 @@
 import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
 import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
+import 'package:crm_flutter/pages/Allocations/components/edit_allocation_lead_dialog.dart';
 import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_page.dart';
 import 'package:crm_flutter/pages/Allocations/components/custom_chip.dart';
+import 'package:crm_flutter/api/response/all_leads_response.dart' as lead_model;
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
-import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:crm_flutter/widgets/add.dart';
 import 'package:crm_flutter/pages/all_lead/add_lead_page.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class AllocationPage extends StatefulWidget {
   const AllocationPage({super.key});
@@ -253,7 +253,7 @@ class _AllocationPageState extends State<AllocationPage> {
   }
 
   // ── Search Results View ───────────────────────────────────
-  Widget _buildSearchResultsView(Future<bool> Function() requestPermissions) {
+  Widget _buildSearchResultsView() {
     return Expanded(
       child: Column(
         children: [
@@ -353,10 +353,7 @@ class _AllocationPageState extends State<AllocationPage> {
                 );
               }
 
-              return _buildLeadList(
-                allocationController.searchResults,
-                requestPermissions,
-              );
+              return _buildLeadList(allocationController.searchResults);
             }),
           ),
         ],
@@ -365,10 +362,7 @@ class _AllocationPageState extends State<AllocationPage> {
   }
 
   // ── Shared Lead ListView ──────────────────────────────────
-  Widget _buildLeadList(
-    List leads,
-    Future<bool> Function() requestPermissions,
-  ) {
+  Widget _buildLeadList(List leads) {
     return ListView.builder(
       controller: _scrollController,
       physics: const BouncingScrollPhysics(),
@@ -415,6 +409,20 @@ class _AllocationPageState extends State<AllocationPage> {
             followUp: data.followUpDate,
             stageFieldValues: data.stageFieldValues,
             phone: data.phone ?? 0,
+            onEdit: () async {
+              final updatedLead = await showDialog<lead_model.Data>(
+                context: context,
+                builder: (_) => EditAllocationLeadDialog(lead: data),
+              );
+              if (updatedLead != null) {
+                allocationController.updateLeadInLists(updatedLead);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lead updated successfully')),
+                  );
+                }
+              }
+            },
             onCallBack: () async {
               final phone = data.phone?.toString() ?? '';
               if (phone.isEmpty) {
@@ -423,20 +431,11 @@ class _AllocationPageState extends State<AllocationPage> {
                 );
                 return;
               }
-              requestPermissions();
               if (data.assignedTo != null) {
-                showCallAlertDialog(
-                  context,
-                  'Call ${data.name?.first ?? ''}',
-                  'Are you sure want to call to $phone number?',
-                  () async {
-                    await CallHelper.callAndTrack(
-                      phone,
-                      data.sId ?? '',
-                      data.leadStageId?.name ?? '',
-                    );
-                  },
-                  Colors.blue,
+                await CallHelper.callAndTrack(
+                  phone,
+                  data.sId ?? '',
+                  data.leadStageId?.name ?? '',
                 );
               }
             },
@@ -462,18 +461,6 @@ class _AllocationPageState extends State<AllocationPage> {
 
   @override
   Widget build(BuildContext context) {
-    Future<bool> requestPermissions() async {
-      PermissionStatus status = await Permission.contacts.status;
-      if (status.isGranted) return true;
-      status = await Permission.contacts.request();
-      if (status.isGranted) return true;
-      if (status.isPermanentlyDenied) {
-        await openAppSettings();
-        return false;
-      }
-      return false;
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: AnimatedSwitcher(
@@ -588,7 +575,7 @@ class _AllocationPageState extends State<AllocationPage> {
             children: [
               // ── Search Results Panel ──────────────────────────
               if (allocationController.isSearchMode.value)
-                _buildSearchResultsView(requestPermissions)
+                _buildSearchResultsView()
               else ...[
                 // ── Stage Chips ────────────────────────────────
                 Obx(() {
@@ -696,10 +683,7 @@ class _AllocationPageState extends State<AllocationPage> {
                           title: 'No Leads Found',
                           subtitle: 'Try changing your date range or filters',
                         )
-                      : _buildLeadList(
-                          allocationController.leads,
-                          requestPermissions,
-                        ),
+                      : _buildLeadList(allocationController.leads),
                 ),
               ],
             ],

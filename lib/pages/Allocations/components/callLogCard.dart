@@ -30,6 +30,7 @@ class CallLogCard extends StatelessWidget {
   final AssignedTo? assignedTo;
   final VoidCallback? accept;
   final VoidCallback? decline;
+  final VoidCallback? onEdit;
   final DateTime? followUp;
   final String time;
   final int? phone;
@@ -52,6 +53,7 @@ class CallLogCard extends StatelessWidget {
     this.assignedTo,
     this.accept,
     this.decline,
+    this.onEdit,
     this.followUp,
     this.time = "no time found",
     this.onTap,
@@ -1899,6 +1901,90 @@ class CallLogCard extends StatelessWidget {
                                                   ),
                                                 ),
 
+                                                if (item
+                                                    .isWhatsAppTemplate) ...[
+                                                  if (item
+                                                          .templateUsage
+                                                          ?.template
+                                                          ?.name
+                                                          ?.trim()
+                                                          .isNotEmpty ==
+                                                      true) ...[
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      'Template: ${item.templateUsage!.template!.name!.trim()}',
+                                                      style: const TextStyle(
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                  if (item
+                                                          .templateUsage
+                                                          ?.usedBy
+                                                          ?.name
+                                                          ?.trim()
+                                                          .isNotEmpty ==
+                                                      true) ...[
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      'Sender: ${item.templateUsage!.usedBy!.name!.trim()}',
+                                                      style: const TextStyle(
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                  if (item
+                                                          .templateUsage
+                                                          ?.template
+                                                          ?.body
+                                                          ?.trim()
+                                                          .isNotEmpty ==
+                                                      true) ...[
+                                                    const SizedBox(height: 10),
+                                                    const Text(
+                                                      'MESSAGE',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 5),
+                                                    Container(
+                                                      width: double.infinity,
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            10,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: isDark
+                                                            ? Colors.grey[900]
+                                                            : Colors.white,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: Colors
+                                                              .grey
+                                                              .shade300,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        item
+                                                            .templateUsage!
+                                                            .template!
+                                                            .body!,
+                                                        softWrap: true,
+                                                        style: const TextStyle(
+                                                          fontSize: 13,
+                                                          height: 1.4,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+
                                                 if (item.changeDetails
                                                     .isNotEmpty) ...[
                                                   const SizedBox(height: 8),
@@ -2979,6 +3065,12 @@ class CallLogCard extends StatelessWidget {
               if (assignedTo == null && isMissedFUps == false) ...[
                 Column(
                   children: [
+                    if (onEdit != null)
+                      IconButton(
+                        tooltip: 'Edit lead',
+                        onPressed: onEdit,
+                        icon: const Icon(Icons.edit_outlined),
+                      ),
                     // ACCEPT BUTTON
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -3014,6 +3106,13 @@ class CallLogCard extends StatelessWidget {
               if (assignedTo != null || isMissedFUps == true) ...[
                 Column(
                   children: [
+                    if (onEdit != null)
+                      IconButton(
+                        tooltip: 'Edit lead',
+                        onPressed: onEdit,
+                        icon: const Icon(Icons.edit_outlined),
+                      ),
+
                     ///Phone
                     InkWell(
                       borderRadius: const BorderRadius.only(

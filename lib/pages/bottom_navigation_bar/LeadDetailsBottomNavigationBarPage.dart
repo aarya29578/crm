@@ -1,6 +1,5 @@
 import 'package:call_log/call_log.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
-import 'package:crm_flutter/widgets/show_call_alert_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsPage.dart';
@@ -45,7 +44,7 @@ class _LeadDetailsBottomNavigationBarPageState
         callStarted = false;
         await Future.delayed(Duration(seconds: 1));
       }
-        });
+    });
     super.initState();
   }
 
@@ -232,19 +231,10 @@ class _LeadDetailsBottomNavigationBarPageState
 
                       if (!context.mounted) return;
                       if (exactNumber != null) {
-                        showCallAlertDialog(
-                          context,
-                          'Call',
-                          'Are you sure want to call to $exactNumber number?',
-                          () async {
-                            await CallHelper.callAndTrack(
-                              exactNumber.toString(),
-                              widget.LeadID,
-                              '',
-                            );
-                            // Navigator.pop(context);
-                          },
-                          Colors.blue,
+                        await CallHelper.callAndTrack(
+                          exactNumber.toString(),
+                          widget.LeadID,
+                          '',
                         );
                         // await CallHelper.callAndTrack(recent.number!);
                         print("callingg***********");

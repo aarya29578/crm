@@ -127,24 +127,30 @@ class IncomingCallReceiver : BroadcastReceiver() {
                         Context.MODE_PRIVATE
                     )
 
-                prefs.edit()
-                    .putBoolean(
-                        KEY_CALL_ACTIVE,
-                        true
-                    )
-                    // IMPORTANT:
-                    // OFFHOOK means the incoming call
-                    // was answered.
-                    .putBoolean(
-                        KEY_CALL_ANSWERED,
-                        true
-                    )
-                    .apply()
+                val isTrackedIncomingCall =
+                    prefs.getBoolean(KEY_CALL_ACTIVE, false) &&
+                            !prefs.getString(KEY_INCOMING_NUMBER, null).isNullOrBlank()
 
-                Log.d(
-                    TAG,
-                    "✅ Call connected / answered"
-                )
+                if (isTrackedIncomingCall) {
+
+                    prefs.edit()
+                        // OFFHOOK answers a call only after RINGING tracked it.
+                        .putBoolean(
+                            KEY_CALL_ANSWERED,
+                            true
+                        )
+                        .apply()
+
+                    Log.d(
+                        TAG,
+                        "✅ Incoming call connected / answered"
+                    )
+                } else {
+                    Log.d(
+                        TAG,
+                        "Ignoring OFFHOOK for a non-incoming call"
+                    )
+                }
             }
 
             // --------------------------------

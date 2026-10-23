@@ -434,6 +434,7 @@ class Data {
   LeadSourceId? leadSourceId;
   LeadSourceId? leadSubSourceId;
   LeadStageId? leadStageId;
+  LeadSourceId? subStatusId;
   Name? name;
   int? phone;
   String? email;
@@ -467,6 +468,7 @@ class Data {
     this.leadSourceId,
     this.leadSubSourceId,
     this.leadStageId,
+    this.subStatusId,
     this.name,
     this.phone,
     this.email,
@@ -502,15 +504,22 @@ class Data {
         ? LeadSourceId.fromJson(json['lead_source_id'])
         : null;
 
-    if (json['sub_source_id'] is Map<String, dynamic>) {
-      leadSubSourceId = LeadSourceId.fromJson(json['sub_source_id']);
-    } else {
-      leadSubSourceId = null;
-    }
+    final subSource = json['sub_source_id'];
+    leadSubSourceId = subSource is Map
+        ? LeadSourceId.fromJson(Map<String, dynamic>.from(subSource))
+        : subSource == null
+        ? null
+        : LeadSourceId(sId: subSource.toString());
 
     leadStageId = json['lead_stage_id'] != null
         ? LeadStageId.fromJson(json['lead_stage_id'])
         : null;
+    final subStatus = json['sub_status_id'] ?? json['subStatusId'];
+    subStatusId = subStatus is Map
+        ? LeadSourceId.fromJson(Map<String, dynamic>.from(subStatus))
+        : subStatus == null
+        ? null
+        : LeadSourceId(sId: subStatus.toString());
     name = json['name'] != null ? Name.fromJson(json['name']) : null;
     phone = json['phone'];
     email = json['email'];
@@ -590,6 +599,9 @@ class Data {
     }
     if (leadStageId != null) {
       data['lead_stage_id'] = leadStageId!.toJson();
+    }
+    if (subStatusId != null) {
+      data['sub_status_id'] = subStatusId!.toJson();
     }
     if (name != null) {
       data['name'] = name!.toJson();
