@@ -3,6 +3,8 @@ import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
 import 'package:crm_flutter/pages/Allocations/components/edit_allocation_lead_dialog.dart';
 import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_page.dart';
 import 'package:crm_flutter/pages/Allocations/components/custom_chip.dart';
+import 'package:crm_flutter/api/response/all_lead_stage_response.dart'
+    as stage_model;
 import 'package:crm_flutter/api/response/all_leads_response.dart' as lead_model;
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
@@ -21,6 +23,14 @@ class AllocationPage extends StatefulWidget {
 }
 
 class _AllocationPageState extends State<AllocationPage> {
+  static const List<String> _leadCategoryNames = [
+    'Fresh',
+    'Claimed',
+    'New',
+    'Interested',
+    'Follow Up',
+  ];
+
   final AllocationController allocationController = Get.put(
     AllocationController(),
   );
@@ -31,6 +41,125 @@ class _AllocationPageState extends State<AllocationPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearchVisible = false;
+
+  stage_model.Data? _stageForCategory(String category) {
+    for (final stage in allocationController.allLeadStages) {
+      if (stage.name?.trim().toLowerCase() == category.toLowerCase()) {
+        return stage;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _toggleLeadCategory(String category) async {
+    var stage = _stageForCategory(category);
+    if (stage?.sId == null) {
+      await allocationController.getAllLeadStages();
+      if (!mounted) return;
+      stage = _stageForCategory(category);
+    }
+
+    final statusId = stage?.sId;
+    if (statusId != null && statusId.isNotEmpty) {
+      allocationController.toggleStatus(statusId, context);
+    }
+  }
+
+  Widget _buildLeadCategoryFilters() {
+    final categories = _leadCategoryNames
+        .map((name) => MapEntry(name, _stageForCategory(name)))
+        .toList();
+
+    for (final stage in allocationController.allLeadStages) {
+      final name = stage.name?.trim();
+      if (name != null &&
+          name.isNotEmpty &&
+          !_leadCategoryNames.any(
+            (category) => category.toLowerCase() == name.toLowerCase(),
+          )) {
+        categories.add(MapEntry(name, stage));
+      }
+    }
+
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.only(top: 8),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        scrollDirection: Axis.horizontal,
+        children: [
+          for (final category in categories)
+            buildCustomChip(
+              text: category.key,
+              isSelected:
+                  category.value?.sId != null &&
+                  allocationController.selectedStatusIds.contains(
+                    category.value!.sId,
+                  ),
+              onTap: () => _toggleLeadCategory(category.key),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateFilters(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            const SizedBox(width: 10),
+            Obx(
+              () => TimeTab(
+                text: 'Today',
+                first: true,
+                isSelected:
+                    allocationController.selectedTimeRange.value == 'Today',
+                onTap: () =>
+                    allocationController.selectTimeRange('Today', context),
+              ),
+            ),
+            Obx(
+              () => TimeTab(
+                text: 'Yesterday',
+                isSelected:
+                    allocationController.selectedTimeRange.value == 'Yesterday',
+                onTap: () =>
+                    allocationController.selectTimeRange('Yesterday', context),
+              ),
+            ),
+            Obx(
+              () => TimeTab(
+                text: 'Last 30 Days',
+                isSelected:
+                    allocationController.selectedTimeRange.value ==
+                    'Last 30 Days',
+                onTap: () => allocationController.selectTimeRange(
+                  'Last 30 Days',
+                  context,
+                ),
+              ),
+            ),
+            Obx(
+              () => TimeTab(
+                text: 'Select Range',
+                last: true,
+                isSelected:
+                    allocationController.selectedTimeRange.value ==
+                    'Select Range',
+                onTap: () => allocationController.selectTimeRange(
+                  'Select Range',
+                  context,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -573,107 +702,12 @@ class _AllocationPageState extends State<AllocationPage> {
           ),
           child: Column(
             children: [
+              _buildLeadCategoryFilters(),
+              _buildDateFilters(context),
               // ── Search Results Panel ──────────────────────────
               if (allocationController.isSearchMode.value)
                 _buildSearchResultsView()
-              else ...[
-                // ── Stage Chips ────────────────────────────────
-                Obx(() {
-                  if (allocationController.allLeadStages.isEmpty) {
-                    return const SizedBox();
-                  }
-                  return Container(
-                    height: 50,
-                    margin: const EdgeInsets.only(top: 8),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      scrollDirection: Axis.horizontal,
-                      itemCount: allocationController.allLeadStages.length,
-                      itemBuilder: (context, index) {
-                        final stageData =
-                            allocationController.allLeadStages[index];
-                        final isSelected = allocationController
-                            .selectedStatusIds
-                            .contains(stageData.sId);
-                        return buildCustomChip(
-                          text: stageData.name ?? 'Unknown',
-                          isSelected: isSelected,
-                          onTap: () => allocationController.toggleStatus(
-                            stageData.sId ?? '',
-                            context,
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                }),
-                const SizedBox(height: 12),
-                // ── Time Tabs ──────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 2,
-                    vertical: 4,
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 10),
-                        Obx(
-                          () => TimeTab(
-                            text: 'Today',
-                            first: true,
-                            isSelected:
-                                allocationController.selectedTimeRange.value ==
-                                'Today',
-                            onTap: () => allocationController.selectTimeRange(
-                              'Today',
-                              context,
-                            ),
-                          ),
-                        ),
-                        Obx(
-                          () => TimeTab(
-                            text: 'Yesterday',
-                            isSelected:
-                                allocationController.selectedTimeRange.value ==
-                                'Yesterday',
-                            onTap: () => allocationController.selectTimeRange(
-                              'Yesterday',
-                              context,
-                            ),
-                          ),
-                        ),
-                        Obx(
-                          () => TimeTab(
-                            text: 'Last 30 Days',
-                            isSelected:
-                                allocationController.selectedTimeRange.value ==
-                                'Last 30 Days',
-                            onTap: () => allocationController.selectTimeRange(
-                              'Last 30 Days',
-                              context,
-                            ),
-                          ),
-                        ),
-                        Obx(
-                          () => TimeTab(
-                            text: 'Select Range',
-                            last: true,
-                            isSelected:
-                                allocationController.selectedTimeRange.value ==
-                                'Select Range',
-                            onTap: () => allocationController.selectTimeRange(
-                              'Select Range',
-                              context,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // ── Lead List ──────────────────────────────────
+              else
                 Expanded(
                   child: allocationController.isLoading.value
                       ? _buildLoadingState()
@@ -685,7 +719,6 @@ class _AllocationPageState extends State<AllocationPage> {
                         )
                       : _buildLeadList(allocationController.leads),
                 ),
-              ],
             ],
           ),
         );
