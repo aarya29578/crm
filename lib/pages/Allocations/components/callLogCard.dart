@@ -10,6 +10,7 @@ import 'package:crm_flutter/pages/Allocations/WhatsappSMS/whatsapp_sms_controlle
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
 import 'package:crm_flutter/pages/home/HomeController.dart';
 import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
+import 'package:crm_flutter/pages/Allocations/components/searchable_sub_status_field.dart';
 import 'package:dio/dio.dart';
 import 'package:external_path/external_path.dart';
 import 'package:file_picker/file_picker.dart';
@@ -722,15 +723,10 @@ class CallLogCard extends StatelessWidget {
                                         );
                                       }
 
-                                      return DropdownButtonFormField<String>(
-                                        isExpanded: true,
-                                        initialValue:
-                                            subStatuses.any(
-                                              (sub) =>
-                                                  sub.id == currentSubStatusId,
-                                            )
-                                            ? currentSubStatusId
-                                            : null,
+                                      return SearchableSubStatusField(
+                                        subStatuses: subStatuses,
+                                        selectedId: currentSubStatusId,
+                                        label: "Select Sub Status",
                                         decoration: InputDecoration(
                                           labelText: "Select Sub Status",
                                           prefixIcon: const Icon(
@@ -765,27 +761,12 @@ class CallLogCard extends StatelessWidget {
                                               ? Colors.grey[900]
                                               : Colors.grey.shade50,
                                         ),
-                                        items: subStatuses.map((sub) {
-                                          return DropdownMenuItem<String>(
-                                            value: sub.id,
-                                            child: Text(
-                                              sub.name ?? '',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                color: isDark
-                                                    ? Colors.white
-                                                    : Colors.black87,
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                        onChanged: (val) async {
-                                          if (val != null && leadId != null) {
+                                        onChanged: (value) async {
+                                          if (value != null && leadId != null) {
                                             try {
                                               await DioApi().patchLead(
                                                 leadId!,
-                                                {"sub_status_id": val},
+                                                {"sub_status_id": value},
                                               );
                                               // Refresh details
                                               await leadDetailsController
@@ -1868,7 +1849,8 @@ class CallLogCard extends StatelessWidget {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  item.action?.isNotEmpty == true
+                                                  item.action?.isNotEmpty ==
+                                                          true
                                                       ? item.action!
                                                       : 'Activity',
                                                   style: const TextStyle(
@@ -1985,7 +1967,8 @@ class CallLogCard extends StatelessWidget {
                                                   ],
                                                 ],
 
-                                                if (item.changeDetails
+                                                if (item
+                                                    .changeDetails
                                                     .isNotEmpty) ...[
                                                   const SizedBox(height: 8),
                                                   const Text(
@@ -2012,7 +1995,8 @@ class CallLogCard extends StatelessWidget {
                                                   ),
                                                 ],
 
-                                                if (item.callDetails
+                                                if (item
+                                                    .callDetails
                                                     .isNotEmpty) ...[
                                                   const SizedBox(height: 8),
                                                   const Text(

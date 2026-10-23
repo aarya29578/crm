@@ -2,6 +2,7 @@ import 'package:crm_flutter/api/dio_util.dart';
 import 'package:crm_flutter/api/response/all_leads_response.dart';
 import 'package:crm_flutter/constants.dart';
 import 'package:crm_flutter/pages/Allocations/components/edit_allocation_lead_dialog.dart';
+import 'package:crm_flutter/pages/Allocations/components/searchable_sub_status_field.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -139,6 +140,7 @@ void main() {
                 'success': true,
                 'data': [
                   {'_id': 'sub-1', 'name': 'Interested'},
+                  {'_id': 'sub-2', 'name': 'Not Interested'},
                 ],
               };
             } else if (path.endsWith('/createuser/all')) {
@@ -224,6 +226,51 @@ void main() {
       await tester.tap(find.text('Online').last);
       await tester.pumpAndSettle();
 
+      final subStatusField = find.byType(SearchableSubStatusField);
+      await tester.scrollUntilVisible(
+        subStatusField,
+        250,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(subStatusField);
+      await tester.pumpAndSettle();
+      final searchField = find.byKey(const ValueKey('sub-status-search'));
+      await tester.enterText(searchField, 'no matching status');
+      await tester.pump();
+      expect(find.text('No sub-status found'), findsOneWidget);
+      await tester.tap(find.byTooltip('Clear search'));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('sub-status-option-sub-1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('sub-status-option-sub-2')),
+        findsOneWidget,
+      );
+      await tester.enterText(searchField, 'interested');
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('sub-status-option-sub-1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('sub-status-option-sub-2')),
+        findsOneWidget,
+      );
+      await tester.enterText(searchField, 'not interested');
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('sub-status-option-sub-1')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('sub-status-option-sub-2')),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Not Interested'));
+      await tester.pumpAndSettle();
+
       final priorityField = find.byWidgetPredicate(
         (widget) =>
             widget is DropdownButtonFormField<String> &&
@@ -247,6 +294,7 @@ void main() {
       expect(lastPatch?['phone'], 9876543210);
       expect(lastPatch?['email'], 'new@example.test');
       expect(lastPatch?['lead_source_id'], 'source-new');
+      expect(lastPatch?['sub_status_id'], 'sub-2');
       expect(lastPatch?['priority'], 'Hot');
       expect(lastPatch?.containsKey('remarks'), isFalse);
       expect(lastPatch?.containsKey('sub_source_id'), isFalse);
@@ -263,6 +311,7 @@ void main() {
       expect(returnedLead?.phone, 9876543210);
       expect(returnedLead?.email, 'new@example.test');
       expect(returnedLead?.leadSourceId?.sId, 'source-new');
+      expect(returnedLead?.subStatusId?.sId, 'sub-2');
       expect(returnedLead?.priority, 'Hot');
       expect(returnedLead?.remarks, 'Keep this remark');
       expect(returnedLead?.leadSubSourceId?.sId, 'sub-source-1');

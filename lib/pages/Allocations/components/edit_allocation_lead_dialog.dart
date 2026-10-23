@@ -8,6 +8,7 @@ import 'package:crm_flutter/api/response/all_sources_response.dart'
     as source_model;
 import 'package:crm_flutter/api/response/location_response.dart';
 import 'package:crm_flutter/api/response/substatus_lead_stage_response.dart';
+import 'package:crm_flutter/pages/Allocations/components/searchable_sub_status_field.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:flutter/material.dart';
 
@@ -719,12 +720,11 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    _dropdown(
+                    SearchableSubStatusField(
+                      subStatuses: _subStatuses,
+                      selectedId: _subStatusId,
                       label: 'Sub-status',
-                      value: _subStatusId,
-                      items: _optionItems(
-                        _subStatuses.map((item) => (item.id, item.name)),
-                      ),
+                      decoration: _decoration('Sub-status'),
                       onChanged: (value) =>
                           setState(() => _subStatusId = value),
                     ),
