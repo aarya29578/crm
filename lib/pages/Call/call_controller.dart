@@ -13,6 +13,7 @@ class CallLogController extends GetxController {
 
   Rx<AllCallHistoryResponse> callLogsResponse = AllCallHistoryResponse().obs;
   Rx<PageState> callApiState = PageState.loading.obs;
+  final Map<String, _UpdatedCallLeadDetails> _updatedLeadDetails = {};
 
   // Date filter state
   RxString selectedTimeRange = 'Today'.obs;
@@ -29,15 +30,42 @@ class CallLogController extends GetxController {
 
       Map<String, dynamic> queryParams = {};
       if (selectedStartDate.value != null) {
-        final sd = DateTime(selectedStartDate.value!.year, selectedStartDate.value!.month, selectedStartDate.value!.day);
+        final sd = DateTime(
+          selectedStartDate.value!.year,
+          selectedStartDate.value!.month,
+          selectedStartDate.value!.day,
+        );
         queryParams['startDate'] = sd.toUtc().toIso8601String();
       }
       if (selectedEndDate.value != null) {
-        final ed = DateTime(selectedEndDate.value!.year, selectedEndDate.value!.month, selectedEndDate.value!.day, 23, 59, 59, 999);
+        final ed = DateTime(
+          selectedEndDate.value!.year,
+          selectedEndDate.value!.month,
+          selectedEndDate.value!.day,
+          23,
+          59,
+          59,
+          999,
+        );
         queryParams['endDate'] = ed.toUtc().toIso8601String();
       }
 
-      final response = await DioApi().getAllCallsHistory(null, queryParams: queryParams.isNotEmpty ? queryParams : null);
+      final response = await DioApi().getAllCallsHistory(
+        null,
+        queryParams: queryParams.isNotEmpty ? queryParams : null,
+      );
+      for (final group in response.data ?? <CallHistoryGroup>[]) {
+        final lead = group.lead;
+        final updated = lead == null ? null : _updatedLeadDetails[lead.sId];
+        if (lead != null && updated != null) {
+          lead.name = LeadName(
+            first: updated.first,
+            middle: updated.middle,
+            last: updated.last,
+          );
+          lead.phone = updated.phone;
+        }
+      }
       callLogsResponse.value = response;
       callApiState.value = PageState.stable;
     } catch (e) {
@@ -58,8 +86,16 @@ class CallLogController extends GetxController {
         break;
       case 'Yesterday':
         final yesterday = now.subtract(const Duration(days: 1));
-        selectedStartDate.value = DateTime(yesterday.year, yesterday.month, yesterday.day);
-        selectedEndDate.value = DateTime(now.year, now.month, now.day).subtract(const Duration(seconds: 1));
+        selectedStartDate.value = DateTime(
+          yesterday.year,
+          yesterday.month,
+          yesterday.day,
+        );
+        selectedEndDate.value = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(const Duration(seconds: 1));
         break;
       case 'Last 30 Days':
         selectedStartDate.value = now.subtract(const Duration(days: 30));
@@ -86,10 +122,63 @@ class CallLogController extends GetxController {
   }
 
   void refreshData() {
-    getApi(
-      startDate: selectedStartDate.value,
-      endDate: selectedEndDate.value,
+    getApi(startDate: selectedStartDate.value, endDate: selectedEndDate.value);
+  }
+
+  Future<void> updateClientDetails({
+    required String leadId,
+    required String clientName,
+    required String mobileNumber,
+  }) async {
+    final normalizedLeadId = leadId.trim();
+    final normalizedName = clientName.trim();
+    final normalizedPhone = mobileNumber.trim();
+    if (normalizedLeadId.isEmpty) {
+      throw ArgumentError.value(leadId, 'leadId', 'Lead ID is required');
+    }
+    if (normalizedName.isEmpty) {
+      throw ArgumentError.value(
+        clientName,
+        'clientName',
+        'Client name is required',
+      );
+    }
+    if (!RegExp(r'^\d{10}$').hasMatch(normalizedPhone)) {
+      throw ArgumentError.value(
+        mobileNumber,
+        'mobileNumber',
+        'Mobile number must contain exactly 10 digits',
+      );
+    }
+
+    final nameParts = normalizedName.split(RegExp(r'\s+'));
+    final first = nameParts.first;
+    final last = nameParts.length > 1 ? nameParts.last : '';
+    final middle = nameParts.length > 2
+        ? nameParts.sublist(1, nameParts.length - 1).join(' ')
+        : '';
+    final phone = int.parse(normalizedPhone);
+
+    await DioApi().patchLead(normalizedLeadId, {
+      'name': {'first': first, 'middle': middle, 'last': last},
+      'phone': phone,
+    });
+
+    _updatedLeadDetails[normalizedLeadId] = _UpdatedCallLeadDetails(
+      first: first,
+      middle: middle,
+      last: last,
+      phone: phone,
     );
+
+    for (final group in callLogsResponse.value.data ?? <CallHistoryGroup>[]) {
+      final lead = group.lead;
+      if (lead?.sId == normalizedLeadId) {
+        lead!.name = LeadName(first: first, middle: middle, last: last);
+        lead.phone = phone;
+      }
+    }
+    callLogsResponse.refresh();
   }
 
   var searchQuery = ''.obs;
@@ -101,7 +190,10 @@ class CallLogController extends GetxController {
     }
     final query = searchQuery.value.toLowerCase();
     return allLogs.where((log) {
-      final nameStr = "${log.lead?.name?.first ?? ''} ${log.lead?.name?.last ?? ''}".trim().toLowerCase();
+      final nameStr =
+          "${log.lead?.name?.first ?? ''} ${log.lead?.name?.last ?? ''}"
+              .trim()
+              .toLowerCase();
       final phoneStr = log.lead?.phone?.toString() ?? '';
       return nameStr.contains(query) || phoneStr.contains(query);
     }).toList();
@@ -115,7 +207,7 @@ class CallLogController extends GetxController {
       if (await Permission.phone.request().isGranted) {
         // Get call logs
         Iterable<device_call_log.CallLogEntry> entries =
-    await device_call_log.CallLog.get();
+            await device_call_log.CallLog.get();
         callLogs.assignAll(entries);
         print('Name: ${callLogs[0].name}');
         print('Number: ${callLogs[0].number}');
@@ -138,4 +230,18 @@ class CallLogController extends GetxController {
       isLoading(false);
     }
   }
+}
+
+class _UpdatedCallLeadDetails {
+  final String first;
+  final String middle;
+  final String last;
+  final int phone;
+
+  const _UpdatedCallLeadDetails({
+    required this.first,
+    required this.middle,
+    required this.last,
+    required this.phone,
+  });
 }

@@ -1,5 +1,8 @@
 import 'package:crm_flutter/helper/call_helper.dart';
+import 'package:crm_flutter/helper/lead_edit_helper.dart';
+import 'package:crm_flutter/api/response/all_leads_response.dart' as lead_model;
 import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
+import 'package:crm_flutter/pages/Allocations/components/edit_allocation_lead_dialog.dart';
 import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_controller.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
@@ -26,6 +29,45 @@ class MissedFollowupsPage extends StatefulWidget {
 class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
   final ScrollController _scrollController = ScrollController();
   late final AllMissFUpsController _allMissFUpsController;
+  final Set<String> _editingLeadIds = {};
+
+  Future<void> _editLead(String? leadId) async {
+    if (leadId == null || leadId.trim().isEmpty) {
+      _showEditError('Lead ID is not available');
+      return;
+    }
+    if (!_editingLeadIds.add(leadId)) return;
+    setState(() {});
+
+    try {
+      final lead = await LeadEditHelper.fetchLeadForEditing(leadId);
+      if (!mounted) return;
+      final updatedLead = await showDialog<lead_model.Data>(
+        context: context,
+        builder: (_) => EditAllocationLeadDialog(lead: lead),
+      );
+      if (updatedLead != null && mounted) {
+        await _allMissFUpsController.fetchData(isRefresh: true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Lead updated successfully')),
+          );
+        }
+      }
+    } catch (error) {
+      _showEditError('Unable to load lead for editing: $error');
+    } finally {
+      _editingLeadIds.remove(leadId);
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _showEditError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   void initState() {
@@ -301,6 +343,7 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                             return Container(
                               child: CallLogCard(
                                 isMissedFUps: true,
+                                isEditing: _editingLeadIds.contains(data.sId),
                                 name: name,
                                 leadId: data.sId,
                                 campaign: data.compaignName is String
@@ -316,6 +359,7 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                                     : data.followUpDate,
                                 phone: data.phone ?? 0,
                                 stageFieldValues: data.stageFieldValues,
+                                onEdit: () => _editLead(data.sId),
                                 onCallBack: () async {
                                   final phone = data.phone?.toString() ?? '';
                                   if (phone.isEmpty) {

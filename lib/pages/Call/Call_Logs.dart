@@ -6,6 +6,7 @@ import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:crm_flutter/pages/Call/call_controller.dart';
+import 'package:crm_flutter/pages/Call/edit_call_client_details_dialog.dart';
 import 'package:intl/intl.dart';
 import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
 
@@ -23,6 +24,7 @@ class _CallLogsState extends State<CallLogs> {
   final CallLogController controller = Get.put(CallLogController());
   bool _isSearchVisible = false;
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _updatingLeadIds = {};
 
   @override
   void initState() {
@@ -226,9 +228,7 @@ class _CallLogsState extends State<CallLogs> {
     if (callGroup == null) return const SizedBox();
 
     final lead = callGroup.lead;
-    final leadName = (lead?.name?.first != null || lead?.name?.last != null)
-        ? "${lead?.name?.first ?? ""} ${lead?.name?.last ?? ""}".trim()
-        : (lead != null ? "Unnamed Lead" : "External Contact");
+    final leadName = _formatLeadName(lead);
     final phone = lead?.phone?.toString() ?? "No Contact Number";
 
     final direction = callGroup.callLog?.direction?.toLowerCase() ?? '';
@@ -322,6 +322,23 @@ class _CallLogsState extends State<CallLogs> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            if (lead?.sId != null && lead!.sId!.isNotEmpty)
+                              IconButton(
+                                key: ValueKey('edit-client-${lead.sId}'),
+                                tooltip: 'Edit client details',
+                                onPressed: _updatingLeadIds.contains(lead.sId)
+                                    ? null
+                                    : () => _editClientDetails(callGroup),
+                                icon: _updatingLeadIds.contains(lead.sId)
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.edit_outlined),
+                              ),
                             if (callType.isNotEmpty) ...[
                               const SizedBox(width: 8),
                               Container(
@@ -381,7 +398,6 @@ class _CallLogsState extends State<CallLogs> {
                         );
                         return;
                       }
-
                       await CallHelper.callAndTrack(phone, lead?.sId, '');
                     },
                     icon: Container(
@@ -490,6 +506,60 @@ class _CallLogsState extends State<CallLogs> {
     );
   }
 
+  Future<void> _editClientDetails(CallHistoryGroup callGroup) async {
+    final lead = callGroup.lead;
+    final leadId = lead?.sId;
+    if (lead == null || leadId == null || leadId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Client details cannot be edited without a lead ID'),
+        ),
+      );
+      return;
+    }
+    if (!_updatingLeadIds.add(leadId)) return;
+    setState(() {});
+
+    try {
+      final saved = await showDialog<bool>(
+        context: context,
+        builder: (_) => EditCallClientDetailsDialog(
+          clientName: _formatLeadName(lead),
+          mobileNumber: lead.phone?.toString() ?? '',
+          onSave: (clientName, mobileNumber) => controller.updateClientDetails(
+            leadId: leadId,
+            clientName: clientName,
+            mobileNumber: mobileNumber,
+          ),
+        ),
+      );
+      if (saved == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Client details updated successfully')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to update client details: $error')),
+        );
+      }
+    } finally {
+      _updatingLeadIds.remove(leadId);
+      if (mounted) setState(() {});
+    }
+  }
+
+  String _formatLeadName(Lead? lead) {
+    if (lead == null) return 'External Contact';
+    final name = [
+      lead.name?.first,
+      lead.name?.middle,
+      lead.name?.last,
+    ].whereType<String>().where((part) => part.trim().isNotEmpty).join(' ');
+    return name.isNotEmpty ? name : 'Unnamed Lead';
+  }
+
   Widget _buildInfoChip({
     required IconData icon,
     required String text,
@@ -566,9 +636,7 @@ class _CallLogsState extends State<CallLogs> {
 
   Widget _buildDetailsSheet(CallHistoryGroup callGroup) {
     final lead = callGroup.lead;
-    final leadName = (lead?.name?.first != null || lead?.name?.last != null)
-        ? "${lead?.name?.first ?? ""} ${lead?.name?.last ?? ""}".trim()
-        : (lead != null ? "Unnamed Lead" : "External Contact");
+    final leadName = _formatLeadName(lead);
     final isMissed =
         lead?.leadStage?.connected?.toLowerCase() == 'not connected';
 

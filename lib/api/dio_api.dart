@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:crm_flutter/api/response/all_campaigns_response.dart';
 import 'package:crm_flutter/api/response/all_follow_up_response.dart';
 import 'package:crm_flutter/api/response/all_missed_followups_response.dart';
@@ -245,17 +246,27 @@ class DioApi {
   }
 
   Future<AllLeadDetailResponse> getAllLeadDetails(leadId) async {
+    final leadIdValue = leadId.toString();
     try {
-      final response = await DioUtil.dio.get("$link/lead/$leadId");
-      print('++++++++ dio +++++++++');
-      print(response);
-      if (response.statusCode == 200) {
+      final response = await DioUtil.dio.get("$link/lead/$leadIdValue");
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300) {
+        debugPrint(
+          'Lead detail GET /lead/$leadIdValue status=${response.statusCode}',
+        );
         return AllLeadDetailResponse.fromJson(response.data);
       } else {
         throw Exception(
           'Failed to load lead id details: ${response.statusCode}',
         );
       }
+    } on DioException catch (error) {
+      debugPrint(
+        'Lead detail GET /lead/$leadIdValue failed '
+        'status=${error.response?.statusCode} message=${error.message}',
+      );
+      rethrow;
     } catch (e) {
       throw Exception('An error occurred while fetching lead id details: $e');
     }
@@ -361,18 +372,51 @@ class DioApi {
   }
 
   Future patchLead(String leadId, Map<String, dynamic> data) async {
+    final endpoint = '/lead/$leadId';
+    var responseFailureLogged = false;
     try {
-      final response = await DioUtil.dio.patch(
-        "$link/lead/$leadId",
-        data: data,
-      );
-      if (response.statusCode == 200) {
+      final response = await DioUtil.dio.patch("$link$endpoint", data: data);
+      final responseBody = response.data;
+      final bodyMessage = responseBody is Map
+          ? responseBody['message']?.toString()
+          : null;
+      if (response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300 &&
+          !(responseBody is Map && responseBody['success'] == false)) {
+        debugPrint('Lead update PATCH $endpoint status=${response.statusCode}');
         return response.data;
       } else {
-        throw Exception("Failed to update lead");
+        final message = bodyMessage ?? 'Failed to update lead';
+        responseFailureLogged = true;
+        debugPrint(
+          'Lead update PATCH $endpoint failed '
+          'status=${response.statusCode} message=$message',
+        );
+        throw Exception('$message (HTTP ${response.statusCode ?? 'unknown'})');
       }
-    } catch (e) {
-      throw Exception("Update lead error: $e");
+    } on DioException catch (error) {
+      final responseBody = error.response?.data;
+      final responseMessage = responseBody is Map
+          ? responseBody['message']?.toString()
+          : null;
+      final message = responseMessage ?? error.message ?? 'Request failed';
+      debugPrint(
+        'Lead update PATCH $endpoint failed '
+        'status=${error.response?.statusCode} message=$message',
+      );
+      throw Exception(
+        'Update lead error (HTTP '
+        '${error.response?.statusCode ?? 'unknown'}): $message',
+      );
+    } catch (error) {
+      if (!responseFailureLogged) {
+        debugPrint(
+          'Lead update PATCH $endpoint failed '
+          'status=unknown message=$error',
+        );
+      }
+      rethrow;
     }
   }
 

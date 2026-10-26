@@ -545,6 +545,12 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
   Future<void> _save() async {
     if (_saving || !_formKey.currentState!.validate()) return;
 
+    final leadId = _lead.sId?.trim();
+    if (leadId == null || leadId.isEmpty) {
+      setState(() => _saveError = 'Lead ID is not available');
+      return;
+    }
+
     Map<String, dynamic> payload;
     Data updated;
     try {
@@ -556,7 +562,7 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
     }
 
     if (payload.isEmpty) {
-      Navigator.of(context).pop(updated);
+      Navigator.of(context).pop();
       return;
     }
 
@@ -565,10 +571,6 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
       _saveError = null;
     });
     try {
-      final leadId = _lead.sId;
-      if (leadId == null || leadId.isEmpty) {
-        throw StateError('Lead ID is not available');
-      }
       await DioApi().patchLead(leadId, payload);
       if (mounted) Navigator.of(context).pop(updated);
     } catch (error) {

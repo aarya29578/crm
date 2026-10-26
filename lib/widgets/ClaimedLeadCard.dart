@@ -14,6 +14,7 @@ ClaimedLeadCard(
   mail,
   followUpDate,
   stageFieldValues,
+  {VoidCallback? onEdit, bool isEditing = false}
 ) {
   return Column(
     children: [
@@ -34,6 +35,8 @@ ClaimedLeadCard(
           mail,
           followUpDate,
           stageFieldValues,
+          onEdit: onEdit,
+          isEditing: isEditing,
         ),
       ),
       // ScheduleCard(),
@@ -136,6 +139,7 @@ ClaimedLeads(
   mail,
   followUpDate,
   stageFieldValues,
+  {VoidCallback? onEdit, bool isEditing = false}
 ) {
   return Container(
     padding: EdgeInsets.all(16),
@@ -421,6 +425,20 @@ ClaimedLeads(
                       ],
                     ),
                   ),
+                  if (onEdit != null || isEditing)
+                    IconButton(
+                      tooltip: 'Edit lead',
+                      onPressed: isEditing ? null : onEdit,
+                      icon: isEditing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.edit_outlined),
+                    ),
                   Expanded(
                     child: Container(
                       child: ElevatedButton.icon(

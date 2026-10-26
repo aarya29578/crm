@@ -1,4 +1,5 @@
 import 'package:crm_flutter/api/dio_util.dart';
+import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/all_leads_response.dart';
 import 'package:crm_flutter/constants.dart';
 import 'package:crm_flutter/pages/Allocations/components/edit_allocation_lead_dialog.dart';
@@ -8,6 +9,36 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('rejects a successful HTTP response with success false', () async {
+    final dio = Dio();
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {'success': false, 'message': 'Lead update rejected'},
+            ),
+          );
+        },
+      ),
+    );
+    DioUtil.dio = dio;
+    addTearDown(dio.close);
+
+    await expectLater(
+      DioApi().patchLead('lead-42', {'remarks': 'Updated'}),
+      throwsA(
+        isA<Exception>().having(
+          (error) => error.toString(),
+          'message',
+          contains('Lead update rejected'),
+        ),
+      ),
+    );
+  });
+
   testWidgets(
     'edits fields, retries a failed save, and reopens with saved values',
     (tester) async {

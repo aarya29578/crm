@@ -6,6 +6,7 @@ import 'package:crm_flutter/pages/Allocations/components/custom_chip.dart';
 import 'package:crm_flutter/api/response/all_lead_stage_response.dart'
     as stage_model;
 import 'package:crm_flutter/api/response/all_leads_response.dart' as lead_model;
+import 'package:crm_flutter/helper/lead_edit_helper.dart';
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
@@ -41,6 +42,46 @@ class _AllocationPageState extends State<AllocationPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearchVisible = false;
+  final Set<String> _editingLeadIds = {};
+
+  Future<void> _editLead(lead_model.Data lead) async {
+    final leadId = lead.sId?.trim();
+    if (leadId == null || leadId.isEmpty) {
+      _showEditMessage('Lead ID is not available', isError: true);
+      return;
+    }
+    if (!_editingLeadIds.add(leadId)) return;
+    setState(() {});
+
+    try {
+      final fullLead = await LeadEditHelper.fetchLeadForEditing(leadId);
+      if (!mounted) return;
+      final updatedLead = await showDialog<lead_model.Data>(
+        context: context,
+        builder: (_) => EditAllocationLeadDialog(lead: fullLead),
+      );
+      if (updatedLead != null && mounted) {
+        allocationController.updateLeadInLists(updatedLead);
+        await allocationController.refreshData();
+        if (mounted) _showEditMessage('Lead updated successfully');
+      }
+    } catch (error) {
+      _showEditMessage('Unable to edit lead $leadId: $error', isError: true);
+    } finally {
+      _editingLeadIds.remove(leadId);
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _showEditMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red.shade700 : null,
+      ),
+    );
+  }
 
   stage_model.Data? _stageForCategory(String category) {
     for (final stage in allocationController.allLeadStages) {
@@ -538,20 +579,8 @@ class _AllocationPageState extends State<AllocationPage> {
             followUp: data.followUpDate,
             stageFieldValues: data.stageFieldValues,
             phone: data.phone ?? 0,
-            onEdit: () async {
-              final updatedLead = await showDialog<lead_model.Data>(
-                context: context,
-                builder: (_) => EditAllocationLeadDialog(lead: data),
-              );
-              if (updatedLead != null) {
-                allocationController.updateLeadInLists(updatedLead);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Lead updated successfully')),
-                  );
-                }
-              }
-            },
+            isEditing: _editingLeadIds.contains(data.sId),
+            onEdit: () => _editLead(data),
             onCallBack: () async {
               final phone = data.phone?.toString() ?? '';
               if (phone.isEmpty) {

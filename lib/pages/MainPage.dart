@@ -1,7 +1,10 @@
 import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/api/response/all_leads_response.dart' as lead_model;
 import 'package:crm_flutter/common_widgets/notificationService.dart';
+import 'package:crm_flutter/helper/lead_edit_helper.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Allocations/components/custom_chip.dart';
+import 'package:crm_flutter/pages/Allocations/components/edit_allocation_lead_dialog.dart';
 import 'package:crm_flutter/pages/home/components/campaign_multiselect_dialog.dart';
 import 'package:crm_flutter/utils/timeago.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +30,63 @@ class _MainPageState extends State<MainPage> {
   final HomeController homeController = Get.put(HomeController());
   final Claimedcontroller controller = Get.put(Claimedcontroller());
   final DioApi dioApi = DioApi();
+  final Set<String> _editingLeadIds = {};
+
+  Future<void> _editLead(String? leadId) async {
+    if (leadId == null || leadId.trim().isEmpty) {
+      _showEditError('Lead ID is not available');
+      return;
+    }
+    if (!_editingLeadIds.add(leadId)) return;
+    setState(() {});
+
+    try {
+      final lead = await LeadEditHelper.fetchLeadForEditing(leadId);
+      if (!mounted) return;
+      final updatedLead = await showDialog<lead_model.Data>(
+        context: context,
+        builder: (_) => EditAllocationLeadDialog(lead: lead),
+      );
+      if (updatedLead == null || !mounted) return;
+
+      final stages = homeController.allLeadStageRes.value.data ?? [];
+      final selectedStageIds = <String>[];
+      for (final index in homeController.mainSelectedIndices) {
+        if (index > 0 && index - 1 < stages.length) {
+          final stageId = stages[index - 1].sId;
+          if (stageId != null) selectedStageIds.add(stageId);
+        }
+      }
+
+      if (selectedStageIds.isNotEmpty) {
+        try {
+          await controller.getLeadsByMultipleStages(selectedStageIds);
+        } catch (error) {
+          _showEditError(
+            'Lead updated, but the status list could not be refreshed: $error',
+          );
+          return;
+        }
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lead updated successfully')),
+        );
+      }
+    } catch (error) {
+      _showEditError('Unable to load lead details for editing: $error');
+    } finally {
+      _editingLeadIds.remove(leadId);
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _showEditError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   void initState() {
@@ -405,6 +465,8 @@ class _MainPageState extends State<MainPage> {
                       data.email ?? "no email",
                       data.followUpDate,
                       data.stageFieldValues,
+                      onEdit: () => _editLead(data.sId),
+                      isEditing: _editingLeadIds.contains(data.sId),
                     ),
                   );
                 },

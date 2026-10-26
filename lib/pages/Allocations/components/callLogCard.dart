@@ -32,6 +32,7 @@ class CallLogCard extends StatelessWidget {
   final VoidCallback? accept;
   final VoidCallback? decline;
   final VoidCallback? onEdit;
+  final bool isEditing;
   final DateTime? followUp;
   final String time;
   final int? phone;
@@ -55,6 +56,7 @@ class CallLogCard extends StatelessWidget {
     this.accept,
     this.decline,
     this.onEdit,
+    this.isEditing = false,
     this.followUp,
     this.time = "no time found",
     this.onTap,
@@ -3049,11 +3051,19 @@ class CallLogCard extends StatelessWidget {
               if (assignedTo == null && isMissedFUps == false) ...[
                 Column(
                   children: [
-                    if (onEdit != null)
+                    if (onEdit != null || isEditing)
                       IconButton(
                         tooltip: 'Edit lead',
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: isEditing ? null : onEdit,
+                        icon: isEditing
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.edit_outlined),
                       ),
                     // ACCEPT BUTTON
                     ElevatedButton(
@@ -3090,11 +3100,19 @@ class CallLogCard extends StatelessWidget {
               if (assignedTo != null || isMissedFUps == true) ...[
                 Column(
                   children: [
-                    if (onEdit != null)
+                    if (onEdit != null || isEditing)
                       IconButton(
                         tooltip: 'Edit lead',
-                        onPressed: onEdit,
-                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: isEditing ? null : onEdit,
+                        icon: isEditing
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.edit_outlined),
                       ),
 
                     ///Phone

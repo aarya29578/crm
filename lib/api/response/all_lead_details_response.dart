@@ -207,6 +207,7 @@ class Data {
   String? sId;
   String? userId;
   Country? leadSourceId;
+  all_leads.LeadSourceId? leadSubSourceId;
   Countrys? leadStageId;
   Name? name;
   int? phone;
@@ -249,6 +250,15 @@ class Data {
     leadSourceId = json['lead_source_id'] is Map
         ? Country.fromJson(json['lead_source_id'])
         : null;
+
+    final subSourceJson = json['sub_source_id'] ?? json['subSourceId'];
+    leadSubSourceId = subSourceJson is Map
+        ? all_leads.LeadSourceId.fromJson(
+            Map<String, dynamic>.from(subSourceJson),
+          )
+        : subSourceJson == null
+        ? null
+        : all_leads.LeadSourceId(sId: subSourceJson.toString());
 
     leadStageId = json['lead_stage_id'] is Map
         ? Countrys.fromJson(json['lead_stage_id'])
@@ -351,6 +361,7 @@ class Data {
       '_id': sId,
       'user_id': userId,
       'lead_source_id': leadSourceId?.toJson(),
+      'sub_source_id': leadSubSourceId?.toJson(),
       'lead_stage_id': leadStageId?.toJson(),
       'name': name?.toJson(),
       'phone': phone,
