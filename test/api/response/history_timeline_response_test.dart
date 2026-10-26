@@ -106,7 +106,7 @@ void main() {
     expect(call.callDetails, [
       'Direction: OUTBOUND',
       'Status: COMPLETED',
-      'Duration: 45',
+      'Duration: 00:45',
     ]);
 
     final update = response.data[1];
@@ -142,6 +142,43 @@ void main() {
     expect(response.data.single.createdAt, isNull);
     expect(response.data.single.changeDetails, isEmpty);
     expect(response.data.single.callDetails, isEmpty);
+  });
+
+  test('formats call durations as minutes and seconds', () {
+    final durations = <int, String>{
+      0: '00:00',
+      14: '00:14',
+      65: '01:05',
+      125: '02:05',
+      3600: '60:00',
+    };
+
+    for (final entry in durations.entries) {
+      final call = HistoryTimelineCall(duration: entry.key);
+
+      expect(call.formattedDuration, entry.value);
+      expect(call.duration, entry.key);
+    }
+  });
+
+  test('omits missing and invalid call durations safely', () {
+    for (final duration in [null, 'invalid', -1, -60, 1.5]) {
+      final entry = HistoryTimelineEntry(
+        action: 'CALL',
+        callLog: HistoryTimelineCall(duration: duration),
+      );
+
+      expect(entry.callDetails, isEmpty);
+    }
+  });
+
+  test('formats a numeric string duration', () {
+    final entry = HistoryTimelineEntry(
+      action: 'CALL',
+      callLog: HistoryTimelineCall(duration: '65'),
+    );
+
+    expect(entry.callDetails, ['Duration: 01:05']);
   });
 
   test('parses WhatsApp template usage and preserves message formatting', () {

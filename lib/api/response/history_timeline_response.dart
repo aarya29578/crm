@@ -114,7 +114,8 @@ class HistoryTimelineEntry {
     return [
       if (_hasText(call.direction)) 'Direction: ${call.direction}',
       if (_hasText(call.status)) 'Status: ${call.status}',
-      if (call.duration != null) 'Duration: ${call.duration}',
+      if (call.formattedDuration case final duration?)
+        'Duration: $duration',
     ];
   }
 
@@ -199,6 +200,20 @@ class HistoryTimelineCall {
   String? status;
 
   HistoryTimelineCall({this.id, this.direction, this.duration, this.status});
+
+  String? get formattedDuration {
+    final seconds = switch (duration) {
+      final int value => value,
+      final String value => int.tryParse(value.trim()),
+      _ => null,
+    };
+    if (seconds == null || seconds < 0) return null;
+
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:'
+        '${remainingSeconds.toString().padLeft(2, '0')}';
+  }
 
   HistoryTimelineCall.fromJson(Map<String, dynamic> json) {
     id = json['_id']?.toString();
