@@ -30,6 +30,26 @@ import 'package:crm_flutter/api/response/getLeadByStage.dart';
 import 'package:crm_flutter/constants.dart';
 import 'package:crm_flutter/api/response/location_response.dart';
 
+String _responseStructure(Object? value, {int depth = 0}) {
+  if (value == null) return 'null';
+  if (depth >= 4) return value.runtimeType.toString();
+  if (value is Map) {
+    final fields = value.entries
+        .map(
+          (entry) =>
+              '${entry.key}:${_responseStructure(entry.value, depth: depth + 1)}',
+        )
+        .join(',');
+    return 'Map{$fields}';
+  }
+  if (value is List) {
+    if (value.isEmpty) return 'List[]';
+    return 'List[length=${value.length},item='
+        '${_responseStructure(value.first, depth: depth + 1)}]';
+  }
+  return value.runtimeType.toString();
+}
+
 class DioApi {
   Future register(data) async {
     try {
@@ -1163,64 +1183,88 @@ class DioApi {
   // POST INCOMING CALL
   // POST INCOMING CALL
   Future postIncomingCall(Map<String, dynamic> data) async {
-    print("🔥 postIncomingCall() CALLED");
-    print("🔥 API DATA: $data");
+    debugPrint(
+      '[incoming-call] ${DateTime.now().toIso8601String()} '
+      'event=api_request',
+    );
 
-    final incomingCallUrl =
-    "$link/call/incoming";
-    print("🌐 Incoming Call URL: $incomingCallUrl");
+    final incomingCallUrl = "$link/call/incoming";
 
     try {
       final response = await DioUtil.dio.post(
         incomingCallUrl,
         data: data,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
-      print("📥 Incoming call response status: ${response.statusCode}");
-      print("📥 Incoming call response data: ${response.data}");
+      debugPrint(
+        '[incoming-call] ${DateTime.now().toIso8601String()} '
+        'event=api_response status=${response.statusCode}',
+      );
 
-      if (response.statusCode == 200 ||
-          response.statusCode == 201) {
-        print(
-          "✅ Incoming call posted successfully: ${response.data}",
-        );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data is Map && response.data['success'] == false) {
+          throw StateError(
+            'The incoming-call API reported an unsuccessful save',
+          );
+        }
         return response.data;
       }
 
-      throw Exception(
-        'Failed to post incoming call: ${response.statusCode}',
-      );
+      throw Exception('Failed to post incoming call: ${response.statusCode}');
     } on DioException catch (e) {
-      print("❌ Incoming call Dio error");
-      print("❌ URL: $incomingCallUrl");
-      print("❌ Status: ${e.response?.statusCode}");
-      print("❌ Response: ${e.response?.data}");
-      print("❌ Message: ${e.message}");
+      debugPrint(
+        '[incoming-call] ${DateTime.now().toIso8601String()} '
+        'event=api_transport_error '
+        'status=${e.response?.statusCode ?? 'none'}',
+      );
 
       throw Exception(
-        'Incoming call post failed: '
-        '${e.response?.data ?? e.message}',
+        'Incoming call post failed (status ${e.response?.statusCode ?? 'unknown'})',
       );
     } catch (e) {
-      print("❌ Incoming call post error: $e");
       rethrow;
     }
   }
 
   // POST PHONE CALL
-  Future postPhoneCall(data) async {
+  Future<dynamic> postPhoneCall(
+    Map<String, dynamic> data, {
+    String? idempotencyKey,
+  }) async {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+
     try {
-      final response = await DioUtil.dio.post("$link/call/dial", data: data);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return response.data;
+      final response = await DioUtil.dio.post(
+        "$link/call/dial",
+        data: data,
+        options: Options(headers: headers),
+      );
+      debugPrint(
+        '[call-session] ${DateTime.now().toIso8601String()} '
+        'event=call_api_response status=${response.statusCode} '
+        'response_structure=${_responseStructure(response.data)}',
+      );
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        throw Exception(
+          'Failed to create call history: ${response.statusCode}',
+        );
       }
-    } catch (e) {
-      return e;
+      if (response.data is Map && response.data['success'] == false) {
+        throw StateError('The call-history API reported an unsuccessful save');
+      }
+      return response.data;
+    } on DioException catch (error) {
+      debugPrint(
+        '[call-session] ${DateTime.now().toIso8601String()} '
+        'event=call_api_transport_error '
+        'status=${error.response?.statusCode ?? 'none'} '
+        'response_structure=${_responseStructure(error.response?.data)}',
+      );
+      rethrow;
     }
   }
 
@@ -1228,10 +1272,21 @@ class DioApi {
     try {
       final response = await DioUtil.dio.post("$link/call/start-call");
       if (response.statusCode == 201 || response.statusCode == 200) {
+        if (response.data is Map && response.data['success'] == false) {
+          throw StateError(
+            'The start-call API reported an unsuccessful result',
+          );
+        }
         return response.data;
       }
-    } catch (e) {
-      return e;
+      throw Exception('Failed to start call tracking: ${response.statusCode}');
+    } on DioException catch (error) {
+      debugPrint(
+        '[call-session] ${DateTime.now().toIso8601String()} '
+        'event=start_call_api_transport_error '
+        'status=${error.response?.statusCode ?? 'none'}',
+      );
+      rethrow;
     }
   }
 

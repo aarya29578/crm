@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
@@ -24,6 +27,7 @@ class _HomePageState extends State<HomePage> {
     homeController.fetchAllCampaigns();
     homeController.selectTimeRange('Today', context);
     homeController.getAllLeads();
+    unawaited(CallHelper.reconcilePendingSession());
   }
 
   @override
@@ -153,62 +157,56 @@ class _HomePageState extends State<HomePage> {
                             //     1,
                             //   ),
                             // ),
+                            Expanded(
+                              child: _buildStatTab(
+                                context: context,
+                                label: 'Overall',
+                                count:
+                                    homeController
+                                        .dashboardData
+                                        .value
+                                        .data
+                                        ?.callStats
+                                        ?.overall ??
+                                    0,
+                                isFirst: true,
+                                isLast: false,
+                              ),
+                            ),
 
                             Expanded(
-  child: _buildStatTab(
-    context: context,
-    label: 'Overall',
-    count:
-        homeController
-            .dashboardData
-            .value
-            .data
-            ?.callStats
-            ?.overall ??
-        0,
-    isFirst: true,
-    isLast: false,
-  ),
-),
+                              child: _buildStatTab(
+                                context: context,
+                                label: 'Outbound',
+                                count:
+                                    homeController
+                                        .dashboardData
+                                        .value
+                                        .data
+                                        ?.callStats
+                                        ?.outbound ??
+                                    0,
+                                isFirst: false,
+                                isLast: false,
+                              ),
+                            ),
 
-Expanded(
-  child: _buildStatTab(
-    context: context,
-    label: 'Outbound',
-    count:
-        homeController
-            .dashboardData
-            .value
-            .data
-            ?.callStats
-            ?.outbound ??
-        0,
-    isFirst: false,
-    isLast: false,
-  ),
-),
-
-Expanded(
-  child: _buildStatTab(
-    context: context,
-    label: 'Inbound',
-    count:
-        homeController
-            .dashboardData
-            .value
-            .data
-            ?.callStats
-            ?.inbound ??
-        0,
-    isFirst: false,
-    isLast: true,
-  ),
-),
-                           
-                           
-
-
-
+                            Expanded(
+                              child: _buildStatTab(
+                                context: context,
+                                label: 'Inbound',
+                                count:
+                                    homeController
+                                        .dashboardData
+                                        .value
+                                        .data
+                                        ?.callStats
+                                        ?.inbound ??
+                                    0,
+                                isFirst: false,
+                                isLast: true,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -719,7 +717,7 @@ Expanded(
                                 horizontal: 10,
                               ),
                               // separatorBuilder: (context, index) =>
-                                  // Divider(color: Colors.grey.shade500),
+                              // Divider(color: Colors.grey.shade500),
                               physics: NeverScrollableScrollPhysics(),
                               itemCount: homeController
                                   .allLeadStageRes

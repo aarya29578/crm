@@ -13,32 +13,31 @@ class IncomingCallService {
 
   static final DioApi _dioApi = DioApi();
 
+  static void _log(String event) {
+    debugPrint(
+      '[incoming-call] ${DateTime.now().toIso8601String()} event=$event',
+    );
+  }
+
   static void initialize() {
-    print("🔥 IncomingCallService initialized");
+    _log('initialized');
 
     _channel.setMethodCallHandler((call) async {
-      print("🔥 MethodChannel event received: ${call.method}");
-      print("🔥 Arguments: ${call.arguments}");
+      _log('method_channel_event_${call.method}');
 
       if (call.method == 'incomingCallEnded') {
         try {
           final data = Map<String, dynamic>.from(call.arguments);
 
-          print("📞 Incoming call received from Android");
-          print(data);
+          _log('incoming_call_received');
 
           // ============================================
           // EXISTING SYNC API - DO NOT CHANGE
           // ============================================
 
-          final payload = {
-            "calls": [data],
-          };
+          _log('incoming_call_payload_prepared');
 
-          print("🚀 ABOUT TO HIT API");
-          print("🚀 Payload: $payload");
-
-         // final response = await _dioApi.syncIncomingCall(payload);
+          // final response = await _dioApi.syncIncomingCall(payload);
 
           //print("✅ API RESPONSE: $response");
 
@@ -49,11 +48,11 @@ class IncomingCallService {
           final phoneNumber = data['phone_number']?.toString() ?? '';
 
           if (phoneNumber.isEmpty) {
-            print("❌ Phone number is empty");
+            _log('incoming_phone_number_missing');
             return;
           }
 
-          print("📱 Incoming phone number: $phoneNumber");
+          _log('incoming_phone_number_available');
 
           // ============================================
           // GET FLUTTER CONTEXT
@@ -62,7 +61,7 @@ class IncomingCallService {
           final context = Get.context;
 
           if (context == null) {
-            print("❌ Flutter context is not available");
+            _log('flutter_context_unavailable');
             return;
           }
 
@@ -77,15 +76,11 @@ class IncomingCallService {
               return AlertDialog(
                 title: const Text(
                   "Call Related?",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 content: Text(
                   "Was this call work related?\n\n$phoneNumber",
-                  style: const TextStyle(
-                    fontSize: 15,
-                  ),
+                  style: const TextStyle(fontSize: 15),
                 ),
                 actions: [
                   TextButton(
@@ -106,9 +101,7 @@ class IncomingCallService {
                     },
                     child: const Text(
                       "YES",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -121,25 +114,21 @@ class IncomingCallService {
           // ============================================
 
           if (isWorkRelated != true) {
-
-            print("❌ Call marked as NOT work related");
+            _log('call_marked_not_work_related');
             return;
-         }
+          }
 
-         print("✅ Call marked as WORK RELATED");
+          _log('call_marked_work_related');
 
           // ============================================
           // YES → FIND EXISTING LEAD
           // ============================================
 
-          print("🟡 YES pressed - starting lead search");
-          print("📱 Searching lead for: $phoneNumber");
+          _log('lead_search_started');
 
           dynamic matchedLead;
 
           final incomingPhone = _normalizePhone(phoneNumber);
-
-          print("📱 Normalized incoming phone: $incomingPhone");
 
           // ============================================
           // GET ALL LEADS PAGE BY PAGE
@@ -149,44 +138,27 @@ class IncomingCallService {
           int totalPages = 1;
 
           while (page <= totalPages && matchedLead == null) {
-            print("fetching");
-            print("📄 Fetching leads page: $page");
+            _log('lead_search_page_requested');
 
-            final leadsResponse = await _dioApi.getAllLeads(
-              page: page,
-            );
+            final leadsResponse = await _dioApi.getAllLeads(page: page);
 
             final leads = leadsResponse.data ?? [];
 
-            print(
-              "🔎 Leads found on page $page: ${leads.length}",
-            );
+            _log('lead_search_page_received');
 
             // Get total pages from API response
             totalPages = leadsResponse.totalPages ?? 1;
-
-            print("📚 Total pages: $totalPages");
 
             // ============================================
             // COMPARE PHONE NUMBERS
             // ============================================
 
             for (final lead in leads) {
-              final leadPhone = _normalizePhone(
-                lead.phone?.toString() ?? '',
-              );
-
-              print(
-                "🔍 Comparing incoming: $incomingPhone "
-                "with lead: $leadPhone",
-              );
+              final leadPhone = _normalizePhone(lead.phone?.toString() ?? '');
 
               if (incomingPhone == leadPhone) {
                 matchedLead = lead;
-
-                print(
-                  "✅ MATCH FOUND: ${lead.sId}",
-                );
+                _log('lead_match_found');
 
                 break;
               }
@@ -199,47 +171,37 @@ class IncomingCallService {
           // CHECK MATCHED LEAD
           // ============================================
 
-          print("🟣 Matched lead: $matchedLead");
+          if (matchedLead == null) {
+            _log('lead_match_not_found');
 
-         if (matchedLead == null) {
-  print("❌ No lead found for phone number: $phoneNumber");
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("This number is not in the leads."),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
 
-  if (context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("This number is not in the leads."),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  return;
-}
-
-          if (matchedLead.sId == null) {
-            print("❌ Matched lead does not have an ID");
             return;
           }
 
-          print("✅ Lead matched");
-          print("🆔 Lead ID: ${matchedLead.sId}");
-          print(
-            "📌 Stage: ${matchedLead.leadStageId?.name}",
-          );
+          if (matchedLead.sId == null) {
+            _log('matched_lead_id_missing');
+            return;
+          }
+
+          _log('lead_match_confirmed');
 
           // ============================================
           // PENDING CALL DATA
           // ============================================
 
-          PendingCallData.data = {
-            ...data,
-            "lead_id": matchedLead.sId,
-          };
+          PendingCallData.data = {...data, "lead_id": matchedLead.sId};
+          PendingCallData.outboundSessionId = null;
 
-          print(
-            "💾 PendingCallData saved: ${PendingCallData.data}",
-          );
+          _log('incoming_call_data_staged');
 
           // ============================================
           // YES → EXISTING CRM POPUP
@@ -248,40 +210,30 @@ class IncomingCallService {
           final latestContext = Get.context;
 
           if (latestContext == null) {
-            print(
-              "❌ Context unavailable for CRM popup",
-            );
+            _log('crm_popup_context_unavailable');
             return;
           }
 
-          print("🚀 Opening existing CRM popup");
+          _log('crm_popup_opening');
 
           await showDialog(
             context: latestContext,
             barrierDismissible: false,
             builder: (dialogContext) {
-              return PopScope(
-                canPop: false,
-                child: Dialog(
-                  insetPadding: const EdgeInsets.all(20),
-                  child: PopupAfterCallUi(
-                    leadId: matchedLead.sId!,
-                    stageName: matchedLead.leadStageId?.name,
-                    isIncoming: true,
-                  ),
+              return Dialog(
+                insetPadding: const EdgeInsets.all(20),
+                child: PopupAfterCallUi(
+                  leadId: matchedLead.sId!,
+                  stageName: matchedLead.leadStageId?.name,
+                  isIncoming: true,
                 ),
               );
             },
           );
 
-          print(
-            "✅ Existing PopupAfterCallUi closed",
-          );
-        } catch (e, stackTrace) {
-          print(
-            "❌ Incoming call processing failed: $e",
-          );
-          print(stackTrace);
+          _log('crm_popup_closed');
+        } catch (e) {
+          _log('incoming_call_processing_failed_${e.runtimeType}');
         }
       }
     });
@@ -292,15 +244,10 @@ class IncomingCallService {
   // ============================================
 
   static String _normalizePhone(String phone) {
-    String normalized = phone.replaceAll(
-      RegExp(r'\D'),
-      '',
-    );
+    String normalized = phone.replaceAll(RegExp(r'\D'), '');
 
     if (normalized.length > 10) {
-      normalized = normalized.substring(
-        normalized.length - 10,
-      );
+      normalized = normalized.substring(normalized.length - 10);
     }
 
     return normalized;

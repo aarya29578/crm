@@ -77,10 +77,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
                         TelephonyManager.EXTRA_INCOMING_NUMBER
                     )
 
-                Log.d(
-                    TAG,
-                    "Incoming number: $incomingNumber"
-                )
+                Log.d(TAG, "Incoming call state received")
 
                 if (!incomingNumber.isNullOrBlank()) {
 
@@ -185,10 +182,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
 
                 Log.d(
                     TAG,
-                    "Call ended. " +
-                            "Number=$incomingNumber " +
-                            "active=$callWasActive " +
-                            "answered=$callWasAnswered"
+                    "Call ended. active=$callWasActive answered=$callWasAnswered"
                 )
 
                 if (callWasActive) {
@@ -478,10 +472,7 @@ class IncomingCallReceiver : BroadcastReceiver() {
                     val callJson =
                         data.toString()
 
-                    Log.d(
-                        TAG,
-                        "📞 Final call data: $callJson"
-                    )
+                    Log.d(TAG, "Final incoming call record prepared")
 
                     // --------------------------------
                     // Save call

@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/common_widgets/call_storage.dart';
+import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
@@ -47,6 +49,7 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
   bool isLoadingFields = false;
   String? selectedRating;
   bool isSubmitting = false;
+  bool _allowDialogClose=false;
   final List<String> ratingOptions = [
     "Hot",
     "Warm",
@@ -57,6 +60,13 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
   ];
   String? _dateTimeError;
   Map<String, String?> dynamicDateErrors = {};
+
+  void _logCallFormEvent(String event, {String? detail}) {
+    debugPrint(
+      '[call-session] ${DateTime.now().toIso8601String()} '
+      'event=$event${detail == null ? '' : ' detail=$detail'}',
+    );
+  }
 
   @override
   void initState() {
@@ -410,569 +420,611 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
     // final canSubmit = selectedStageId != null && (!isFollowUp || dt != null);
 
     // print("Stages from bottomsheetUi: ${stages[index].name}");
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Container(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.call_end_rounded,
-                        color: Colors.blue,
-                        size: 28,
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        "Call Status",
-                        style: TextStyle(
+    return PopScope(
+      canPop: _allowDialogClose,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Container(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.call_end_rounded,
                           color: Colors.blue,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          size: 28,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                Obx(() {
-                  if (homeController.countLoading.value == PageState.loading) {
-                    return const CircularProgressIndicator();
-                  }
-
-                  final stages =
-                      homeController.allLeadStageRes.value.data ?? [];
-                  final selectedStageObj =
-                      stages.where((e) => e.sId == selectedStageId).isNotEmpty
-                      ? stages.firstWhere((e) => e.sId == selectedStageId)
-                      : null;
-                  final hasSubStatus = selectedStageObj?.hasSubStatus == true;
-
-                  print(
-                    "PopupAfterCallUi Obx rebuild: selectedStageId: $selectedStageId, hasSubStatus: $hasSubStatus",
-                  );
-
-                  final leadData =
-                      leadDetailsController.allLeadDetailRes.value.data;
-                  final visitedStageIds = leadData?.visitedStageIds ?? [];
-                  final filteredStages = stages
-                      .where((stage) => stage.name?.toLowerCase() != 'new')
-                      .toList();
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      DropdownButtonFormField<String>(
-                        initialValue:
-                            filteredStages.any((s) => s.sId == selectedStageId)
-                            ? selectedStageId
-                            : null,
-                        decoration: InputDecoration(
-                          labelText: "Current Stage",
-                          prefixIcon: const Icon(
-                            Icons.layers_outlined,
+                        const SizedBox(width: 12),
+                        const Text(
+                          "Call Status",
+                          style: TextStyle(
                             color: Colors.blue,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.blue,
-                              width: 2,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.shade50,
                         ),
-                        items: filteredStages.map((stage) {
-                          return DropdownMenuItem<String>(
-                            value: stage.sId,
-                            enabled: true,
-                            child: Text(
-                              stage.name ?? '',
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w500,
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+      
+                  Obx(() {
+                    if (homeController.countLoading.value == PageState.loading) {
+                      return const CircularProgressIndicator();
+                    }
+      
+                    final stages =
+                        homeController.allLeadStageRes.value.data ?? [];
+                    final selectedStageObj =
+                        stages.where((e) => e.sId == selectedStageId).isNotEmpty
+                        ? stages.firstWhere((e) => e.sId == selectedStageId)
+                        : null;
+                    final hasSubStatus = selectedStageObj?.hasSubStatus == true;
+      
+                    print(
+                      "PopupAfterCallUi Obx rebuild: selectedStageId: $selectedStageId, hasSubStatus: $hasSubStatus",
+                    );
+      
+                    final leadData =
+                        leadDetailsController.allLeadDetailRes.value.data;
+                    final visitedStageIds = leadData?.visitedStageIds ?? [];
+                    final filteredStages = stages
+                        .where((stage) => stage.name?.toLowerCase() != 'new')
+                        .toList();
+      debugPrint('Current-stage options: ${filteredStages.length}');
+debugPrint('selectedStageId: $selectedStageId');
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DropdownButtonFormField<String>(
+                          initialValue:
+                              filteredStages.any((s) => s.sId == selectedStageId)
+                              ? selectedStageId
+                              : null,
+                          decoration: InputDecoration(
+                            labelText: "Current Stage",
+                            prefixIcon: const Icon(
+                              Icons.layers_outlined,
+                              color: Colors.blue,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Colors.blue,
+                                width: 2,
                               ),
                             ),
-                          );
-                        }).toList(),
-                        onChanged: (value) async {
-                          if (value != null) {
-                            setState(() {
-                              selectedStageId = value;
-                              selectedSubStatusId = null; // reset substatus
-                            });
-
-                            final selectedStageObj = stages.firstWhere(
-                              (e) => e.sId == value,
-                            );
-
-                            /// FETCH DYNAMIC FIELDS
-                            fetchStageFields(value);
-
-                            /// CALL API IF HAS SUBSTATUS
-                            if (selectedStageObj.hasSubStatus == true) {
-                              await homeController.getFailedSubLStage(
-                                selectedStageId: value,
-                              );
-                            }
-                          }
-                        },
-                      ),
-
-                      if (hasSubStatus) ...[
-                        if (homeController.subStageLoading.value ==
-                            PageState.loading)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 20),
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        else ...[
-                          (() {
-                            final subStatuses =
-                                homeController.allSubLStageRes.value.data ?? [];
-                            print(
-                              "PopupAfterCallUi subStatus Obx render: subStatuses count = ${subStatuses.length}",
-                            );
-
-                            if (subStatuses.isEmpty) {
-                              return const Padding(
-                                padding: EdgeInsets.only(top: 20),
-                                child: Text("No Sub Status Available"),
-                              );
-                            }
-
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 20),
-                              child: DropdownButtonFormField<String>(
-                                initialValue:
-                                    subStatuses.any(
-                                      (sub) => sub.id == selectedSubStatusId,
-                                    )
-                                    ? selectedSubStatusId
-                                    : null,
-                                decoration: InputDecoration(
-                                  labelText: "Select Sub Status",
-                                  prefixIcon: const Icon(
-                                    Icons.subdirectory_arrow_right_rounded,
-                                    color: Colors.blue,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: Colors.grey.shade300,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                      color: Colors.blue,
-                                      width: 2,
-                                    ),
-                                  ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          items: filteredStages.map((stage) {
+                            return DropdownMenuItem<String>(
+                              value: stage.sId,
+                              enabled: true,
+                              child: Text(
+                                stage.name ?? '',
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                items: subStatuses.map((sub) {
-                                  return DropdownMenuItem<String>(
-                                    value: sub.id,
-                                    child: Text(sub.name ?? ''),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  setState(() {
-                                    selectedSubStatusId = val;
-                                  });
-                                },
                               ),
                             );
-                          })(),
+                          }).toList(),
+                          onChanged: (value) async {
+                            if (value != null) {
+                              setState(() {
+                                selectedStageId = value;
+                                selectedSubStatusId = null; // reset substatus
+                              });
+      
+                              final selectedStageObj = stages.firstWhere(
+                                (e) => e.sId == value,
+                              );
+      
+                              /// FETCH DYNAMIC FIELDS
+                              fetchStageFields(value);
+      
+                              /// CALL API IF HAS SUBSTATUS
+                              if (selectedStageObj.hasSubStatus == true) {
+                                await homeController.getFailedSubLStage(
+                                  selectedStageId: value,
+                                );
+                              }
+                            }
+                          },
+                        ),
+      
+                        if (hasSubStatus) ...[
+                          if (homeController.subStageLoading.value ==
+                              PageState.loading)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 20),
+                              child: Center(child: CircularProgressIndicator()),
+                            )
+                          else ...[
+                            (() {
+                              final subStatuses =
+                                  homeController.allSubLStageRes.value.data ?? [];
+                              print(
+                                "PopupAfterCallUi subStatus Obx render: subStatuses count = ${subStatuses.length}",
+                              );
+      
+                              if (subStatuses.isEmpty) {
+                                return const Padding(
+                                  padding: EdgeInsets.only(top: 20),
+                                  child: Text("No Sub Status Available"),
+                                );
+                              }
+      
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 20),
+                                child: DropdownButtonFormField<String>(
+                                  initialValue:
+                                      subStatuses.any(
+                                        (sub) => sub.id == selectedSubStatusId,
+                                      )
+                                      ? selectedSubStatusId
+                                      : null,
+                                  decoration: InputDecoration(
+                                    labelText: "Select Sub Status",
+                                    prefixIcon: const Icon(
+                                      Icons.subdirectory_arrow_right_rounded,
+                                      color: Colors.blue,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(
+                                        color: Colors.blue,
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                  items: subStatuses.map((sub) {
+                                    return DropdownMenuItem<String>(
+                                      value: sub.id,
+                                      child: Text(sub.name ?? ''),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    setState(() {
+                                      selectedSubStatusId = val;
+                                    });
+                                  },
+                                ),
+                              );
+                            })(),
+                          ],
                         ],
                       ],
-                    ],
-                  );
-                }),
-
-                const SizedBox(height: 20),
-
-                // Rating Dropdown
-                DropdownButtonFormField<String>(
-                  initialValue:
-                      (selectedRating != null &&
-                          ratingOptions.contains(selectedRating))
-                      ? selectedRating
-                      : null,
-                  decoration: InputDecoration(
-                    labelText: "Lead Rating",
-                    prefixIcon: const Icon(
-                      Icons.star_outline,
-                      color: Colors.blue,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
+                    );
+                  }),
+      
+                  const SizedBox(height: 20),
+      
+                  // Rating Dropdown
+                  DropdownButtonFormField<String>(
+                    initialValue:
+                        (selectedRating != null &&
+                            ratingOptions.contains(selectedRating))
+                        ? selectedRating
+                        : null,
+                    decoration: InputDecoration(
+                      labelText: "Lead Rating",
+                      prefixIcon: const Icon(
+                        Icons.star_outline,
                         color: Colors.blue,
-                        width: 2,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.blue,
+                          width: 2,
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text("None"),
+                      ),
+                      ...ratingOptions.map((rating) {
+                        return DropdownMenuItem<String>(
+                          value: rating,
+                          child: Text(rating),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        selectedRating = value;
+                      });
+                    },
+                  ),
+      
+                  if (isFollowUp) ...[
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Follow Up Date ",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.black87,
                       ),
                     ),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                  ),
-                  items: [
-                    const DropdownMenuItem<String>(
-                      value: null,
-                      child: Text("None"),
+                    const SizedBox(height: 10),
+                    InkWell(
+                      onTap: () => _pickDateTime(),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _dateTimeError != null
+                                ? Colors.red
+                                : Colors.grey.shade300,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.grey.shade50,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_month_outlined,
+                              color: _dateTimeError != null
+                                  ? Colors.red
+                                  : Colors.blue,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                dt == null
+                                    ? "Select Date & Time"
+                                    : DateFormat(
+                                        'dd MMM yyyy • hh:mm a',
+                                      ).format(dt!),
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: dt == null
+                                      ? Colors.grey.shade600
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 14,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    ...ratingOptions.map((rating) {
-                      return DropdownMenuItem<String>(
-                        value: rating,
-                        child: Text(rating),
-                      );
-                    }),
+                    if (_dateTimeError != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6, left: 4),
+                        child: Text(
+                          _dateTimeError!,
+                          style: const TextStyle(color: Colors.red, fontSize: 12),
+                        ),
+                      ),
                   ],
-                  onChanged: (value) {
-                    setState(() {
-                      selectedRating = value;
-                    });
-                  },
-                ),
-
-                if (isFollowUp) ...[
-                  const SizedBox(height: 20),
+      
+                  if (isLoadingFields)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (stageFields.isNotEmpty)
+                    _buildDynamicFields(),
+      
+                  const SizedBox(height: 24),
                   const Text(
-                    "Follow Up Date ",
+                    "Remarks & Notes",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  InkWell(
-                    onTap: () => _pickDateTime(),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: notesController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: "Enter any important notes from the call...",
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.only(bottom: 40),
+                        child: Icon(Icons.note_alt_outlined, color: Colors.blue),
                       ),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: _dateTimeError != null
-                              ? Colors.red
-                              : Colors.grey.shade300,
-                        ),
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        color: Colors.grey.shade50,
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_month_outlined,
-                            color: _dateTimeError != null
-                                ? Colors.red
-                                : Colors.blue,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              dt == null
-                                  ? "Select Date & Time"
-                                  : DateFormat(
-                                      'dd MMM yyyy • hh:mm a',
-                                    ).format(dt!),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.blue,
+                          width: 2,
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                  ),
+      
+                  30.heightBox,
+      
+                  ///Here will be the dropdown buttom using data(showing data in dropdown) stages[index].name
+                  // const Spacer(),
+                  const SizedBox(height: 32),
+      
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: isSubmitting
+                          ? null // button disabled while a request is already in flight
+                          : () async {
+                              final callData = PendingCallData.data;
+      
+                              if (callData == null) {
+                                _logCallFormEvent('pending_call_data_missing');
+                                Navigator.pop(context);
+                                return;
+                              }
+      
+                              if (selectedStageId == null) {
+                                Get.snackbar(
+                                  "Error",
+                                  "Please select Call Status",
+                                  snackPosition: SnackPosition.TOP,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
+      
+                              if (hasSubStatus && selectedSubStatusId == null) {
+                                Get.snackbar(
+                                  "Error",
+                                  "Please select Sub Status",
+                                  snackPosition: SnackPosition.TOP,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
+      
+                              if (isFollowUp &&
+                                  dt != null &&
+                                  dt!.isBefore(DateTime.now())) {
+                                Get.snackbar(
+                                  "Error",
+                                  "Cannot select a past date or time",
+                                  snackPosition: SnackPosition.TOP,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
+      
+                              callData["lead_stage_id"] = selectedStageId;
+                              callData["remarks"] = notesController.text;
+                              callData["sub_status_id"] = hasSubStatus
+                                  ? selectedSubStatusId
+                                  : null;
+      
+                              if (isFollowUp && dt != null) {
+                                callData["followUpDate"] = dt!.toIso8601String();
+                              }
+      
+                              if (selectedRating != null) {
+                                callData["priority"] = selectedRating;
+                              }
+      
+                              final textFields = <Map<String, dynamic>>[];
+                              DateTime? dynamicFollowUpDate;
+      
+                              for (var field in stageFields) {
+                                final fieldId = field['_id'];
+                                final fieldType = field['fieldType'];
+      
+                                if (fieldType == 'datetime' &&
+                                    dynamicDates[fieldId] != null) {
+                                  dynamicFollowUpDate = dynamicDates[fieldId];
+                                  if (dynamicFollowUpDate!.isBefore(
+                                    DateTime.now(),
+                                  )) {
+                                    Get.snackbar(
+                                      "Error",
+                                      "Cannot select a past date or time",
+                                      snackPosition: SnackPosition.TOP,
+                                      backgroundColor: Colors.red,
+                                      colorText: Colors.white,
+                                    );
+                                    return;
+                                  }
+                                } else if (fieldType == 'text') {
+                                  final controller = textControllers[fieldId];
+                                  if (controller != null &&
+                                      controller.text.isNotEmpty) {
+                                    textFields.add({
+                                      "fieldId": fieldId,
+                                      "fieldType": "text",
+                                      "value": controller.text,
+                                    });
+                                  }
+                                }
+                              }
+      
+                              if (dynamicFollowUpDate != null) {
+                                callData["followUpDate"] = dynamicFollowUpDate
+                                    .toIso8601String();
+                              }
+                              if (textFields.isNotEmpty) {
+                                callData["stageFieldValues"] = jsonEncode(
+                                  textFields,
+                                );
+                              }
+      
+                              // Lock the button NOW, right before the API call
+                              setState(() => isSubmitting = true);
+      
+                              _logCallFormEvent('form_submission_started');
+      
+                              try {
+                                if (widget.isIncoming ||
+                                    callData["device_call_id"] != null) {
+                                  await DioApi().postIncomingCall(callData);
+                                  PendingCallData.data = null;
+                                  PendingCallData.outboundSessionId = null;
+                                } else {
+                                  await CallHelper.submitPendingCall(callData);
+                                }
+                                _logCallFormEvent('form_submission_verified');
+                                try {
+                                  await Get.find<FollowUpController>()
+                                      .syncWithApi();
+                                } catch (error) {
+                                  _logCallFormEvent(
+                                    'follow_up_sync_failed',
+                                    detail: error.runtimeType.toString(),
+                                  );
+                                }
+      if (!mounted) return;
+
+setState(() {
+  _allowDialogClose = true;
+});
+
+await WidgetsBinding.instance.endOfFrame;
+
+if (!mounted) return;
+Navigator.of(context, rootNavigator: true).pop();
+
+/// Refresh AFTER dialog closes
+unawaited(_refreshCallScreens());
+                               } catch (e) {
+                                _logCallFormEvent(
+                                  'form_submission_failed_or_unverified',
+                                  detail: e.runtimeType.toString(),
+                                );
+                                // unlock only on failure — on success the dialog is already gone
+                                if (mounted) {
+                                  setState(() => isSubmitting = false);
+                                }
+                              }
+                            },
+                      child: isSubmitting
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              "Continue with Changes",
                               style: TextStyle(
-                                fontSize: 15,
-                                color: dt == null
-                                    ? Colors.grey.shade600
-                                    : Colors.black87,
-                                fontWeight: FontWeight.w500,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                          const Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 14,
-                            color: Colors.grey,
-                          ),
-                        ],
-                      ),
                     ),
                   ),
-                  if (_dateTimeError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6, left: 4),
-                      child: Text(
-                        _dateTimeError!,
-                        style: const TextStyle(color: Colors.red, fontSize: 12),
-                      ),
-                    ),
                 ],
-
-                if (isLoadingFields)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (stageFields.isNotEmpty)
-                  _buildDynamicFields(),
-
-                const SizedBox(height: 24),
-                const Text(
-                  "Remarks & Notes",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: notesController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: "Enter any important notes from the call...",
-                    prefixIcon: const Padding(
-                      padding: EdgeInsets.only(bottom: 40),
-                      child: Icon(Icons.note_alt_outlined, color: Colors.blue),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.blue,
-                        width: 2,
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                  ),
-                ),
-
-                30.heightBox,
-
-                ///Here will be the dropdown buttom using data(showing data in dropdown) stages[index].name
-                // const Spacer(),
-                const SizedBox(height: 32),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: isSubmitting
-                        ? null // button disabled while a request is already in flight
-                        : () async {
-                            final callData = PendingCallData.data;
-
-                            if (callData == null) {
-                              print("No pending call data");
-                              Navigator.pop(context);
-                              return;
-                            }
-
-                            if (selectedStageId == null) {
-                              Get.snackbar(
-                                "Error",
-                                "Please select Call Status",
-                                snackPosition: SnackPosition.TOP,
-                                backgroundColor: Colors.red,
-                                colorText: Colors.white,
-                              );
-                              return;
-                            }
-
-                            if (hasSubStatus && selectedSubStatusId == null) {
-                              Get.snackbar(
-                                "Error",
-                                "Please select Sub Status",
-                                snackPosition: SnackPosition.TOP,
-                                backgroundColor: Colors.red,
-                                colorText: Colors.white,
-                              );
-                              return;
-                            }
-
-                            if (isFollowUp &&
-                                dt != null &&
-                                dt!.isBefore(DateTime.now())) {
-                              Get.snackbar(
-                                "Error",
-                                "Cannot select a past date or time",
-                                snackPosition: SnackPosition.TOP,
-                                backgroundColor: Colors.red,
-                                colorText: Colors.white,
-                              );
-                              return;
-                            }
-
-                            callData["lead_stage_id"] = selectedStageId;
-                            callData["remarks"] = notesController.text;
-                            callData["sub_status_id"] = hasSubStatus
-                                ? selectedSubStatusId
-                                : null;
-
-                            if (isFollowUp && dt != null) {
-                              callData["followUpDate"] = dt!.toIso8601String();
-                            }
-
-                            if (selectedRating != null) {
-                              callData["priority"] = selectedRating;
-                            }
-
-                            final textFields = <Map<String, dynamic>>[];
-                            DateTime? dynamicFollowUpDate;
-
-                            for (var field in stageFields) {
-                              final fieldId = field['_id'];
-                              final fieldType = field['fieldType'];
-
-                              if (fieldType == 'datetime' &&
-                                  dynamicDates[fieldId] != null) {
-                                dynamicFollowUpDate = dynamicDates[fieldId];
-                                if (dynamicFollowUpDate!.isBefore(
-                                  DateTime.now(),
-                                )) {
-                                  Get.snackbar(
-                                    "Error",
-                                    "Cannot select a past date or time",
-                                    snackPosition: SnackPosition.TOP,
-                                    backgroundColor: Colors.red,
-                                    colorText: Colors.white,
-                                  );
-                                  return;
-                                }
-                              } else if (fieldType == 'text') {
-                                final controller = textControllers[fieldId];
-                                if (controller != null &&
-                                    controller.text.isNotEmpty) {
-                                  textFields.add({
-                                    "fieldId": fieldId,
-                                    "fieldType": "text",
-                                    "value": controller.text,
-                                  });
-                                }
-                              }
-                            }
-
-                            if (dynamicFollowUpDate != null) {
-                              callData["followUpDate"] = dynamicFollowUpDate
-                                  .toIso8601String();
-                            }
-                            if (textFields.isNotEmpty) {
-                              callData["stageFieldValues"] = jsonEncode(
-                                textFields,
-                              );
-                            }
-
-                            // Lock the button NOW, right before the API call
-                            setState(() => isSubmitting = true);
-
-                            print("Hitting API...");
-
-                            try {
-                              if (widget.isIncoming ||
-                                  callData["device_call_id"] != null) {
-                                await DioApi().postIncomingCall(callData);
-                              } else {
-                                await DioApi().postPhoneCall(callData);
-                              }
-                              print("API SUCCESS");
-
-                              PendingCallData.data = null;
-
-                              await Get.find<FollowUpController>()
-                                  .syncWithApi();
-
-                              /// CLOSE DIALOG FIRST
-                              Navigator.pop(context);
-
-                              /// Refresh AFTER dialog closes
-                              Future.microtask(() {
-                                print("Refreshing Screens");
-
-                                allocationController.selectTimeRange(
-                                  allocationController.selectedTimeRange.value,
-                                  context,
-                                );
-
-                                callLogController.getApi();
-                              });
-                            } catch (e) {
-                              print("API FAILED: $e");
-                              // unlock only on failure — on success the dialog is already gone
-                              if (mounted) {
-                                setState(() => isSubmitting = false);
-                              }
-                            }
-                          },
-                    child: isSubmitting
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            "Continue with Changes",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _refreshCallScreens() async {
+    try {
+      await allocationController.refreshData();
+    } catch (error) {
+      _logCallFormEvent(
+        'allocation_refresh_failed',
+        detail: error.runtimeType.toString(),
+      );
+    }
+    try {
+      await callLogController.getApi();
+    } catch (error) {
+      _logCallFormEvent(
+        'call_history_refresh_failed',
+        detail: error.runtimeType.toString(),
+      );
+    }
+    try {
+      await homeController.getDashboardData(
+        startDate: homeController.selectedStartDate.value,
+        endDate: homeController.selectedEndDate.value,
+        statusIds: homeController.selectedStatusIds,
+      );
+    } catch (error) {
+      _logCallFormEvent(
+        'home_dashboard_refresh_failed',
+        detail: error.runtimeType.toString(),
+      );
+    }
   }
 
   Widget _buildDynamicFields() {

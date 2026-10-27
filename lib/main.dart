@@ -9,6 +9,7 @@ import 'package:crm_flutter/pages/Auth/AuthController.dart';
 import 'package:crm_flutter/pages/SplashController.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
 import 'package:crm_flutter/pages/SplashPage.dart';
+import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/services/incoming_call_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +24,8 @@ Future<void> main() async {
   await DioUtil.init();
 
   LocalStorage.sharedPreferences = await SharedPreferences.getInstance();
+
+  CallHelper.initialize();
 
   // Initialize local notifications
   await NotificationService.init();

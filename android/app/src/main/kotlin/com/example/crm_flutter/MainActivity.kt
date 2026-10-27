@@ -3,6 +3,7 @@ package com.example.crm_flutter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -101,7 +102,7 @@ class MainActivity : FlutterActivity() {
 
                     Log.d(
                         "MainActivity",
-                        "🔥 Sending call to Flutter: $callData"
+                        "Sending incoming call event to Flutter"
                     )
 
                     channel.invokeMethod(
@@ -132,6 +133,11 @@ class MainActivity : FlutterActivity() {
 
         super.configureFlutterEngine(
             flutterEngine
+        )
+
+        Log.i(
+            "MainActivity",
+            "event=flutter_engine_configured at=${System.currentTimeMillis()} pid=${Process.myPid()}"
         )
 
         methodChannel = MethodChannel(
@@ -245,6 +251,11 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+
+        Log.i(
+            "MainActivity",
+            "event=activity_destroyed at=${System.currentTimeMillis()} pid=${Process.myPid()}"
+        )
 
         methodChannel = null
 
