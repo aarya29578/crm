@@ -202,6 +202,82 @@ class _AllocationPageState extends State<AllocationPage> {
     );
   }
 
+  Widget _buildLeadCount() {
+    return Obx(() {
+      final isSearchMode = allocationController.isSearchMode.value;
+      final isLoading = isSearchMode
+          ? allocationController.isSearchLoading.value
+          : allocationController.isLoading.value;
+      final count = isSearchMode
+          ? allocationController.searchResults.length
+          : allocationController.totalLeadCount.value ??
+                allocationController.leads.length;
+
+      return Container(
+        key: const ValueKey('allocation-lead-count'),
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: ColorConstants.MainPurpleBackground.withValues(alpha: 0.12),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 17,
+              color: ColorConstants.MainPurpleBackground,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: isLoading
+                  ? Text(
+                      isSearchMode ? 'Searching leads…' : 'Loading leads…',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    )
+                  : Text.rich(
+                      TextSpan(
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                        ),
+                        children: [
+                          const TextSpan(text: 'Total Leads: '),
+                          TextSpan(
+                            text: '$count',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: ColorConstants.MainPurpleBackground,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+            if (isLoading) ...[
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: ColorConstants.MainPurpleBackground,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -733,6 +809,7 @@ class _AllocationPageState extends State<AllocationPage> {
             children: [
               _buildLeadCategoryFilters(),
               _buildDateFilters(context),
+              _buildLeadCount(),
               // ── Search Results Panel ──────────────────────────
               if (allocationController.isSearchMode.value)
                 _buildSearchResultsView()

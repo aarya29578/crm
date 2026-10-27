@@ -18,6 +18,7 @@ class AllocationController extends GetxController {
   }
 
   RxList<Data> leads = <Data>[].obs;
+  Rx<int?> totalLeadCount = Rx<int?>(null);
   RxBool isLoading = false.obs;
   RxBool isPaginationLoading = false.obs;
   RxBool isMoreDataAvailable = true.obs;
@@ -200,6 +201,7 @@ class AllocationController extends GetxController {
       if (isInitial) {
         currentPage = 1;
         leads.clear();
+        totalLeadCount.value = null;
         isMoreDataAvailable.value = true;
 
         filterStartDate = startDate;
@@ -224,6 +226,8 @@ class AllocationController extends GetxController {
 
       if (response.success == true) {
         final List<Data>? responseData = response.data;
+        totalLeadCount.value =
+            response.total ?? leads.length + (responseData?.length ?? 0);
 
         if (responseData == null || responseData.isEmpty) {
           isMoreDataAvailable.value = false;
