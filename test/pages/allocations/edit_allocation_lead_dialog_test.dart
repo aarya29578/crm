@@ -126,6 +126,11 @@ void main() {
                 'success': true,
                 'data': [
                   {'_id': 'stage-1', 'name': 'Qualified', 'hasSubStatus': true},
+                  {
+                    '_id': 'stage-failed',
+                    'name': 'Failed',
+                    'hasSubStatus': true,
+                  },
                 ],
               };
             } else if (path.endsWith('/campaign/all')) {
@@ -257,7 +262,35 @@ void main() {
       await tester.tap(find.text('Online').last);
       await tester.pumpAndSettle();
 
+      final leadStageField = find.byWidgetPredicate(
+        (widget) =>
+            widget is DropdownButtonFormField<String> &&
+            widget.decoration.labelText == 'Lead Stage',
+      );
+      await tester.scrollUntilVisible(
+        leadStageField,
+        250,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(leadStageField);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Failed').last);
+      await tester.pumpAndSettle();
       final subStatusField = find.byType(SearchableSubStatusField);
+      expect(
+        tester.widget<SearchableSubStatusField>(subStatusField).label,
+        'Failed Reason',
+      );
+
+      await tester.tap(leadStageField);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Qualified').last);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<SearchableSubStatusField>(subStatusField).label,
+        'Sub Status',
+      );
+
       await tester.scrollUntilVisible(
         subStatusField,
         250,

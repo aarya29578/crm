@@ -27,6 +27,13 @@ void main() {
                   },
                   'phone': 1234567890,
                   'email': 'ada@example.test',
+                  'customList': [
+                    {
+                      'label': 'Interest',
+                      'value': 'Commercial',
+                      '_id': 'custom-1',
+                    },
+                  ],
                   'lead_source_id': {'_id': 'source-1', 'name': 'Referral'},
                   'sub_source_id': {'_id': 'sub-source-1', 'name': 'Partner'},
                   'lead_stage_id': {'_id': 'stage-1', 'name': 'Interested'},
@@ -61,6 +68,7 @@ void main() {
     expect(lead.name?.first, 'Ada');
     expect(lead.name?.middle, 'Byron');
     expect(lead.name?.last, 'Lovelace');
+    expect(lead.customList?.single.value, ['Commercial']);
     expect(lead.leadSourceId?.sId, 'source-1');
     expect(lead.leadSubSourceId?.sId, 'sub-source-1');
     expect(lead.leadStageId?.sId, 'stage-1');

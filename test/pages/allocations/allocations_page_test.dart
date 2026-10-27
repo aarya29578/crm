@@ -85,4 +85,40 @@ void main() {
       expectFiltersVisible(tester);
     },
   );
+
+  testWidgets('lead count displays totals and handles loading states', (
+    tester,
+  ) async {
+    final controller = _TestAllocationController();
+    await pumpAllocationPage(tester, controller);
+    expect(find.text('Total Leads: 0'), findsOneWidget);
+
+    controller.totalLeadCount.value = 24;
+    await tester.pump();
+    expect(find.text('Total Leads: 24'), findsOneWidget);
+
+    controller.totalLeadCount.value = null;
+    await tester.pump();
+    expect(find.text('Total Leads: 0'), findsOneWidget);
+
+    controller.isLoading.value = true;
+    await tester.pump();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('allocation-lead-count')),
+        matching: find.text('Loading leads…'),
+      ),
+      findsOneWidget,
+    );
+
+    controller.isLoading.value = false;
+    controller.isSearchMode.value = true;
+    controller.isSearchLoading.value = true;
+    await tester.pump();
+    expect(find.text('Searching leads…'), findsOneWidget);
+
+    controller.isSearchLoading.value = false;
+    await tester.pump();
+    expect(find.text('Total Leads: 0'), findsOneWidget);
+  });
 }
