@@ -31,6 +31,9 @@ class _MainPageState extends State<MainPage> {
   final Claimedcontroller controller = Get.put(Claimedcontroller());
   final DioApi dioApi = DioApi();
   final Set<String> _editingLeadIds = {};
+  final TextEditingController _searchTextController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearchVisible = false;
 
   Future<void> _editLead(String? leadId) async {
     if (leadId == null || leadId.trim().isEmpty) {
@@ -88,6 +91,169 @@ class _MainPageState extends State<MainPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  void _openLeadSearch() {
+    setState(() => _isSearchVisible = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _searchFocusNode.requestFocus();
+    });
+  }
+
+  void _closeLeadSearch() {
+    _searchTextController.clear();
+    controller.clearSearch();
+    _searchFocusNode.unfocus();
+    if (mounted) setState(() => _isSearchVisible = false);
+  }
+
+  Widget _buildLeadSearchField() {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: TextField(
+        controller: _searchTextController,
+        focusNode: _searchFocusNode,
+        autofocus: true,
+        style: const TextStyle(color: Colors.white, fontSize: 15),
+        cursorColor: Colors.white,
+        decoration: InputDecoration(
+          hintText: 'Search by name, phone, email…',
+          hintStyle: TextStyle(
+            color: Colors.white.withValues(alpha: 0.65),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: Colors.white.withValues(alpha: 0.8),
+            size: 20,
+          ),
+          suffixIcon: Obx(
+            () => controller.searchQuery.value.isNotEmpty
+                ? IconButton(
+                    tooltip: 'Clear search',
+                    onPressed: () {
+                      _searchTextController.clear();
+                      controller.clearSearch();
+                    },
+                    icon: Icon(
+                      Icons.cancel,
+                      color: Colors.white.withValues(alpha: 0.8),
+                      size: 18,
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+        ),
+        onChanged: controller.onSearchChanged,
+      ),
+    );
+  }
+
+  List<String> _selectedStageIds() {
+    final stages = homeController.allLeadStageRes.value.data ?? [];
+    return homeController.mainSelectedIndices
+        .where((index) => index > 0 && index - 1 < stages.length)
+        .map((index) => stages[index - 1].sId)
+        .whereType<String>()
+        .toList();
+  }
+
+  Future<void> _refreshSelectedLeads() async {
+    await homeController.getAllLeadStage();
+    homeController.loadLeadsForSelectedTab(controller);
+    await controller.refreshSearch();
+  }
+
+  Widget _buildSearchResults(List<String> selectedStageIds) {
+    final results = controller.searchResultsForStages(selectedStageIds);
+    final isLoading = controller.isSearchLoading.value;
+    final error = controller.searchError.value;
+
+    return RefreshIndicator(
+      onRefresh: _refreshSelectedLeads,
+      child: results.isEmpty
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(
+                  height: 220,
+                  child: Center(
+                    child: isLoading
+                        ? const CircularProgressIndicator()
+                        : Text(
+                            error.isNotEmpty ? error : 'No matching leads',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: error.isNotEmpty
+                                  ? Colors.red.shade700
+                                  : Colors.grey.shade600,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            )
+          : ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: results.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return Container(
+                    width: double.infinity,
+                    color: Colors.grey.shade200,
+                    padding: const EdgeInsets.only(
+                      left: 20,
+                      top: 10,
+                      bottom: 10,
+                    ),
+                    child: Text('${results.length} Leads', style: greyHeading),
+                  );
+                }
+
+                final data = results[index - 1];
+                final createdAt = data.createdAt;
+                final leadTime =
+                    createdAt != null && DateTime.tryParse(createdAt) != null
+                    ? timeAgo(createdAt)
+                    : 'Unknown time';
+                return GestureDetector(
+                  onTap: data.sId == null
+                      ? null
+                      : () => Get.to(
+                          LeadDetailsBottomNavigationBarPage(LeadID: data.sId!),
+                        ),
+                  child: ClaimedLeadCard(
+                    context,
+                    leadTime,
+                    '${data.name?.first ?? ''} ${data.name?.last ?? ''}'.trim(),
+                    data.phone ?? 'no number found',
+                    data.leadSourceId?.name ?? 'no name',
+                    data.assignedTo?.name ?? 'not assigned',
+                    data.compaignName?.name ?? 'no Campaign found!',
+                    data.sId,
+                    data.email ?? 'no email',
+                    data.followUpDate,
+                    data.stageFieldValues,
+                    onEdit: () => _editLead(data.sId),
+                    isEditing: _editingLeadIds.contains(data.sId),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchTextController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -104,44 +270,47 @@ class _MainPageState extends State<MainPage> {
         alpha: 0.06,
       ),
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text('Welcome'),
-                SizedBox(width: 7),
-                Flexible(
-                  child: Text(
-                    (userName == null || userName!.isEmpty)
-                        ? "User!"
-                        : "$userName!",
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+        title: _isSearchVisible
+            ? _buildLeadSearchField()
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text('Welcome'),
+                      SizedBox(width: 7),
+                      Flexible(
+                        child: Text(
+                          (userName == null || userName!.isEmpty)
+                              ? "User!"
+                              : "$userName!",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            Obx(() {
-              final selected = homeController.selectedCampaigns;
-              String displayString;
-              if (selected.isEmpty) {
-                displayString = "→ All Campaigns";
-              } else {
-                displayString = "→ ${selected.map((c) => c.name).join(', ')}";
-              }
-              return Text(
-                displayString,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              );
-            }),
-          ],
-        ),
+                  Obx(() {
+                    final selected = homeController.selectedCampaigns;
+                    String displayString;
+                    if (selected.isEmpty) {
+                      displayString = "→ All Campaigns";
+                    } else {
+                      displayString =
+                          "→ ${selected.map((c) => c.name).join(', ')}";
+                    }
+                    return Text(
+                      displayString,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  }),
+                ],
+              ),
         titleTextStyle: TextStyle(
           fontSize: 21,
           color: Colors.white,
@@ -221,6 +390,7 @@ class _MainPageState extends State<MainPage> {
                   );
                 } else {
                   homeController.loadLeadsForSelectedTab(controller);
+                  await controller.refreshSearch();
                 }
               } catch (e) {
                 Get.snackbar(
@@ -232,6 +402,22 @@ class _MainPageState extends State<MainPage> {
                 );
               }
             },
+          ),
+          Obx(
+            () => homeController.mainSelectedIndices.contains(0)
+                ? const SizedBox.shrink()
+                : IconButton(
+                    tooltip: _isSearchVisible
+                        ? 'Close lead search'
+                        : 'Search leads',
+                    icon: Icon(
+                      _isSearchVisible ? Icons.close : Icons.search,
+                      color: Colors.white,
+                    ),
+                    onPressed: _isSearchVisible
+                        ? _closeLeadSearch
+                        : _openLeadSearch,
+                  ),
           ),
           Obx(() {
             final count = homeController.selectedCampaigns.length;
@@ -322,6 +508,7 @@ class _MainPageState extends State<MainPage> {
                       isSelected: isSelected,
                       onTap: () {
                         if (index == 0) {
+                          _closeLeadSearch();
                           // Select only Home
                           homeController.mainSelectedIndices
                             ..clear()
@@ -337,6 +524,7 @@ class _MainPageState extends State<MainPage> {
 
                             // If no stage selected, go back to Home
                             if (homeController.mainSelectedIndices.isEmpty) {
+                              _closeLeadSearch();
                               homeController.mainSelectedIndices.add(0);
                             }
                           } else {
@@ -371,6 +559,7 @@ class _MainPageState extends State<MainPage> {
       }
 
       final stages = homeController.allLeadStageRes.value.data ?? [];
+      final selectedStageIds = _selectedStageIds();
       // Validation check for invalid selection
       bool hasValidSelection = false;
       for (int index in homeController.mainSelectedIndices) {
@@ -382,6 +571,10 @@ class _MainPageState extends State<MainPage> {
 
       if (!hasValidSelection) {
         return const Center(child: Text('Invalid selection'));
+      }
+
+      if (controller.searchQuery.value.isNotEmpty) {
+        return _buildSearchResults(selectedStageIds);
       }
 
       if (controller.stateload.value == PageState.loading) {
