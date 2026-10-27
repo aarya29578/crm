@@ -586,7 +586,7 @@ debugPrint('selectedStageId: $selectedStageId');
                                       ? selectedSubStatusId
                                       : null,
                                   decoration: InputDecoration(
-                                    labelText: "Select Sub Status",
+                                    labelText: "Select Failed Status",
                                     prefixIcon: const Icon(
                                       Icons.subdirectory_arrow_right_rounded,
                                       color: Colors.blue,
@@ -841,7 +841,7 @@ debugPrint('selectedStageId: $selectedStageId');
                               if (hasSubStatus && selectedSubStatusId == null) {
                                 Get.snackbar(
                                   "Error",
-                                  "Please select Sub Status",
+                                  "Please select Failed Status",
                                   snackPosition: SnackPosition.TOP,
                                   backgroundColor: Colors.red,
                                   colorText: Colors.white,
