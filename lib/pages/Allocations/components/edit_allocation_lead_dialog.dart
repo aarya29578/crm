@@ -66,6 +66,13 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
 
   Data get _lead => widget.lead;
 
+  String get _subStatusLabel {
+    final selectedStage = _stages
+        .where((stage) => stage.sId == _stageId)
+        .firstOrNull;
+    return subStatusLabelForStage(selectedStage?.name);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -725,8 +732,8 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
                     SearchableSubStatusField(
                       subStatuses: _subStatuses,
                       selectedId: _subStatusId,
-                      label: 'Sub-status',
-                      decoration: _decoration('Sub-status'),
+                      label: _subStatusLabel,
+                      decoration: _decoration(_subStatusLabel),
                       onChanged: (value) =>
                           setState(() => _subStatusId = value),
                     ),

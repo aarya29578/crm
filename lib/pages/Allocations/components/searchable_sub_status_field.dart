@@ -1,6 +1,12 @@
 import 'package:crm_flutter/api/response/substatus_lead_stage_response.dart';
 import 'package:flutter/material.dart';
 
+String subStatusLabelForStage(String? stageName) {
+  return stageName?.trim().toLowerCase() == 'failed'
+      ? 'Failed Reason'
+      : 'Sub Status';
+}
+
 class SearchableSubStatusField extends StatefulWidget {
   final List<SubStatusData> subStatuses;
   final String? selectedId;
@@ -54,7 +60,7 @@ class _SearchableSubStatusFieldState extends State<SearchableSubStatusField> {
           children: [
             Expanded(
               child: Text(
-                selectedName ?? 'Select Sub Status',
+                selectedName ?? 'Select ${widget.label}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -98,6 +104,9 @@ class _SubStatusSearchDialogState extends State<_SubStatusSearchDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final searchLabel = widget.label == 'Failed Reason'
+        ? 'failed reason'
+        : 'sub-status';
     final query = _searchController.text.trim().toLowerCase();
     final filteredStatuses = widget.subStatuses.where((subStatus) {
       return (subStatus.name ?? '').toLowerCase().contains(query);
@@ -114,7 +123,7 @@ class _SubStatusSearchDialogState extends State<_SubStatusSearchDialog> {
               key: const ValueKey('sub-status-search'),
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search sub-status',
+                hintText: 'Search $searchLabel',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isEmpty
                     ? null
@@ -133,7 +142,7 @@ class _SubStatusSearchDialogState extends State<_SubStatusSearchDialog> {
             const SizedBox(height: 8),
             Expanded(
               child: filteredStatuses.isEmpty
-                  ? const Center(child: Text('No sub-status found'))
+                  ? Center(child: Text('No $searchLabel found'))
                   : ListView.builder(
                       itemCount: filteredStatuses.length,
                       itemBuilder: (context, index) {

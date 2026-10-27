@@ -904,10 +904,17 @@ class CustomList {
 
   CustomList.fromJson(Map<String, dynamic> json) {
     label = json['label'];
-    if (json['value'] != null) {
-      value = List<String>.from(json['value']);
-    } else {
+    final rawValue = json['value'];
+    if (rawValue == null) {
       value = [];
+    } else if (rawValue is String) {
+      value = [rawValue];
+    } else if (rawValue is List) {
+      value = List<String>.from(rawValue);
+    } else {
+      throw FormatException(
+        'customList.value must be a string or a list of strings',
+      );
     }
     sId = json['_id'];
   }

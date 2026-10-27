@@ -567,6 +567,9 @@ class CallLogCard extends StatelessWidget {
                                 : null;
                             final hasSubStatus =
                                 selectedStageObj?.hasSubStatus == true;
+                            final subStatusLabel = subStatusLabelForStage(
+                              selectedStageObj?.name,
+                            );
                             final firstDateTimeField = stageFields.firstWhere(
                               (field) => field['fieldType'] == 'datetime',
                               orElse: () => null,
@@ -720,17 +723,17 @@ class CallLogCard extends StatelessWidget {
                                           [];
 
                                       if (subStatuses.isEmpty) {
-                                        return const Text(
-                                          "No Sub Status Available",
+                                        return Text(
+                                          "No $subStatusLabel Available",
                                         );
                                       }
 
                                       return SearchableSubStatusField(
                                         subStatuses: subStatuses,
                                         selectedId: currentSubStatusId,
-                                        label: "Select Sub Status",
+                                        label: subStatusLabel,
                                         decoration: InputDecoration(
-                                          labelText: "Select Sub Status",
+                                          labelText: subStatusLabel,
                                           prefixIcon: const Icon(
                                             Icons
                                                 .subdirectory_arrow_right_rounded,
@@ -779,9 +782,9 @@ class CallLogCard extends StatelessWidget {
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(
-                                                const SnackBar(
+                                                SnackBar(
                                                   content: Text(
-                                                    "Sub Status updated successfully",
+                                                    "$subStatusLabel updated successfully",
                                                   ),
                                                 ),
                                               );
@@ -791,7 +794,7 @@ class CallLogCard extends StatelessWidget {
                                               ).showSnackBar(
                                                 SnackBar(
                                                   content: Text(
-                                                    "Failed to update sub status: $e",
+                                                    "Failed to update ${subStatusLabel.toLowerCase()}: $e",
                                                   ),
                                                 ),
                                               );

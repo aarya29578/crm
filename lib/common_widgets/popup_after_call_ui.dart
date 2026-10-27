@@ -6,6 +6,7 @@ import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
+import 'package:crm_flutter/pages/Allocations/components/searchable_sub_status_field.dart';
 import 'package:crm_flutter/pages/Call/call_controller.dart';
 import 'package:crm_flutter/pages/home/HomeController.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
@@ -409,6 +410,7 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
     final isFollowUp = selectedStageObj?.name == "Follow Up";
 
     final hasSubStatus = selectedStageObj?.hasSubStatus == true;
+    final subStatusLabel = subStatusLabelForStage(selectedStageObj?.name);
 
     // final stageChanged =
     //     selectedStageId != null && selectedStageId != currentStageId;
@@ -473,6 +475,9 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
                         ? stages.firstWhere((e) => e.sId == selectedStageId)
                         : null;
                     final hasSubStatus = selectedStageObj?.hasSubStatus == true;
+                    final subStatusLabel = subStatusLabelForStage(
+                      selectedStageObj?.name,
+                    );
       
                     print(
                       "PopupAfterCallUi Obx rebuild: selectedStageId: $selectedStageId, hasSubStatus: $hasSubStatus",
@@ -570,9 +575,9 @@ debugPrint('selectedStageId: $selectedStageId');
                               );
       
                               if (subStatuses.isEmpty) {
-                                return const Padding(
-                                  padding: EdgeInsets.only(top: 20),
-                                  child: Text("No Sub Status Available"),
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 20),
+                                  child: Text("No $subStatusLabel Available"),
                                 );
                               }
       
@@ -586,7 +591,7 @@ debugPrint('selectedStageId: $selectedStageId');
                                       ? selectedSubStatusId
                                       : null,
                                   decoration: InputDecoration(
-                                    labelText: "Select Failed Status",
+                                    labelText: subStatusLabel,
                                     prefixIcon: const Icon(
                                       Icons.subdirectory_arrow_right_rounded,
                                       color: Colors.blue,
@@ -841,7 +846,7 @@ debugPrint('selectedStageId: $selectedStageId');
                               if (hasSubStatus && selectedSubStatusId == null) {
                                 Get.snackbar(
                                   "Error",
-                                  "Please select Failed Status",
+                                  "Please select $subStatusLabel",
                                   snackPosition: SnackPosition.TOP,
                                   backgroundColor: Colors.red,
                                   colorText: Colors.white,
