@@ -290,9 +290,9 @@ class CallHelper {
       );
       if (entry == null) {
         _log('call_log_entry_missing', sessionId: session.sessionId);
-        _showMessage(
-          'The device call record is not available yet. The pending call was kept for retry.',
-        );
+        //_showMessage(
+          //'The device call record is not available yet. The pending call was kept for retry.',
+        //);
         return;
       }
 

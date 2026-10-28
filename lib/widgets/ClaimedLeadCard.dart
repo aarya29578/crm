@@ -1,4 +1,5 @@
 import 'package:crm_flutter/helper/call_helper.dart';
+import 'package:crm_flutter/helper/whatsapp_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -14,7 +15,7 @@ ClaimedLeadCard(
   mail,
   followUpDate,
   stageFieldValues,
-  {VoidCallback? onEdit, bool isEditing = false}
+  {VoidCallback? onEdit, bool isEditing = false, String? campaignId}
 ) {
   return Column(
     children: [
@@ -37,6 +38,7 @@ ClaimedLeadCard(
           stageFieldValues,
           onEdit: onEdit,
           isEditing: isEditing,
+          campaignId: campaignId,
         ),
       ),
       // ScheduleCard(),
@@ -139,7 +141,7 @@ ClaimedLeads(
   mail,
   followUpDate,
   stageFieldValues,
-  {VoidCallback? onEdit, bool isEditing = false}
+  {VoidCallback? onEdit, bool isEditing = false, String? campaignId}
 ) {
   return Container(
     padding: EdgeInsets.all(16),
@@ -439,6 +441,36 @@ ClaimedLeads(
                             )
                           : const Icon(Icons.edit_outlined),
                     ),
+                  IconButton(
+                    tooltip: 'WhatsApp',
+                    onPressed: () {
+                      WhatsAppHelper.showWhatsAppTemplates(
+                        context: context,
+                        leadId: id,
+                        campaignId: campaignId,
+                        phone: phone?.toString() ?? '',
+                        customerName: name ?? '',
+                      );
+                    },
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.blue.shade100,
+                            Colors.green.shade200,
+                          ],
+                        ),
+                      ),
+                      child: Image.asset(
+                        'assets/whatsapp.png',
+                        color: Colors.green.shade800,
+                      ),
+                    ),
+                  ),
                   Expanded(
                     child: Container(
                       child: ElevatedButton.icon(
