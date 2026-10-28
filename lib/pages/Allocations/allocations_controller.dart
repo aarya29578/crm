@@ -509,6 +509,9 @@ class AllocationController extends GetxController {
   // ──────────────────────────────────────────────────────────
 
   Future<void> refreshData() async {
+    if (allLeadStages.isEmpty) {
+      await getAllLeadStages();
+    }
     await getAllLeads(
       isInitial: true,
       startDate: selectedStartDate.value,
