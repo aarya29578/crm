@@ -4,6 +4,7 @@ import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/all_lead_details_response.dart';
 import 'package:crm_flutter/api/response/all_leads_response.dart';
 import 'package:crm_flutter/api/response/history_timeline_response.dart';
+import 'package:crm_flutter/helper/whatsapp_helper.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/Allocations/WhatsappSMS/whatsapp_sms_controller.dart';
@@ -2119,257 +2120,23 @@ class CallLogCard extends StatelessWidget {
 
   void onWhatsApp(BuildContext context) {
     print("WhatsApp clicked");
-
-    _whatsappSmsController.currentPage = 1;
-    _whatsappSmsController.wsData.clear();
-    _whatsappSmsController.isMoreDataAvailable.value = true;
-
-    showDialog(
+    WhatsAppHelper.showWhatsAppTemplates(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          titlePadding: EdgeInsets.zero,
-          title: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.message, color: Colors.green.shade700, size: 24),
-                const SizedBox(width: 10),
-                Text(
-                  'WhatsApp Templates',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          contentPadding: const EdgeInsets.only(top: 10, bottom: 0),
-          content: Obx(() {
-            if (_whatsappSmsController.isLoading.value == PageState.loading &&
-                _whatsappSmsController.wsData.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(30.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.green,
-                    ),
-                    SizedBox(height: 15),
-                    Text("Loading templates..."),
-                  ],
-                ),
-              );
-            }
-
-            if (_whatsappSmsController.wsData.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(30.0),
-                child: Text(
-                  "No templates available",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.red, fontSize: 16),
-                ),
-              );
-            }
-
-            return Container(
-              width: double.maxFinite,
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.5,
-              ),
-              child: Scrollbar(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  itemCount: _whatsappSmsController.wsData.length,
-                  separatorBuilder: (context, index) =>
-                      const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final templateData = _whatsappSmsController.wsData[index];
-                    final templateBody = templateData.body ?? '';
-                    final templateName =
-                        templateData.name ?? 'Template ${index + 1}';
-
-                    final processedMessage = _processTemplate(templateBody);
-
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: () async {
-                        try {
-                          if (leadId == null || leadId!.isEmpty) {
-                            Get.snackbar(
-                              "Error",
-                              "Lead ID is not available",
-                              snackPosition: SnackPosition.TOP,
-                            );
-                            return;
-                          }
-
-                          final templateId = templateData.sId;
-
-                          if (templateId == null || templateId.isEmpty) {
-                            Get.snackbar(
-                              "Error",
-                              "Template ID is not available",
-                              snackPosition: SnackPosition.TOP,
-                            );
-                            return;
-                          }
-
-                          // Record template usage
-                          final response = await DioApi().recordTemplateUsage(
-                            leadId: leadId!,
-                            templateId: templateId,
-                            channel: "whatsapp",
-                          );
-
-                          print(
-                            "========== TEMPLATE USAGE RESPONSE ==========",
-                          );
-                          print(response);
-                          print(
-                            "=============================================",
-                          );
-
-                          // Refresh allocation data and wait for it to finish
-                          await allocationController.refreshData();
-
-                          await _loadTimeline(leadId!);
-
-                          // Close template dialog
-                          Navigator.pop(dialogContext);
-
-                          // Open WhatsApp only once
-                          await openWhatsApp(
-                            phone.toString(),
-                            processedMessage,
-                          );
-                        } catch (e) {
-                          print("Template usage error: $e");
-
-                          Get.snackbar(
-                            "Error",
-                            "Failed to record template usage: $e",
-                            snackPosition: SnackPosition.TOP,
-                          );
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 10,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    templateName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    processedMessage,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.send,
-                                color: Colors.green.shade600,
-                                size: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            );
-          }),
-          actionsPadding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 5,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(
-                "Cancel",
-                style: TextStyle(color: Colors.grey.shade800),
-              ),
-            ),
-          ],
-        );
+      leadId: leadId,
+      campaignId: campaignId,
+      phone: phone?.toString() ?? '',
+      customerName: name,
+      onTemplateSent: () async {
+        await allocationController.refreshData();
+        if (leadId != null && leadId!.isNotEmpty) {
+          await _loadTimeline(leadId!);
+        }
       },
     );
-
-    /// CALL API AFTER DIALOG OPENS
-    Future.microtask(() {
-      _whatsappSmsController.getWhatsSms(
-        whichSource: 'whatsapp',
-        campaignId: campaignId,
-      );
-    });
   }
 
   Future<void> openWhatsApp(String phone, String message) async {
-    final encodedMessage = Uri.encodeComponent(message);
-
-    final uri = Uri.parse(
-      "whatsapp://send?phone=91$phone&text=$encodedMessage",
-    );
-
-    print("whatsappURL : $uri");
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication, // IMPORTANT
-      );
-    } else {
-      print("WhatsApp not installed or cannot open");
-
-      /// Fallback to browser (always works)
-      final fallback = Uri.parse("https://wa.me/91$phone?text=$encodedMessage");
-
-      await launchUrl(fallback, mode: LaunchMode.externalApplication);
-    }
+    await WhatsAppHelper.openWhatsApp(phone, message);
   }
 
   void onSms(BuildContext context) {

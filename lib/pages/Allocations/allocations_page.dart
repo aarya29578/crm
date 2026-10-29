@@ -3,8 +3,6 @@ import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
 import 'package:crm_flutter/pages/Allocations/components/edit_allocation_lead_dialog.dart';
 import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_page.dart';
 import 'package:crm_flutter/pages/Allocations/components/custom_chip.dart';
-import 'package:crm_flutter/api/response/all_lead_stage_response.dart'
-    as stage_model;
 import 'package:crm_flutter/api/response/all_leads_response.dart' as lead_model;
 import 'package:crm_flutter/helper/lead_edit_helper.dart';
 import 'package:crm_flutter/pages/home/components/time_tab.dart';
@@ -24,13 +22,6 @@ class AllocationPage extends StatefulWidget {
 }
 
 class _AllocationPageState extends State<AllocationPage> {
-  static const List<String> _leadCategoryNames = [
-    'Fresh',
-    'Claimed',
-    'New',
-    'Interested',
-    'Follow Up',
-  ];
 
   final AllocationController allocationController = Get.put(
     AllocationController(),
@@ -83,63 +74,39 @@ class _AllocationPageState extends State<AllocationPage> {
     );
   }
 
-  stage_model.Data? _stageForCategory(String category) {
-    for (final stage in allocationController.allLeadStages) {
-      if (stage.name?.trim().toLowerCase() == category.toLowerCase()) {
-        return stage;
-      }
-    }
-    return null;
-  }
-
-  Future<void> _toggleLeadCategory(String category) async {
-    var stage = _stageForCategory(category);
-    if (stage?.sId == null) {
-      await allocationController.getAllLeadStages();
-      if (!mounted) return;
-      stage = _stageForCategory(category);
-    }
-
-    final statusId = stage?.sId;
-    if (statusId != null && statusId.isNotEmpty) {
-      allocationController.toggleStatus(statusId, context);
-    }
-  }
-
   Widget _buildLeadCategoryFilters() {
-    final categories = _leadCategoryNames
-        .map((name) => MapEntry(name, _stageForCategory(name)))
-        .toList();
-
-    for (final stage in allocationController.allLeadStages) {
-      final name = stage.name?.trim();
-      if (name != null &&
-          name.isNotEmpty &&
-          !_leadCategoryNames.any(
-            (category) => category.toLowerCase() == name.toLowerCase(),
-          )) {
-        categories.add(MapEntry(name, stage));
-      }
+    final stages = allocationController.allLeadStages;
+    if (stages.isEmpty) {
+      return const SizedBox.shrink();
     }
 
     return Container(
       height: 50,
       margin: const EdgeInsets.only(top: 8),
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: SingleChildScrollView(
+        key: const ValueKey('allocation-category-filters-scroll'),
         scrollDirection: Axis.horizontal,
-        children: [
-          for (final category in categories)
-            buildCustomChip(
-              text: category.key,
-              isSelected:
-                  category.value?.sId != null &&
-                  allocationController.selectedStatusIds.contains(
-                    category.value!.sId,
-                  ),
-              onTap: () => _toggleLeadCategory(category.key),
-            ),
-        ],
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: [
+            for (final stage in stages)
+              buildCustomChip(
+                text: (stage.name != null && stage.name!.trim().isNotEmpty)
+                    ? stage.name!.trim()
+                    : 'Unknown',
+                isSelected:
+                    stage.sId != null &&
+                    allocationController.selectedStatusIds.contains(stage.sId),
+                onTap: () {
+                  final statusId = stage.sId;
+                  if (statusId != null && statusId.isNotEmpty) {
+                    allocationController.toggleStatus(statusId, context);
+                  }
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -283,6 +250,9 @@ class _AllocationPageState extends State<AllocationPage> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (allocationController.allLeadStages.isEmpty) {
+        allocationController.getAllLeadStages();
+      }
       allocationController.selectTimeRange('Today', context);
     });
 

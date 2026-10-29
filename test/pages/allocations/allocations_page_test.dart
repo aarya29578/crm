@@ -7,8 +7,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 
 class _TestAllocationController extends AllocationController {
+  final bool _allowDefaultStages;
+
+  _TestAllocationController({
+    List<stage_model.Data>? initialStages,
+    bool allowDefaultStages = true,
+  }) : _allowDefaultStages = allowDefaultStages {
+    if (initialStages != null) {
+      allLeadStages.assignAll(initialStages);
+    }
+  }
+
   @override
-  Future<void> getAllLeadStages() async {}
+  Future<void> getAllLeadStages() async {
+    if (allLeadStages.isEmpty && _allowDefaultStages) {
+      allLeadStages.assignAll([
+        stage_model.Data(sId: 'fresh-id', name: 'Fresh'),
+        stage_model.Data(sId: 'claimed-id', name: 'Claimed'),
+        stage_model.Data(sId: 'new-id', name: 'New'),
+        stage_model.Data(sId: 'interested-id', name: 'Interested'),
+        stage_model.Data(sId: 'follow-up-id', name: 'Follow Up'),
+      ]);
+    }
+  }
 
   @override
   Future<void> selectTimeRange(String range, BuildContext context) async {}
@@ -86,6 +107,105 @@ void main() {
     },
   );
 
+  testWidgets('renders and selects when there are fewer than 5 filters', (
+    tester,
+  ) async {
+    final controller = _TestAllocationController(
+      allowDefaultStages: false,
+      initialStages: [
+        stage_model.Data(sId: 'stage-1', name: 'Qualified'),
+        stage_model.Data(sId: 'stage-2', name: 'Contacted'),
+        stage_model.Data(sId: 'stage-3', name: 'Proposal Sent'),
+      ],
+    );
+    await pumpAllocationPage(tester, controller);
+
+    expect(find.text('Qualified'), findsOneWidget);
+    expect(find.text('Contacted'), findsOneWidget);
+    expect(find.text('Proposal Sent'), findsOneWidget);
+    expect(find.text('Fresh'), findsNothing);
+    expect(find.text('Claimed'), findsNothing);
+    expect(find.text('Follow Up'), findsNothing);
+
+    await tester.tap(find.text('Contacted'));
+    await tester.pump();
+    expect(controller.selectedStatusIds, contains('stage-2'));
+  });
+
+  testWidgets('renders and selects when there are exactly 5 filters', (
+    tester,
+  ) async {
+    final controller = _TestAllocationController(
+      allowDefaultStages: false,
+      initialStages: [
+        stage_model.Data(sId: 's-1', name: 'Stage 1'),
+        stage_model.Data(sId: 's-2', name: 'Stage 2'),
+        stage_model.Data(sId: 's-3', name: 'Stage 3'),
+        stage_model.Data(sId: 's-4', name: 'Stage 4'),
+        stage_model.Data(sId: 's-5', name: 'Stage 5'),
+      ],
+    );
+    await pumpAllocationPage(tester, controller);
+
+    for (var i = 1; i <= 5; i++) {
+      expect(find.text('Stage $i'), findsOneWidget);
+    }
+    expect(find.text('Fresh'), findsNothing);
+
+    await tester.tap(find.text('Stage 3'));
+    await tester.pump();
+    expect(controller.selectedStatusIds, contains('s-3'));
+  });
+
+  testWidgets(
+    'supports horizontal scrolling and selecting when there are more than 5 filters',
+    (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final stages = List.generate(
+        12,
+        (i) => stage_model.Data(
+          sId: 'stage-${i + 1}',
+          name: 'Filter Stage ${i + 1}',
+        ),
+      );
+      final controller = _TestAllocationController(
+        allowDefaultStages: false,
+        initialStages: stages,
+      );
+      await pumpAllocationPage(tester, controller);
+
+      expect(find.text('Filter Stage 1'), findsOneWidget);
+
+      final scrollFinder = find.byKey(
+        const ValueKey('allocation-category-filters-scroll'),
+      );
+      expect(scrollFinder, findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Filter Stage 12'),
+        150,
+        scrollable: find.descendant(
+          of: scrollFinder,
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Filter Stage 12'), findsOneWidget);
+
+      await tester.tap(find.text('Filter Stage 12'));
+      await tester.pump();
+      expect(controller.selectedStatusIds, contains('stage-12'));
+
+      await tester.drag(scrollFinder, const Offset(600, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('Filter Stage 1'), findsOneWidget);
+    },
+  );
+
   testWidgets('lead count displays totals and handles loading states', (
     tester,
   ) async {
@@ -122,3 +242,4 @@ void main() {
     expect(find.text('Total Leads: 0'), findsOneWidget);
   });
 }
+

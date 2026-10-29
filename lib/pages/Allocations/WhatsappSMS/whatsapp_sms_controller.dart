@@ -4,29 +4,50 @@ import 'package:crm_flutter/models/enums.dart';
 import 'package:get/get.dart';
 
 class WhatsappSmsController extends GetxController {
-  final DioApi _dioApi = Get.find<DioApi>();
+  DioApi get _dioApi =>
+      Get.isRegistered<DioApi>() ? Get.find<DioApi>() : DioApi();
 
   RxList<WSData> wsData = <WSData>[].obs;
   RxBool isMoreDataAvailable = true.obs;
   Rx<PageState> isLoading = PageState.stable.obs;
 
   int currentPage = 1;
+  int _currentRequestId = 0;
+  String? activeCampaignId;
 
-  Future<void> getWhatsSms({String? campaignId, String? whichSource}) async {
-    if (!isMoreDataAvailable.value || isLoading.value == PageState.loading) {
+  Future<void> getWhatsSms({
+    String? campaignId,
+    String? whichSource,
+    bool forceRefresh = false,
+  }) async {
+    if (forceRefresh ||
+        (campaignId != null && campaignId != activeCampaignId)) {
+      currentPage = 1;
+      wsData.clear();
+      isMoreDataAvailable.value = true;
+      activeCampaignId = campaignId;
+    } else if (campaignId != null) {
+      activeCampaignId = campaignId;
+    }
+
+    if (!isMoreDataAvailable.value) {
       return;
     }
 
+    final requestId = ++_currentRequestId;
+
     try {
       isLoading.value = PageState.loading;
-
-      await Future.delayed(Duration(seconds: 1));
 
       final res = await _dioApi.getwhatsSms(
         page: currentPage,
         campaignId: campaignId,
         whichSource: whichSource,
       );
+
+      if (requestId != _currentRequestId) {
+        return;
+      }
 
       if (res.success == true) {
         final responseData = res.data;
@@ -43,16 +64,29 @@ class WhatsappSmsController extends GetxController {
         isLoading.value = PageState.error;
       }
     } catch (err) {
+      if (requestId != _currentRequestId) {
+        return;
+      }
       isLoading.value = PageState.error;
       print("Error loading data: $err");
     }
   }
 
-  Future<void> refreshData() async {
+  void reset({String? campaignId}) {
+    _currentRequestId++;
     currentPage = 1;
     wsData.clear();
     isMoreDataAvailable.value = true;
+    isLoading.value = PageState.stable;
+    activeCampaignId = campaignId;
+  }
 
-    await getWhatsSms();
+  Future<void> refreshData({String? campaignId, String? whichSource}) async {
+    reset(campaignId: campaignId);
+    await getWhatsSms(
+      campaignId: campaignId,
+      whichSource: whichSource,
+      forceRefresh: true,
+    );
   }
 }

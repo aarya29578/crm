@@ -122,4 +122,33 @@ void main() {
 
     expect(editCount, 1);
   });
+
+  testWidgets('claimed lead card renders WhatsApp button with campaignId', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ClaimedLeadCard(
+              context,
+              'Today',
+              'Lead Name',
+              '5551234',
+              'Organization',
+              'Agent One',
+              'Campaign',
+              'lead-1',
+              'lead@example.test',
+              null,
+              null,
+              campaignId: 'campaign-123',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byTooltip('WhatsApp'), findsOneWidget);
+  });
 }
