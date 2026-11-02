@@ -1976,9 +1976,12 @@ class CallLogCard extends StatelessWidget {
                                                   ],
                                                 ],
 
-                                                if (item
-                                                    .changeDetails
-                                                    .isNotEmpty) ...[
+                                                if (item.changeDetails.any(
+                                                  (detail) =>
+                                                      !_isExcludedHistoryDetail(
+                                                        detail,
+                                                      ),
+                                                )) ...[
                                                   const SizedBox(height: 8),
                                                   const Text(
                                                     'Lead changes',
@@ -1988,20 +1991,21 @@ class CallLogCard extends StatelessWidget {
                                                       fontSize: 14,
                                                     ),
                                                   ),
-                                                  ...item.changeDetails.map(
-                                                    (detail) => Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                            top: 3,
-                                                          ),
-                                                      child: Text(
-                                                        detail,
-                                                        style: const TextStyle(
-                                                          fontSize: 13,
-                                                        ),
+                                                  ...item.changeDetails
+                                                      .where(
+                                                        (detail) =>
+                                                            !_isExcludedHistoryDetail(
+                                                              detail,
+                                                            ),
+                                                      )
+                                                      .map(
+                                                        (detail) =>
+                                                            _buildChangeDetailItem(
+                                                              context,
+                                                              detail,
+                                                              isDark,
+                                                            ),
                                                       ),
-                                                    ),
-                                                  ),
                                                 ],
 
                                                 if (item
@@ -2097,6 +2101,222 @@ class CallLogCard extends StatelessWidget {
     final dateTime = DateTime.parse(date).toLocal();
 
     return DateFormat('dd MMM yyyy, hh:mm a').format(dateTime);
+  }
+
+  static bool isExcludedHistoryDetail(String detail) =>
+      _isExcludedHistoryDetail(detail);
+
+  static Widget buildChangeDetailItem(
+    BuildContext context,
+    String detail, {
+    bool isDark = false,
+  }) =>
+      _buildChangeDetailItem(context, detail, isDark);
+
+  static bool _isExcludedHistoryDetail(String detail) {
+    final colonIndex = detail.indexOf(':');
+    final rawLabel =
+        colonIndex != -1 ? detail.substring(0, colonIndex) : detail;
+    final normalized =
+        rawLabel.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+    if (normalized == 'listid' ||
+        normalized == 'customlist' ||
+        normalized == 'customlistlabel' ||
+        normalized == 'namefirst' ||
+        normalized == 'first' ||
+        normalized == 'phone' ||
+        normalized == 'phonenumber') {
+      return true;
+    }
+
+    final lower = detail.toLowerCase().trim();
+    return lower.startsWith('list id') ||
+        lower.startsWith('list_id') ||
+        lower.startsWith('listid') ||
+        lower.startsWith('custom list') ||
+        lower.startsWith('custom_list') ||
+        lower.startsWith('name first') ||
+        lower.startsWith('name: first') ||
+        lower.startsWith('first:') ||
+        lower.startsWith('phone:') ||
+        lower.startsWith('phone number');
+  }
+
+  static Widget _buildChangeDetailItem(
+    BuildContext context,
+    String detail,
+    bool isDark,
+  ) {
+    final colonIndex = detail.indexOf(':');
+    final label =
+        colonIndex != -1 ? detail.substring(0, colonIndex).trim() : '';
+    final rawValue =
+        colonIndex != -1 ? detail.substring(colonIndex + 1).trim() : detail.trim();
+    final normalizedLabel =
+        label.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+    final isRemark =
+        normalizedLabel == 'remark' || normalizedLabel == 'remarks';
+    final isFollowUpDate = normalizedLabel == 'followupdate' ||
+        normalizedLabel == 'followup' ||
+        normalizedLabel == 'nextfollowupdate' ||
+        normalizedLabel == 'nextfollowup';
+
+    if (isRemark) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF2E2415) : const Color(0xFFFFFBEB),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDark ? const Color(0xFF78350F) : const Color(0xFFFDE68A),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.edit_note_rounded,
+                  size: 16,
+                  color:
+                      isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Remark',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? const Color(0xFFFDE68A)
+                        : const Color(0xFF92400E),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              rawValue,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: isDark ? Colors.grey.shade100 : const Color(0xFF1F2937),
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isFollowUpDate) {
+      String displayDate = rawValue;
+      if (rawValue.isNotEmpty) {
+        final parsed = DateTime.tryParse(rawValue);
+        if (parsed != null) {
+          displayDate =
+              DateFormat('dd MMM yyyy, hh:mm a').format(parsed.toLocal());
+        }
+      }
+
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF132E20) : const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDark ? const Color(0xFF166534) : const Color(0xFFBBF7D0),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.event_available_rounded,
+                  size: 16,
+                  color:
+                      isDark ? const Color(0xFF4ADE80) : const Color(0xFF16A34A),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Follow-Up Date',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? const Color(0xFFBBF7D0)
+                        : const Color(0xFF14532D),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              displayDate,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.grey.shade100 : const Color(0xFF14532D),
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '• ',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white : Colors.black87,
+                  height: 1.35,
+                ),
+                children: [
+                  if (label.isNotEmpty)
+                    TextSpan(
+                      text: '$label: ',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  TextSpan(text: rawValue),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _processTemplate(String body) {

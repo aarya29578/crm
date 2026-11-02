@@ -97,14 +97,47 @@ class HistoryTimelineEntry {
 
   List<String> get changeDetails {
     return changes.entries
-        .where((entry) => !_isIdentifier(entry.key))
+        .where((entry) => !_isIdentifier(entry.key) && !_isExcludedKey(entry.key))
         .map((entry) {
-          final value = _formatValue(entry.value);
+          dynamic valueToFormat = entry.value;
+          if (entry.key == 'name' && valueToFormat is Map) {
+            final filteredMap = Map<dynamic, dynamic>.from(valueToFormat)
+              ..remove('first');
+            if (filteredMap.isEmpty) return null;
+            valueToFormat = filteredMap;
+          }
+          final value = _formatValue(valueToFormat);
           if (value == null) return null;
           return '${_formatFieldName(entry.key)}: $value';
         })
         .whereType<String>()
+        .where((detail) => !_isExcludedDetailString(detail))
         .toList();
+  }
+
+  static bool _isExcludedKey(String key) {
+    final lower = key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return lower == 'listid' ||
+        lower == 'customlist' ||
+        lower == 'customlistlabel' ||
+        lower == 'namefirst' ||
+        lower == 'first' ||
+        lower == 'phone' ||
+        lower == 'phonenumber';
+  }
+
+  static bool _isExcludedDetailString(String detail) {
+    final lower = detail.toLowerCase().trim();
+    return lower.startsWith('list id') ||
+        lower.startsWith('list_id') ||
+        lower.startsWith('listid') ||
+        lower.startsWith('custom list') ||
+        lower.startsWith('custom_list') ||
+        lower.startsWith('name first') ||
+        lower.startsWith('name: first') ||
+        lower.startsWith('first:') ||
+        lower.startsWith('phone:') ||
+        lower.startsWith('phone number:');
   }
 
   List<String> get callDetails {
@@ -139,7 +172,7 @@ class HistoryTimelineEntry {
     if (name is String && name.trim().isNotEmpty) return name.trim();
 
     final values = map.entries
-        .where((entry) => !_isIdentifier(entry.key))
+        .where((entry) => !_isIdentifier(entry.key) && !_isExcludedKey(entry.key))
         .map((entry) {
           final nestedValue = _formatValue(entry.value);
           if (nestedValue == null) return null;
