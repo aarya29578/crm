@@ -11,6 +11,7 @@ import 'package:crm_flutter/pages/Allocations/WhatsappSMS/whatsapp_sms_controlle
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
 import 'package:crm_flutter/pages/home/HomeController.dart';
 import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
+import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_controller.dart';
 import 'package:crm_flutter/pages/Allocations/components/searchable_sub_status_field.dart';
 import 'package:dio/dio.dart';
 import 'package:external_path/external_path.dart';
@@ -79,7 +80,9 @@ class CallLogCard extends StatelessWidget {
       Get.find<WhatsappSmsController>();
 
   final AllocationController allocationController =
-      Get.find<AllocationController>();
+      Get.isRegistered<AllocationController>()
+          ? Get.find<AllocationController>()
+          : Get.put(AllocationController());
 
   RxList<PlatformFile> selectedFiles = <PlatformFile>[].obs;
   RxList<String> removedFiles = <String>[].obs;
@@ -2127,7 +2130,12 @@ class CallLogCard extends StatelessWidget {
       phone: phone?.toString() ?? '',
       customerName: name,
       onTemplateSent: () async {
-        await allocationController.refreshData();
+        if (Get.isRegistered<AllocationController>()) {
+          await Get.find<AllocationController>().refreshData();
+        }
+        if (Get.isRegistered<AllMissFUpsController>()) {
+          await Get.find<AllMissFUpsController>().fetchData(isRefresh: true);
+        }
         if (leadId != null && leadId!.isNotEmpty) {
           await _loadTimeline(leadId!);
         }
@@ -2269,7 +2277,12 @@ class CallLogCard extends StatelessWidget {
                           print(
                             "=============================================",
                           );
-                          await allocationController.refreshData();
+                          if (Get.isRegistered<AllocationController>()) {
+          await Get.find<AllocationController>().refreshData();
+        }
+        if (Get.isRegistered<AllMissFUpsController>()) {
+          await Get.find<AllMissFUpsController>().fetchData(isRefresh: true);
+        }
 
                           await _loadTimeline(leadId!);
 
@@ -2398,7 +2411,7 @@ class CallLogCard extends StatelessWidget {
     final String isoTime = time;
 
     // Parse and format
-    final dateTime = DateTime.parse(isoTime).toLocal();
+    final dateTime = DateTime.tryParse(isoTime)?.toLocal() ?? DateTime.now();
     final formattedTime = DateFormat('hh:mm a, dd MMM').format(dateTime);
 
     return Container(

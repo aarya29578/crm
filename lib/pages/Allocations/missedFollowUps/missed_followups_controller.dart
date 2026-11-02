@@ -1,5 +1,7 @@
 import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/api/response/all_lead_stage_response.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
+import 'package:crm_flutter/models/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:crm_flutter/pages/home/components/date_range_picker_dialog.dart';
@@ -20,6 +22,41 @@ class AllMissFUpsController extends GetxController {
   RxString selectedTimeRange = 'Today'.obs;
   Rx<DateTime?> selectedStartDate = Rx<DateTime?>(null);
   Rx<DateTime?> selectedEndDate = Rx<DateTime?>(null);
+
+  // Status-Wise Lead Count State (matching Home dashboard)
+  Rx<AllLeadStageResponse> allLeadStageRes = AllLeadStageResponse().obs;
+  Rx<PageState> stageCountLoading = PageState.loading.obs;
+  RxBool isStatusBreakdownExpanded = true.obs;
+  bool _isFetchingStages = false;
+
+  /// Fetches overall lead stages and counts across all leads globally
+  Future<void> fetchLeadStages({bool forceRefresh = false}) async {
+    if (_isFetchingStages) return;
+    if (!forceRefresh &&
+        stageCountLoading.value == PageState.stable &&
+        (allLeadStageRes.value.data?.isNotEmpty ?? false)) {
+      return;
+    }
+
+    _isFetchingStages = true;
+    stageCountLoading.value = PageState.loading;
+
+    try {
+      // Calls getAllLeadStage() without campaignId to obtain global counts across all leads
+      final response = await DioApi().getAllLeadStage();
+      if (response.success == true) {
+        allLeadStageRes.value = response;
+        stageCountLoading.value = PageState.stable;
+      } else {
+        stageCountLoading.value = PageState.error;
+      }
+    } catch (e) {
+      debugPrint('Error loading lead stages in follow-ups: $e');
+      stageCountLoading.value = PageState.error;
+    } finally {
+      _isFetchingStages = false;
+    }
+  }
 
   Future<void> selectTimeRange(String range, BuildContext context) async {
     selectedTimeRange.value = range;
