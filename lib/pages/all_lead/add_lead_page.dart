@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 
 import 'add_lead_controller.dart';
+import 'package:crm_flutter/pages/Allocations/components/campaign_dynamic_fields_widget.dart';
 
 class AddLeadPage extends StatelessWidget {
   AddLeadPage({super.key});
@@ -634,6 +635,21 @@ class AddLeadPage extends StatelessWidget {
                       maxLines: 4,
                     ),
                   ),
+
+                  Obx(() {
+                    final campaignId = controller.campaign.value;
+                    if (campaignId == null || campaignId.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return full(
+                      CampaignDynamicFieldsWidget(
+                        key: controller.dynamicFieldsKey,
+                        campaignId: campaignId,
+                        decorationBuilder: (label, isRequired) =>
+                            _inputDecoration(isRequired ? "$label *" : label),
+                      ),
+                    );
+                  }),
 
                   full(_attachmentSection()),
 
