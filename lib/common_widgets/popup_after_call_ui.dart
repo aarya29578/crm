@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/common_widgets/call_storage.dart';
+import 'package:crm_flutter/common_widgets/stage_date_time_picker.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:crm_flutter/models/enums.dart';
@@ -47,6 +48,7 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
   Map<String, dynamic> stageFieldValues = {}; // fieldId -> value
   Map<String, TextEditingController> textControllers = {};
   Map<String, DateTime?> dynamicDates = {};
+  Map<String, TimeOfDay?> dynamicTimes = {};
   bool isLoadingFields = false;
   String? selectedRating;
   bool isSubmitting = false;
@@ -178,31 +180,38 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
 
     // 2. Pre-fill dynamic fields from configuration
     for (var field in stageFields) {
-      final fieldId = field['_id'];
+      final fieldId = field['_id']?.toString() ?? '';
       final fieldType = field['fieldType'];
+      final isTarget = isTargetStageDateTimeField(field);
 
-      if (fieldType == 'datetime') {
-        // If there's a dynamic datetime field, it often corresponds to followUpDate
-        if (leadData.followUpDate != null &&
+      if (fieldType == 'datetime' || isTarget) {
+        final savedValue =
+            findSavedStageValue(leadData.stageFieldValues, field);
+        DateTime? date;
+        if (savedValue != null && savedValue.toString().isNotEmpty) {
+          date = DateTime.tryParse(savedValue.toString())?.toLocal();
+        } else if (!isTarget &&
+            leadData.followUpDate != null &&
             leadData.followUpDate!.isNotEmpty) {
           try {
-            final date = DateTime.parse(leadData.followUpDate!).toLocal();
-            dynamicDates[fieldId] = date;
+            date = DateTime.parse(leadData.followUpDate!).toLocal();
           } catch (e) {
             print("Error parsing dynamic datetime: $e");
           }
         }
+        if (date != null) {
+          dynamicDates[fieldId] = DateTime(date.year, date.month, date.day);
+          dynamicTimes[fieldId] =
+              TimeOfDay(hour: date.hour, minute: date.minute);
+        }
       } else if (fieldType == 'text') {
-        final savedValue = leadData.stageFieldValues?.firstWhere(
-          (f) => f['fieldId'] == fieldId,
-          orElse: () => null,
-        );
+        final savedValue =
+            findSavedStageValue(leadData.stageFieldValues, field);
         if (savedValue != null) {
           if (!textControllers.containsKey(fieldId)) {
             textControllers[fieldId] = TextEditingController();
           }
-          textControllers[fieldId]!.text =
-              savedValue['value']?.toString() ?? '';
+          textControllers[fieldId]!.text = savedValue.toString();
         }
       }
     }
@@ -881,22 +890,50 @@ debugPrint('selectedStageId: $selectedStageId');
                                 callData["priority"] = selectedRating;
                               }
       
-                              final textFields = <Map<String, dynamic>>[];
-                              DateTime? dynamicFollowUpDate;
-      
+                              final stageFieldItems =
+                                  <Map<String, dynamic>>[];
+
                               for (var field in stageFields) {
-                                final fieldId = field['_id'];
+                                final fieldId = field['_id']?.toString() ?? '';
                                 final fieldType = field['fieldType'];
-      
-                                if (fieldType == 'datetime' &&
-                                    dynamicDates[fieldId] != null) {
-                                  dynamicFollowUpDate = dynamicDates[fieldId];
-                                  if (dynamicFollowUpDate!.isBefore(
-                                    DateTime.now(),
-                                  )) {
+                                final isTarget =
+                                    isTargetStageDateTimeField(field);
+                                final key = getStageFieldKey(field);
+                                final displayLabel =
+                                    getStageFieldDisplayLabel(field);
+                                final isRequired = field['required'] == true;
+
+                                if (fieldType == 'datetime' || isTarget) {
+                                  final d = dynamicDates[fieldId];
+                                  final t = dynamicTimes[fieldId];
+                                  if (d != null && t != null) {
+                                    final combined = DateTime(
+                                      d.year,
+                                      d.month,
+                                      d.day,
+                                      t.hour,
+                                      t.minute,
+                                    );
+                                    stageFieldItems.add({
+                                      if (field['_id'] != null)
+                                        "fieldId": field['_id'],
+                                      "fieldName": key,
+                                      "fieldType": "datetime",
+                                      "value": combined.toIso8601String(),
+                                    });
+                                  } else if (d != null || t != null) {
                                     Get.snackbar(
                                       "Error",
-                                      "Cannot select a past date or time",
+                                      "Please select both date and time for $displayLabel",
+                                      snackPosition: SnackPosition.TOP,
+                                      backgroundColor: Colors.red,
+                                      colorText: Colors.white,
+                                    );
+                                    return;
+                                  } else if (isRequired) {
+                                    Get.snackbar(
+                                      "Error",
+                                      "$displayLabel is required",
                                       snackPosition: SnackPosition.TOP,
                                       backgroundColor: Colors.red,
                                       colorText: Colors.white,
@@ -907,22 +944,33 @@ debugPrint('selectedStageId: $selectedStageId');
                                   final controller = textControllers[fieldId];
                                   if (controller != null &&
                                       controller.text.isNotEmpty) {
-                                    textFields.add({
-                                      "fieldId": fieldId,
+                                    stageFieldItems.add({
+                                      if (field['_id'] != null)
+                                        "fieldId": field['_id'],
+                                      "fieldName": key,
                                       "fieldType": "text",
                                       "value": controller.text,
                                     });
+                                  } else if (isRequired) {
+                                    Get.snackbar(
+                                      "Error",
+                                      "$displayLabel is required",
+                                      snackPosition: SnackPosition.TOP,
+                                      backgroundColor: Colors.red,
+                                      colorText: Colors.white,
+                                    );
+                                    return;
                                   }
                                 }
                               }
-      
-                              if (dynamicFollowUpDate != null) {
-                                callData["followUpDate"] = dynamicFollowUpDate
-                                    .toIso8601String();
+
+                              if (dt != null) {
+                                callData["followUpDate"] =
+                                    dt!.toIso8601String();
                               }
-                              if (textFields.isNotEmpty) {
+                              if (stageFieldItems.isNotEmpty) {
                                 callData["stageFieldValues"] = jsonEncode(
-                                  textFields,
+                                  stageFieldItems,
                                 );
                               }
       
@@ -1036,74 +1084,43 @@ unawaited(_refreshCallScreens());
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: stageFields.map((field) {
-        final fieldId = field['_id'];
+        final fieldId = field['_id']?.toString() ?? '';
         final fieldType = field['fieldType'];
-        final fieldName =
-            field['name'] ??
-            (fieldType == 'datetime' ? 'Date & Time' : 'Field');
+        final isTarget = isTargetStageDateTimeField(field);
+        final fieldName = getStageFieldDisplayLabel(field);
+        final isRequired = field['required'] == true;
 
-        if (fieldType == 'datetime') {
+        if (fieldType == 'datetime' || isTarget) {
+          final date = dynamicDates[fieldId];
+          final time = dynamicTimes[fieldId];
+
           return Padding(
             padding: const EdgeInsets.only(top: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "$fieldName *",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                InkWell(
-                  onTap: () => _pickCustomDateTime(fieldId),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.grey.shade50,
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_month_outlined,
-                          color: Colors.blue,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            dynamicDates[fieldId] == null
-                                ? "Select $fieldName"
-                                : DateFormat(
-                                    'dd MMM yyyy • hh:mm a',
-                                  ).format(dynamicDates[fieldId]!),
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: dynamicDates[fieldId] == null
-                                  ? Colors.grey.shade600
-                                  : Colors.black87,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 14,
-                          color: Colors.grey,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+            child: StageDateTimePicker(
+              fieldKey: getStageFieldKey(field),
+              label: fieldName,
+              date: date,
+              time: time,
+              isRequired: isRequired,
+              isDark: false,
+              onDateChanged: (pickedDate) {
+                setState(() {
+                  dynamicDates[fieldId] = pickedDate;
+                });
+              },
+              onTimeChanged: (pickedTime) {
+                setState(() {
+                  dynamicTimes[fieldId] = pickedTime;
+                });
+              },
+              onClear: !isRequired
+                  ? () {
+                      setState(() {
+                        dynamicDates[fieldId] = null;
+                        dynamicTimes[fieldId] = null;
+                      });
+                    }
+                  : null,
             ),
           );
         } else if (fieldType == 'text') {

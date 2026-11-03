@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:crm_flutter/pages/home/HomeController.dart';
 import 'package:get/get.dart';
 import 'package:crm_flutter/pages/Call/Call_Logs.dart';
+import 'package:crm_flutter/pages/Call/call_leads_controller.dart';
+import 'package:crm_flutter/pages/Call/call_leads_page.dart';
 import 'package:crm_flutter/pages/claimed/ClaimedController.dart';
 import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_page.dart';
 
@@ -171,6 +173,21 @@ class _HomePageState extends State<HomePage> {
                                     0,
                                 isFirst: true,
                                 isLast: false,
+                                onTap: () => Get.to(
+                                  () => CallLeadsPage(
+                                    callType: CallLeadType.overall,
+                                    startDate:
+                                        homeController
+                                            .selectedStartDate
+                                            .value,
+                                    endDate:
+                                        homeController.selectedEndDate.value,
+                                    timeRange:
+                                        homeController
+                                            .selectedTimeRange
+                                            .value,
+                                  ),
+                                ),
                               ),
                             ),
 
@@ -188,6 +205,21 @@ class _HomePageState extends State<HomePage> {
                                     0,
                                 isFirst: false,
                                 isLast: false,
+                                onTap: () => Get.to(
+                                  () => CallLeadsPage(
+                                    callType: CallLeadType.outbound,
+                                    startDate:
+                                        homeController
+                                            .selectedStartDate
+                                            .value,
+                                    endDate:
+                                        homeController.selectedEndDate.value,
+                                    timeRange:
+                                        homeController
+                                            .selectedTimeRange
+                                            .value,
+                                  ),
+                                ),
                               ),
                             ),
 
@@ -205,6 +237,21 @@ class _HomePageState extends State<HomePage> {
                                     0,
                                 isFirst: false,
                                 isLast: true,
+                                onTap: () => Get.to(
+                                  () => CallLeadsPage(
+                                    callType: CallLeadType.inbound,
+                                    startDate:
+                                        homeController
+                                            .selectedStartDate
+                                            .value,
+                                    endDate:
+                                        homeController.selectedEndDate.value,
+                                    timeRange:
+                                        homeController
+                                            .selectedTimeRange
+                                            .value,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -823,8 +870,8 @@ Widget _buildStatTab({
   // required int index,
   required bool isFirst,
   required bool isLast,
+  VoidCallback? onTap,
 }) {
-  final HomeController homeController = Get.find();
   // final isSelected = homeController.selectedTab.value == index;
 
   return Container(
@@ -834,7 +881,7 @@ Widget _buildStatTab({
       color: Colors.white,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
-        // onTap: () => homeController.selectedTab.value = index,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),

@@ -25,6 +25,7 @@ class CallHelper {
   static bool _reconcileInProgress = false;
   static bool _formOpen = false;
   static bool _submissionInProgress = false;
+  static String? _activePostCallSessionId;
   static String? _endingSessionId;
   static PhoneStateStatus? _lastPhoneStateStatus;
   static PendingOutboundCall? _currentSession;
@@ -101,13 +102,13 @@ class CallHelper {
       return;
     }
 
-    final existing = await _sessionStore.load();
-    if (existing != null) {
-      _log('existing_session_blocks_new_call', sessionId: existing.sessionId);
-      await reconcilePendingSession();
-      _showMessage('Finish or retry the pending call before starting another.');
+     final existing = await _sessionStore.load();
+     if (existing != null) {
+       _log('existing_session_blocks_new_call', sessionId: existing.sessionId);
+       await reconcilePendingSession();
+       _showMessage('Finish or retry the pending call before starting another.');
       return;
-    }
+     }
 
     final session = PendingOutboundCall.create(
       leadId: leadId,
@@ -248,13 +249,28 @@ class CallHelper {
       _currentSession = session;
       _log('session_restored', sessionId: session.sessionId);
       await _ensurePhoneStateListener();
-      if (session.callData != null) {
-        PendingCallData.data = Map<String, dynamic>.from(session.callData!);
-        PendingCallData.outboundSessionId = session.sessionId;
-        _showPostCallForm(session);
+
+      // The session may have been submitted and cleared while the listener
+      // was being initialized. Reload before deciding whether to reopen it.
+      final latestSession = await _sessionStore.load();
+      if (latestSession == null ||
+          latestSession.sessionId != session.sessionId) {
+        _log(
+          'session_already_cleared_or_replaced',
+          sessionId: session.sessionId,
+        );
         return;
       }
-      await _resolveEndedSession(session);
+
+      _currentSession = latestSession;
+      if (latestSession.callData != null) {
+        PendingCallData.data =
+            Map<String, dynamic>.from(latestSession.callData!);
+        PendingCallData.outboundSessionId = latestSession.sessionId;
+        _showPostCallForm(latestSession);
+        return;
+      }
+      await _resolveEndedSession(latestSession);
     } catch (error) {
       _log('session_restore_failed', detail: error.runtimeType.toString());
       _showMessage('The pending call could not be restored. It remains saved.');
@@ -290,11 +306,11 @@ class CallHelper {
       );
       if (entry == null) {
         _log('call_log_entry_missing', sessionId: session.sessionId);
-        //_showMessage(
-          //'The device call record is not available yet. The pending call was kept for retry.',
-        //);
+        _showMessage(
+          'The device call record is not available yet. The pending call was kept for retry.',
+        );
         return;
-      }
+     }
 
       final data = PendingOutboundCall.callPayloadForEntry(
         session: session,
@@ -304,6 +320,8 @@ class CallHelper {
             'no number found',
         recordingPath: recordingPath,
       );
+
+      
       final readySession = session.copyWith(
         endedAt: session.endedAt ?? now,
         callData: data,
@@ -340,7 +358,14 @@ class CallHelper {
   }
 
   static void _showPostCallForm(PendingOutboundCall session) {
-    if (_formOpen) return;
+    if (_formOpen || _activePostCallSessionId == session.sessionId) {
+      _log(
+        'post_call_form_skipped_duplicate',
+        sessionId: session.sessionId,
+      );
+      return;
+    }
+
     final context = AppNavigator.key.currentContext;
     if (context == null ||
         !Get.isRegistered<HomeController>() ||
@@ -351,7 +376,9 @@ class CallHelper {
     }
 
     _formOpen = true;
+    _activePostCallSessionId = session.sessionId;
     _log('post_call_form_open', sessionId: session.sessionId);
+
     unawaited(
       showDialog<void>(
         context: context,
@@ -365,6 +392,10 @@ class CallHelper {
         ),
       ).whenComplete(() {
         _formOpen = false;
+        if (_activePostCallSessionId == session.sessionId) {
+          _activePostCallSessionId = null;
+        }
+        _log('post_call_form_closed', sessionId: session.sessionId);
       }),
     );
   }

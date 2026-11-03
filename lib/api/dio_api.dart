@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:crm_flutter/api/response/all_campaigns_response.dart';
+import 'package:crm_flutter/api/response/campaign_custom_fields_response.dart';
 import 'package:crm_flutter/api/response/all_follow_up_response.dart';
 import 'package:crm_flutter/api/response/all_missed_followups_response.dart';
 import 'package:crm_flutter/api/response/all_templates_response.dart';
@@ -112,6 +113,134 @@ class DioApi {
       }
     } catch (e) {
       throw Exception('An error occurred while fetching campaigns: $e');
+    }
+  }
+
+  Future<CampaignCustomFieldsResponse> getCampaignCustomFields(
+    String campaignId,
+  ) async {
+    final trimmedId = campaignId.trim();
+    if (trimmedId.isEmpty || trimmedId == 'null' || trimmedId == 'undefined') {
+      throw Exception('Invalid campaign ID: "$campaignId"');
+    }
+
+    try {
+      final response = await DioUtil.dio.get(
+        "$link/customlist/campaign/$trimmedId",
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data is Map<String, dynamic>) {
+          return CampaignCustomFieldsResponse.fromJson(response.data);
+        } else if (response.data is Map) {
+          return CampaignCustomFieldsResponse.fromJson(
+            Map<String, dynamic>.from(response.data),
+          );
+        }
+        return CampaignCustomFieldsResponse(success: true, fields: []);
+      } else {
+        throw Exception(
+          'Failed to load campaign custom fields: ${response.statusCode}',
+        );
+      }
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      final responseData = e.response?.data;
+
+      // Handle 404
+      if (statusCode == 404) {
+        // Inspect response body to determine if this is a confirmed "no configuration"
+        // versus an incorrect endpoint/route or invalid campaign ID.
+        if (responseData is Map) {
+          final message = responseData['message']?.toString() ?? '';
+          final messageLower = message.toLowerCase();
+
+          // Check if the backend explicitly complained about invalid ID / cast error
+          if (messageLower.contains('invalid') ||
+              messageLower.contains('cast to') ||
+              messageLower.contains('objectid')) {
+            throw Exception('Invalid campaign ID: $message');
+          }
+
+          // Check if the message is that the campaign itself does not exist
+          if (messageLower == 'campaign not found') {
+            throw Exception('Campaign not found: $trimmedId');
+          }
+
+          // Confirmed no-configuration: custom list document does not exist for this campaign
+          // e.g. "Custom list not found", "No custom fields found", data: null, etc.
+          return CampaignCustomFieldsResponse(success: true, fields: []);
+        }
+
+        // If response is HTML or text like "Cannot GET ...", the endpoint/route is incorrect
+        final bodyStr = responseData?.toString() ?? '';
+        if (bodyStr.contains('Cannot GET') ||
+            bodyStr.contains('<!DOCTYPE') ||
+            bodyStr.contains('<html')) {
+          throw Exception(
+            'Custom list API endpoint not found: $link/customlist/campaign/$trimmedId',
+          );
+        }
+
+        // Generic 404 with non-JSON or unexpected body
+        throw Exception(
+          'Campaign custom fields service returned 404: ${e.message ?? 'Resource not found'}',
+        );
+      }
+
+      if (statusCode == 401) {
+        throw Exception('Unauthorized: Session expired or invalid authentication.');
+      }
+
+      if (statusCode == 403) {
+        throw Exception('Forbidden: You do not have permission to view campaign fields.');
+      }
+
+      if (statusCode != null && statusCode >= 500) {
+        final serverMsg =
+            responseData is Map ? responseData['message']?.toString() : null;
+        throw Exception(
+          serverMsg != null && serverMsg.isNotEmpty
+              ? 'Server error ($statusCode): $serverMsg'
+              : 'Server error ($statusCode): Failed to load campaign fields.',
+        );
+      }
+
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw Exception('Network connection error: Failed to connect to server.');
+      }
+
+      final errorMsg =
+          responseData is Map ? responseData['message']?.toString() : null;
+      throw Exception(
+        errorMsg != null && errorMsg.isNotEmpty
+            ? errorMsg
+            : 'An error occurred while fetching campaign custom fields: ${e.message ?? e.toString()}',
+      );
+    } catch (e) {
+      throw Exception(
+        'An error occurred while fetching campaign custom fields: $e',
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> getLeadFields() async {
+    try {
+      final response = await DioUtil.dio.get("$link/Leadfield");
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data is Map<String, dynamic>) {
+          return response.data;
+        } else if (response.data is Map) {
+          return Map<String, dynamic>.from(response.data);
+        }
+        return {'success': true, 'data': response.data};
+      } else {
+        throw Exception('Failed to load lead fields: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('An error occurred while fetching lead fields: $e');
     }
   }
 
@@ -391,11 +520,17 @@ class DioApi {
     }
   }
 
-  Future patchLead(String leadId, Map<String, dynamic> data) async {
+  Future patchLead(String leadId, dynamic data) async {
     final endpoint = '/lead/$leadId';
     var responseFailureLogged = false;
     try {
-      final response = await DioUtil.dio.patch("$link$endpoint", data: data);
+      final response = await DioUtil.dio.patch(
+        "$link$endpoint",
+        data: data,
+        options: data is FormData
+            ? Options(contentType: "multipart/form-data")
+            : null,
+      );
       final responseBody = response.data;
       final bodyMessage = responseBody is Map
           ? responseBody['message']?.toString()
@@ -1434,6 +1569,9 @@ class DioApi {
         // Nested objects
         if (key == "name" || key == "location") {
           formData.fields.add(MapEntry(key, jsonEncode(value)));
+        } else if (key == "customList" || key == "stageFieldValues") {
+          final stringVal = value is String ? value : jsonEncode(value);
+          formData.fields.add(MapEntry(key, stringVal));
         } else {
           formData.fields.add(MapEntry(key, value.toString()));
         }

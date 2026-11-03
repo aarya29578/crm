@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/pages/Allocations/components/campaign_dynamic_fields_widget.dart';
 import 'package:crm_flutter/api/response/all_campaigns_response.dart';
 import 'package:crm_flutter/api/response/all_lead_stage_response.dart'
     as stage_model;
@@ -24,6 +26,7 @@ class EditAllocationLeadDialog extends StatefulWidget {
 
 class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _dynamicFieldsKey = GlobalKey<CampaignDynamicFieldsWidgetState>();
   late final TextEditingController _firstName;
   late final TextEditingController _middleName;
   late final TextEditingController _lastName;
@@ -420,6 +423,13 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
       payload['followUpDate'] = _followUpDate?.toUtc().toIso8601String();
     }
 
+    if (_dynamicFieldsKey.currentState != null &&
+        _dynamicFieldsKey.currentState!.hasChanges()) {
+      final customFields =
+          _dynamicFieldsKey.currentState!.getCustomFieldPayload();
+      payload['customList'] = jsonEncode(customFields);
+    }
+
     return payload;
   }
 
@@ -510,6 +520,11 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
         _cityId != _lead.location?.city?.sId) {
       updated.location = _buildLocation();
     }
+    if (_dynamicFieldsKey.currentState != null &&
+        _dynamicFieldsKey.currentState!.hasChanges()) {
+      updated.customList =
+          _dynamicFieldsKey.currentState!.getCustomFieldsAsModelList();
+    }
     return updated;
   }
 
@@ -551,6 +566,10 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
 
   Future<void> _save() async {
     if (_saving || !_formKey.currentState!.validate()) return;
+    if (_dynamicFieldsKey.currentState != null &&
+        !_dynamicFieldsKey.currentState!.validate()) {
+      return;
+    }
 
     final leadId = _lead.sId?.trim();
     if (leadId == null || leadId.isEmpty) {
@@ -816,6 +835,17 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
                     ),
                     const SizedBox(height: 12),
                     _textField('Remarks', _remarks, maxLines: 3),
+                    const SizedBox(height: 16),
+                    CampaignDynamicFieldsWidget(
+                      key: _dynamicFieldsKey,
+                      campaignId: _campaignId,
+                      initialCustomList:
+                          _campaignId == _lead.compaignName?.sId
+                              ? _lead.customList
+                              : null,
+                      decorationBuilder: (label, isRequired) =>
+                          _decoration(label),
+                    ),
                   ],
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/helper/whatsapp_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:crm_flutter/common_widgets/stage_date_time_picker.dart';
 
 ClaimedLeadCard(
   context,
@@ -283,11 +284,13 @@ ClaimedLeads(
                               style: TextStyle(fontSize: 13, color: Colors.red.shade900),
                               children: [
                                 TextSpan(
-                                  text: "Stage Remark: ",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  text: "${isTargetStageDateTimeField(field) ? getStageFieldDisplayLabel(field) : 'Stage Remark'}: ",
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 TextSpan(
-                                  text: "${field['value'] ?? 'N/A'}",
+                                  text: isTargetStageDateTimeField(field) && field['value'] != null
+                                      ? formatDisplayDateTime(field['value'].toString())
+                                      : "${field['value'] ?? 'N/A'}",
                                 ),
                               ],
                             ),

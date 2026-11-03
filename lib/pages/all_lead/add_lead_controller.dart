@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:crm_flutter/pages/Allocations/components/campaign_dynamic_fields_widget.dart';
 import 'package:get/get.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:crm_flutter/api/dio_api.dart';
@@ -11,6 +13,7 @@ import 'package:crm_flutter/api/response/all_lead_stage_response.dart'
 
 class AddLeadController extends GetxController {
   final formKey = GlobalKey<FormState>();
+  final dynamicFieldsKey = GlobalKey<CampaignDynamicFieldsWidgetState>();
 
   final firstNameController = TextEditingController();
   final middleNameController = TextEditingController();
@@ -212,6 +215,20 @@ class AddLeadController extends GetxController {
 
   Future<void> createLead() async {
     try {
+      if (dynamicFieldsKey.currentState != null &&
+          !dynamicFieldsKey.currentState!.validate()) {
+        Get.snackbar(
+          "Validation Error",
+          "Please fill in all required campaign fields",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      final customListPayload =
+          dynamicFieldsKey.currentState?.getCustomFieldPayload() ?? [];
       final body = {
         "lead_source_id": source.value,
 
@@ -255,6 +272,10 @@ class AddLeadController extends GetxController {
 
         "website": websiteController.text.trim(),
       };
+
+      if (customListPayload.isNotEmpty) {
+        body["customList"] = jsonEncode(customListPayload);
+      }
 
       final documentPaths = selectedFiles
           .where((file) => file.path != null)
