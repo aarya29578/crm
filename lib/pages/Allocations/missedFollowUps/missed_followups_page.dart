@@ -566,6 +566,9 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                                 followUp: data.followUpDate is String
                                     ? DateTime.tryParse(data.followUpDate)
                                     : data.followUpDate,
+                                siteVisitDate: data.siteVisitDate,
+                                siteVisitDone: data.siteVisitDone,
+                                meetingDone: data.meetingDone,
                                 phone: data.phone ?? 0,
                                 stageFieldValues: data.stageFieldValues,
                                 onEdit: () => _editLead(data.sId),

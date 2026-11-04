@@ -64,6 +64,9 @@ class FollowUpData {
   String? updatedAt;
   bool? status;
   String? followUpDate;
+  String? siteVisitDate;
+  String? siteVisitDone;
+  String? meetingDone;
 
   FollowUpData({
     this.id,
@@ -95,6 +98,9 @@ class FollowUpData {
     this.updatedAt,
     this.status,
     this.followUpDate,
+    this.siteVisitDate,
+    this.siteVisitDone,
+    this.meetingDone,
   });
 
   factory FollowUpData.fromJson(Map<String, dynamic> json) {
@@ -140,6 +146,10 @@ class FollowUpData {
       updatedAt: json['updatedAt'],
       status: json['status'],
       followUpDate: json['followUpDate'],
+      siteVisitDate: json['siteVisitDate']?.toString(),
+      siteVisitDone: json['siteVisitDone']?.toString(),
+      meetingDone:
+          (json['meetingDone'] ?? json['bookingDone'])?.toString(),
     );
   }
 
@@ -173,6 +183,9 @@ class FollowUpData {
     'updatedAt': updatedAt,
     'status': status,
     'followUpDate': followUpDate,
+    'siteVisitDate': siteVisitDate,
+    'siteVisitDone': siteVisitDone,
+    'meetingDone': meetingDone,
   };
 }
 
