@@ -29,8 +29,16 @@ class MissedFollowupsPage extends StatefulWidget {
 
 class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
   late final AllMissFUpsController _allMissFUpsController;
   final Set<String> _editingLeadIds = {};
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _editLead(String? leadId) async {
     if (leadId == null || leadId.trim().isEmpty) {
@@ -77,8 +85,13 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
         ? Get.find<AllMissFUpsController>()
         : Get.put(AllMissFUpsController());
 
+    _allMissFUpsController.searchQueryAll.value = '';
+    _allMissFUpsController.searchQueryMissed.value = '';
+    _searchController.clear();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _allMissFUpsController.followUpType.value = widget.initialType;
+      _searchController.text = _allMissFUpsController.currentSearchQuery;
 
       // Apply date filter from home page if provided
       if (widget.startDate != null && widget.endDate != null) {
@@ -107,10 +120,63 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
+  Widget _buildSearchField() {
+    return Container(
+      height: 44,
+      margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: ColorConstants.MainPurpleBackground.withValues(alpha: 0.35),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _searchController,
+        style: const TextStyle(fontSize: 14, color: Colors.black87),
+        cursorColor: ColorConstants.MainPurpleBackground,
+        decoration: InputDecoration(
+          hintText: 'Search leads by name, phone or email...',
+          hintStyle: TextStyle(
+            color: Colors.grey.shade500,
+            fontSize: 13,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: ColorConstants.MainPurpleBackground,
+            size: 20,
+          ),
+          suffixIcon: Obx(() {
+            final query = _allMissFUpsController.currentSearchQuery;
+            if (query.isEmpty) return const SizedBox.shrink();
+            return IconButton(
+              tooltip: 'Clear search',
+              icon: Icon(
+                Icons.cancel,
+                color: Colors.grey.shade500,
+                size: 18,
+              ),
+              onPressed: () {
+                _searchController.clear();
+                _allMissFUpsController.clearSearch();
+              },
+            );
+          }),
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        ),
+        onChanged: _allMissFUpsController.onSearchChanged,
+      ),
+    );
   }
 
   Widget _buildStatusBreakdownSection() {
@@ -339,7 +405,7 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
         ],
       ),
       body: Obx(() {
-        final leads = _allMissFUpsController.leads;
+        final leads = _allMissFUpsController.displayLeads;
         return SafeArea(
           child: Column(
             children: [
@@ -370,8 +436,13 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                               'All') {
                             return;
                           }
-                          _allMissFUpsController.followUpType.value = 'All';
-                          _allMissFUpsController.fetchData(isRefresh: true);
+                          _allMissFUpsController.setFollowUpType('All');
+                          _searchController.text =
+                              _allMissFUpsController.searchQueryAll.value;
+                          _searchController.selection =
+                              TextSelection.fromPosition(
+                            TextPosition(offset: _searchController.text.length),
+                          );
                         },
                         child: const Text("All"),
                       ),
@@ -402,8 +473,13 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                               'Missed') {
                             return;
                           }
-                          _allMissFUpsController.followUpType.value = 'Missed';
-                          _allMissFUpsController.fetchData(isRefresh: true);
+                          _allMissFUpsController.setFollowUpType('Missed');
+                          _searchController.text =
+                              _allMissFUpsController.searchQueryMissed.value;
+                          _searchController.selection =
+                              TextSelection.fromPosition(
+                            TextPosition(offset: _searchController.text.length),
+                          );
                         },
                         child: const Text("Missed"),
                       ),
@@ -411,6 +487,7 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                   ],
                 ),
               ),
+              _buildSearchField(),
               // Date Filter UI
               Padding(
                 padding: const EdgeInsets.only(bottom: 6.0),
@@ -487,9 +564,12 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                                   'Could not load follow-ups. Retry',
                                 ),
                               )
-                            : const Text(
-                                "No Follow-up found",
-                                style: TextStyle(
+                            : Text(
+                                _allMissFUpsController
+                                        .currentSearchQuery.trim().isNotEmpty
+                                    ? "No leads found"
+                                    : "No Follow-up found",
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.grey,

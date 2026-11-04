@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/all_lead_stage_response.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
@@ -17,6 +19,123 @@ class AllMissFUpsController extends GetxController {
   int _requestGeneration = 0;
 
   RxString followUpType = 'Missed'.obs; // 'All' or 'Missed'
+
+  // Independent search queries for All Follow-Ups and Missed Follow-Ups
+  RxString searchQueryAll = ''.obs;
+  RxString searchQueryMissed = ''.obs;
+  Timer? _searchDebounce;
+
+  String get currentSearchQuery =>
+      followUpType.value == 'Missed' ? searchQueryMissed.value : searchQueryAll.value;
+
+  List<dynamic> get displayLeads {
+    final query = currentSearchQuery.trim();
+    if (query.isEmpty) return leads;
+    return leads.where((lead) => matchesLeadSearch(lead, query)).toList();
+  }
+
+  static bool matchesLeadSearch(dynamic lead, String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    if (lead == null) return false;
+
+    String nameStr = '';
+    String phoneStr = '';
+    String emailStr = '';
+
+    if (lead is Map) {
+      final rawName = lead['name'];
+      if (rawName is String) {
+        nameStr = rawName;
+      } else if (rawName is Map) {
+        final first = rawName['first'];
+        final middle = rawName['middle'];
+        final last = rawName['last'];
+        nameStr = [first, middle, last]
+            .where((s) => s != null && s.toString().trim().isNotEmpty)
+            .join(' ');
+      }
+      phoneStr = (lead['phone'] ?? '').toString();
+      emailStr = (lead['email'] ?? '').toString();
+    } else {
+      try {
+        final rawName = (lead as dynamic).name;
+        if (rawName is String) {
+          nameStr = rawName;
+        } else if (rawName != null) {
+          final first = (rawName as dynamic).first;
+          dynamic middle;
+          try {
+            middle = (rawName as dynamic).middle;
+          } catch (_) {}
+          final last = (rawName as dynamic).last;
+          nameStr = [first, middle, last]
+              .where((s) => s != null && s.toString().trim().isNotEmpty)
+              .join(' ');
+        }
+      } catch (_) {}
+
+      try {
+        phoneStr = ((lead as dynamic).phone ?? '').toString();
+      } catch (_) {}
+
+      try {
+        emailStr = ((lead as dynamic).email ?? '').toString();
+      } catch (_) {}
+    }
+
+    // 1. Lead name (case-insensitive partial matching)
+    if (nameStr.toLowerCase().contains(q)) return true;
+
+    // 2. Phone number (partial matching e.g. '98765' matches 9876543210)
+    if (phoneStr.toLowerCase().contains(q)) return true;
+
+    // 3. Email address (case-insensitive partial matching)
+    if (emailStr.toLowerCase().contains(q)) return true;
+
+    return false;
+  }
+
+  void onSearchChanged(String query) {
+    _searchDebounce?.cancel();
+
+    final isMissed = followUpType.value == 'Missed';
+    if (isMissed) {
+      searchQueryMissed.value = query;
+    } else {
+      searchQueryAll.value = query;
+    }
+
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      fetchData(isRefresh: true);
+    });
+  }
+
+  void clearSearch() {
+    _searchDebounce?.cancel();
+
+    final isMissed = followUpType.value == 'Missed';
+    if (isMissed) {
+      searchQueryMissed.value = '';
+    } else {
+      searchQueryAll.value = '';
+    }
+
+    fetchData(isRefresh: true);
+  }
+
+  void setFollowUpType(String type) {
+    if (followUpType.value == type) return;
+    _searchDebounce?.cancel();
+    followUpType.value = type;
+    fetchData(isRefresh: true);
+  }
+
+  @override
+  void onClose() {
+    _searchDebounce?.cancel();
+    super.onClose();
+  }
 
   // Date Filter State
   RxString selectedTimeRange = 'Today'.obs;
@@ -131,6 +250,7 @@ class AllMissFUpsController extends GetxController {
     final generation = _requestGeneration;
     final requestedPage = currentPage;
     final isMissed = followUpType.value == 'Missed';
+    final search = currentSearchQuery.trim();
     final startDate = selectedStartDate.value;
     final endDate = selectedEndDate.value;
 
@@ -147,6 +267,7 @@ class AllMissFUpsController extends GetxController {
           currentDateTime: DateTime.now().toUtc().toIso8601String(),
           page: requestedPage,
           limit: _pageSize,
+          search: search,
           startDate: startDate,
           endDate: endDate,
         );
@@ -160,6 +281,7 @@ class AllMissFUpsController extends GetxController {
         final response = await DioApi().getAllFollowUps(
           page: requestedPage,
           limit: _pageSize,
+          search: search,
           startDate: startDate,
           endDate: endDate,
         );
