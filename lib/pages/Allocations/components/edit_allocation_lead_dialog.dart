@@ -11,6 +11,7 @@ import 'package:crm_flutter/api/response/all_sources_response.dart'
 import 'package:crm_flutter/api/response/location_response.dart';
 import 'package:crm_flutter/api/response/substatus_lead_stage_response.dart';
 import 'package:crm_flutter/pages/Allocations/components/searchable_sub_status_field.dart';
+import 'package:crm_flutter/common_widgets/stage_date_time_picker.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
 import 'package:flutter/material.dart';
 
@@ -61,6 +62,8 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
   String? _priority;
   String? _gender;
   DateTime? _followUpDate;
+  final Map<String, DateTime?> _statusDates = {};
+  final Map<String, TimeOfDay?> _statusTimes = {};
 
   bool _optionsLoaded = false;
   bool _saving = false;
@@ -68,6 +71,16 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
   String? _saveError;
 
   Data get _lead => widget.lead;
+
+  String? get _currentStageName {
+    if (_stageId == null) return null;
+    final match = _stages.where((stage) => stage.sId == _stageId);
+    if (match.isNotEmpty) return match.first.name;
+    if (_lead.leadStageId?.sId == _stageId) {
+      return _lead.leadStageId?.name;
+    }
+    return null;
+  }
 
   String get _subStatusLabel {
     final selectedStage = _stages
@@ -101,6 +114,17 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
     _priority = _lead.priority;
     _gender = _lead.gender;
     _followUpDate = _lead.followUpDate?.toLocal();
+    for (final key in ['siteVisitDate', 'siteVisitDone', 'meetingDone']) {
+      final savedValue = findSavedStageValueByKey(_lead, key);
+      if (savedValue != null && savedValue.toString().isNotEmpty) {
+        final parsed = DateTime.tryParse(savedValue.toString())?.toLocal();
+        if (parsed != null) {
+          _statusDates[key] = DateTime(parsed.year, parsed.month, parsed.day);
+          _statusTimes[key] =
+              TimeOfDay(hour: parsed.hour, minute: parsed.minute);
+        }
+      }
+    }
     _loadOptions();
   }
 
@@ -336,11 +360,13 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
       initialDate: initial,
       firstDate: DateTime(1900),
       lastDate: DateTime(2100),
+      helpText: 'Select Follow-up Date',
     );
     if (date == null || !mounted) return;
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
+      helpText: 'Select Follow-up Time',
     );
     if (time == null || !mounted) return;
     setState(() {
@@ -352,6 +378,136 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
         time.minute,
       );
     });
+  }
+
+  Future<void> _selectStageDate(
+    String targetKey,
+    String dateLabel,
+    String timeLabel,
+  ) async {
+    final now = DateTime.now();
+    final d = _statusDates[targetKey];
+    final t = _statusTimes[targetKey];
+    final initial = (d != null && t != null)
+        ? DateTime(d.year, d.month, d.day, t.hour, t.minute)
+        : (d != null
+            ? DateTime(d.year, d.month, d.day, now.hour, now.minute)
+            : now);
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+      helpText: 'Select $dateLabel',
+    );
+    if (date == null || !mounted) return;
+
+    final initialTime = t ?? TimeOfDay.fromDateTime(initial);
+    final time = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      helpText: 'Select $timeLabel',
+    );
+    if (time == null || !mounted) return;
+
+    setState(() {
+      _statusDates[targetKey] = DateTime(date.year, date.month, date.day);
+      _statusTimes[targetKey] = TimeOfDay(hour: time.hour, minute: time.minute);
+    });
+  }
+
+  Widget _buildStatusDateTimePicker() {
+    final currentStageName = _currentStageName;
+    final isFollowUp = currentStageName?.trim().toLowerCase() == 'follow up';
+    final targetKey = getBackendKeyForStageName(currentStageName);
+
+    if (isFollowUp) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: InputDecorator(
+          key: const ValueKey('follow-up-date-picker'),
+          decoration: _decoration('Follow-up Date & Time'),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _followUpDate == null
+                      ? 'Not set'
+                      : '${MaterialLocalizations.of(context).formatMediumDate(_followUpDate!)} '
+                            '${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(_followUpDate!))}',
+                ),
+              ),
+              IconButton(
+                onPressed: _selectFollowUpDate,
+                icon: const Icon(Icons.calendar_month),
+              ),
+              if (_followUpDate != null)
+                IconButton(
+                  onPressed: () => setState(() => _followUpDate = null),
+                  icon: const Icon(Icons.clear),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (targetKey != null) {
+      final String dateLabel;
+      final String timeLabel;
+      if (targetKey == 'siteVisitDate') {
+        dateLabel = 'Site Visit Planned Date';
+        timeLabel = 'Site Visit Planned Time';
+      } else if (targetKey == 'siteVisitDone') {
+        dateLabel = 'Site Visit Done Date';
+        timeLabel = 'Site Visit Done Time';
+      } else {
+        dateLabel = 'Booking Done Date';
+        timeLabel = 'Booking Done Time';
+      }
+
+      final d = _statusDates[targetKey];
+      final t = _statusTimes[targetKey];
+      final DateTime? currentDt = (d != null && t != null)
+          ? DateTime(d.year, d.month, d.day, t.hour, t.minute)
+          : (d != null ? DateTime(d.year, d.month, d.day) : null);
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: InputDecorator(
+          key: ValueKey('stage-date-picker-$targetKey'),
+          decoration: _decoration(dateLabel),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  currentDt == null
+                      ? 'Not set'
+                      : '${MaterialLocalizations.of(context).formatMediumDate(currentDt)} '
+                            '${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(currentDt))}',
+                ),
+              ),
+              IconButton(
+                onPressed: () =>
+                    _selectStageDate(targetKey, dateLabel, timeLabel),
+                icon: const Icon(Icons.calendar_month),
+              ),
+              if (currentDt != null)
+                IconButton(
+                  onPressed: () => setState(() {
+                    _statusDates[targetKey] = null;
+                    _statusTimes[targetKey] = null;
+                  }),
+                  icon: const Icon(Icons.clear),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   Map<String, dynamic> _buildPayload() {
@@ -421,6 +577,18 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
     final currentFollowUp = _lead.followUpDate?.toLocal();
     if (_followUpDate != currentFollowUp) {
       payload['followUpDate'] = _followUpDate?.toUtc().toIso8601String();
+    }
+
+    final currentStageName = _currentStageName;
+    final targetKey = getBackendKeyForStageName(currentStageName);
+    if (targetKey != null) {
+      final d = _statusDates[targetKey];
+      final t = _statusTimes[targetKey];
+      final combinedIso =
+          (d != null && t != null) ? combineDateAndTime(d, t) : null;
+      if (combinedIso != null) {
+        payload[targetKey] = combinedIso;
+      }
     }
 
     if (_dynamicFieldsKey.currentState != null &&
@@ -525,6 +693,18 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
       updated.customList =
           _dynamicFieldsKey.currentState!.getCustomFieldsAsModelList();
     }
+    final currentStageName = _currentStageName;
+    final targetKey = getBackendKeyForStageName(currentStageName);
+    if (targetKey != null) {
+      final d = _statusDates[targetKey];
+      final t = _statusTimes[targetKey];
+      final combinedIso =
+          (d != null && t != null) ? combineDateAndTime(d, t) : null;
+      if (targetKey == 'siteVisitDate') updated.siteVisitDate = combinedIso;
+      if (targetKey == 'siteVisitDone') updated.siteVisitDone = combinedIso;
+      if (targetKey == 'meetingDone') updated.meetingDone = combinedIso;
+    }
+    updated.stageFieldValues = _lead.stageFieldValues;
     return updated;
   }
 
@@ -569,6 +749,20 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
     if (_dynamicFieldsKey.currentState != null &&
         !_dynamicFieldsKey.currentState!.validate()) {
       return;
+    }
+
+    final currentStageName = _currentStageName;
+    final targetKey = getBackendKeyForStageName(currentStageName);
+    final targetLabel = getDisplayLabelForStageName(currentStageName);
+    if (targetKey != null) {
+      final d = _statusDates[targetKey];
+      final t = _statusTimes[targetKey];
+      if ((d != null && t == null) || (d == null && t != null)) {
+        setState(() {
+          _saveError = 'Please select both date and time for $targetLabel';
+        });
+        return;
+      }
     }
 
     final leadId = _lead.sId?.trim();
@@ -807,32 +1001,7 @@ class _EditAllocationLeadDialogState extends State<EditAllocationLeadDialog> {
                       ),
                       onChanged: (value) => setState(() => _gender = value),
                     ),
-                    const SizedBox(height: 12),
-                    InputDecorator(
-                      decoration: _decoration('Follow-up Date & Time'),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _followUpDate == null
-                                  ? 'Not set'
-                                  : '${MaterialLocalizations.of(context).formatMediumDate(_followUpDate!)} '
-                                        '${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(_followUpDate!))}',
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: _selectFollowUpDate,
-                            icon: const Icon(Icons.calendar_month),
-                          ),
-                          if (_followUpDate != null)
-                            IconButton(
-                              onPressed: () =>
-                                  setState(() => _followUpDate = null),
-                              icon: const Icon(Icons.clear),
-                            ),
-                        ],
-                      ),
-                    ),
+                    _buildStatusDateTimePicker(),
                     const SizedBox(height: 12),
                     _textField('Remarks', _remarks, maxLines: 3),
                     const SizedBox(height: 16),

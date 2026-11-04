@@ -176,6 +176,16 @@ class CallLogCard extends StatelessWidget {
           // Pre-fill
           final leadData = leadDetailsController.allLeadDetailRes.value.data;
           if (leadData != null) {
+            for (final key in ['siteVisitDate', 'siteVisitDone', 'meetingDone']) {
+              final savedValue = findSavedStageValueByKey(leadData, key);
+              if (savedValue != null && savedValue.toString().isNotEmpty) {
+                final parsed = DateTime.tryParse(savedValue.toString())?.toLocal();
+                if (parsed != null) {
+                  dynamicDates[key] = DateTime(parsed.year, parsed.month, parsed.day);
+                  dynamicTimes[key] = TimeOfDay(hour: parsed.hour, minute: parsed.minute);
+                }
+              }
+            }
             for (var field in fields) {
               final fieldId = field['_id']?.toString() ?? '';
               final fieldType = field['fieldType'];
@@ -222,38 +232,79 @@ class CallLogCard extends StatelessWidget {
       }
     }
 
+    Future<void> saveTargetStatusDateTime(
+      String targetKey,
+      String targetLabel, {
+      bool isClear = false,
+    }) async {
+      if (leadId == null) return;
+      try {
+        final d = dynamicDates[targetKey];
+        final t = dynamicTimes[targetKey];
+        final combinedIso =
+            (!isClear && d != null && t != null) ? combineDateAndTime(d, t) : null;
+
+        final Map<String, dynamic> patchPayload = {};
+        if (combinedIso != null) {
+          patchPayload[targetKey] = combinedIso;
+        } else if (isClear) {
+          patchPayload[targetKey] = null;
+        }
+
+        if (patchPayload.isNotEmpty) {
+          await DioApi().patchLead(leadId!, patchPayload);
+          await leadDetailsController.getAllLeadDetails(context, leadId!);
+        }
+        Get.snackbar(
+          "Success",
+          isClear
+              ? "$targetLabel cleared successfully"
+              : "$targetLabel updated successfully",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } catch (e) {
+        Get.snackbar(
+          "Error",
+          "Failed to update $targetLabel: $e",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+
     Future<void> saveStageFields() async {
       if (leadId == null) return;
       try {
-        final List<Map<String, dynamic>> fieldsPayload = [];
+        final List<Map<String, dynamic>> textFieldsPayload = [];
+        String? dynamicFollowUpIso;
         for (var f in stageFields) {
           final fId = f['_id']?.toString() ?? '';
           final fType = f['fieldType'];
           final isTarget = isTargetStageDateTimeField(f);
           final key = getStageFieldKey(f);
 
-          if (fType == 'datetime' || isTarget) {
-            final d = dynamicDates[fId];
-            final t = dynamicTimes[fId];
-            if (d != null && t != null) {
-              final combined = DateTime(
-                d.year,
-                d.month,
-                d.day,
-                t.hour,
-                t.minute,
-              );
-              fieldsPayload.add({
-                if (f['_id'] != null) "fieldId": f['_id'],
-                "fieldName": key,
-                "fieldType": "datetime",
-                "value": combined.toIso8601String(),
-              });
+          if (fType == 'datetime') {
+            if (!isTarget) {
+              final d = dynamicDates[fId];
+              final t = dynamicTimes[fId];
+              if (d != null && t != null) {
+                final combined = DateTime(
+                  d.year,
+                  d.month,
+                  d.day,
+                  t.hour,
+                  t.minute,
+                );
+                dynamicFollowUpIso = combined.toIso8601String();
+              }
             }
           } else if (fType == 'text') {
             final c = textControllers[fId];
             if (c != null && c.text.isNotEmpty) {
-              fieldsPayload.add({
+              textFieldsPayload.add({
                 if (f['_id'] != null) "fieldId": f['_id'],
                 "fieldName": key,
                 "fieldType": "text",
@@ -263,10 +314,18 @@ class CallLogCard extends StatelessWidget {
           }
         }
 
-        await DioApi().patchLead(leadId!, {
-          "stageFieldValues": fieldsPayload,
-        });
-        await leadDetailsController.getAllLeadDetails(context, leadId!);
+        final Map<String, dynamic> patchData = {};
+        if (textFieldsPayload.isNotEmpty) {
+          patchData["stageFieldValues"] = textFieldsPayload;
+        }
+        if (dynamicFollowUpIso != null) {
+          patchData["followUpDate"] = dynamicFollowUpIso;
+        }
+
+        if (patchData.isNotEmpty) {
+          await DioApi().patchLead(leadId!, patchData);
+          await leadDetailsController.getAllLeadDetails(context, leadId!);
+        }
       } catch (e) {
         print("Error saving stage fields: $e");
       }
@@ -630,6 +689,12 @@ class CallLogCard extends StatelessWidget {
                                     (e) => e.sId == currentStageId,
                                   )
                                 : null;
+                            final currentStageName =
+                                selectedStageObj?.name ?? leadData?.leadStageId?.name;
+                            final targetKey =
+                                getBackendKeyForStageName(currentStageName);
+                            final targetLabel =
+                                getDisplayLabelForStageName(currentStageName);
                             final hasSubStatus =
                                 selectedStageObj?.hasSubStatus == true;
                             final subStatusLabel = subStatusLabelForStage(
@@ -873,8 +938,37 @@ class CallLogCard extends StatelessWidget {
                                   ],
                                 ],
 
-                                // Dynamic Fields Section
-                                if (isLoadingFields.value)
+                                if (targetKey != null && targetLabel != null) ...[
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 20),
+                                    child: StageDateTimePicker(
+                                      fieldKey: targetKey,
+                                      label: targetLabel,
+                                      date: dynamicDates[targetKey],
+                                      time: dynamicTimes[targetKey],
+                                      isRequired: false,
+                                      isDark: isDark,
+                                      onDateChanged: (newDate) async {
+                                        dynamicDates[targetKey] = newDate;
+                                        if (dynamicTimes[targetKey] != null) {
+                                          await saveTargetStatusDateTime(targetKey, targetLabel);
+                                        }
+                                      },
+                                      onTimeChanged: (newTime) async {
+                                        dynamicTimes[targetKey] = newTime;
+                                        if (dynamicDates[targetKey] != null) {
+                                          await saveTargetStatusDateTime(targetKey, targetLabel);
+                                        }
+                                      },
+                                      onClear: () async {
+                                        dynamicDates.remove(targetKey);
+                                        dynamicTimes.remove(targetKey);
+                                        await saveTargetStatusDateTime(targetKey, targetLabel, isClear: true);
+                                      },
+                                    ),
+                                  ),
+                                  buildRemarksField(),
+                                ] else if (isLoadingFields.value)
                                   const Padding(
                                     padding: EdgeInsets.symmetric(vertical: 20),
                                     child: Center(
@@ -1111,7 +1205,21 @@ class CallLogCard extends StatelessWidget {
                         ),
 
                         Obx(() {
-                          if (isLoadingFields.value ||
+                          final leadData = leadDetailsController.allLeadDetailRes.value.data;
+                          final currentStageId = leadData?.leadStageId?.sId;
+                          final stages = homeController.allLeadStageRes.value.data ?? [];
+                          final selectedStageObj = stages
+                                  .where((e) => e.sId == currentStageId)
+                                  .isNotEmpty
+                              ? stages.firstWhere(
+                                  (e) => e.sId == currentStageId,
+                                )
+                              : null;
+                          final currentStageName = selectedStageObj?.name ?? leadData?.leadStageId?.name;
+                          final targetKey = getBackendKeyForStageName(currentStageName);
+
+                          if (targetKey != null ||
+                              isLoadingFields.value ||
                               stageFields.any(
                                 (field) =>
                                     field['fieldType'] == 'datetime' ||

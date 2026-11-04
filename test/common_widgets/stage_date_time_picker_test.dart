@@ -40,16 +40,21 @@ void main() {
       expect(getStageFieldKey({'fieldName': 'siteVisitDone'}), 'siteVisitDone');
     });
 
-    test('meetingDone maps to "Meeting Done"', () {
+    test('meetingDone maps to "Booking Done" with "Meeting Done" as alias', () {
       expect(
         getStageFieldDisplayLabel({'fieldName': 'meetingDone'}),
-        'Meeting Done',
+        'Booking Done',
       );
       expect(
         getStageFieldDisplayLabel({'key': 'meetingdone'}),
-        'Meeting Done',
+        'Booking Done',
+      );
+      expect(
+        getStageFieldDisplayLabel({'name': 'Booking Done'}),
+        'Booking Done',
       );
       expect(getStageFieldKey({'fieldName': 'meetingDone'}), 'meetingDone');
+      expect(getStageFieldKey({'fieldName': 'bookingDone'}), 'meetingDone');
     });
 
     test('isTargetStageDateTimeField correctly identifies target fields', () {
@@ -128,7 +133,6 @@ void main() {
     });
 
     test('Independent selection: changing date preserves time', () {
-      final initialDate = DateTime(2026, 11, 5);
       final preservedTime = const TimeOfDay(hour: 14, minute: 15);
 
       // User changes date only
@@ -140,7 +144,6 @@ void main() {
 
     test('Independent selection: changing time preserves date', () {
       final preservedDate = DateTime(2026, 11, 5);
-      final initialTime = const TimeOfDay(hour: 9, minute: 0);
 
       // User changes time only
       final updatedTime = const TimeOfDay(hour: 16, minute: 45);
@@ -352,7 +355,7 @@ void main() {
       expect(find.text('10:30 AM'), findsOneWidget);
     });
 
-    testWidgets('Shows placeholders "Select Date" and "Select Time" when unselected', (
+    testWidgets('Shows placeholders "Select Date" and "Select Time" when unselected with Booking Done labels', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -360,7 +363,7 @@ void main() {
           home: Scaffold(
             body: StageDateTimePicker(
               fieldKey: 'meetingDone',
-              label: 'Meeting Done',
+              label: 'Booking Done',
               date: null,
               time: null,
               onDateChanged: (_) {},
@@ -370,7 +373,9 @@ void main() {
         ),
       );
 
-      expect(find.text('Meeting Done'), findsOneWidget);
+      expect(find.text('Booking Done'), findsOneWidget);
+      expect(find.text('Booking Done Date'), findsOneWidget);
+      expect(find.text('Booking Done Time'), findsOneWidget);
       expect(find.text('Select Date'), findsOneWidget);
       expect(find.text('Select Time'), findsOneWidget);
     });
@@ -426,6 +431,150 @@ void main() {
       expect(find.text('Site Visit Planned'), findsOneWidget);
       expect(find.text('05 November 2026'), findsOneWidget);
       expect(find.text('10:30 AM'), findsOneWidget);
+    });
+  });
+
+  group('6. Status-to-Backend Mapping and Helpers', () {
+    test('getBackendKeyForStageName maps exact statuses correctly', () {
+      expect(getBackendKeyForStageName('Site Visit Planned'), 'siteVisitDate');
+      expect(getBackendKeyForStageName('Site Visit Done'), 'siteVisitDone');
+      expect(getBackendKeyForStageName('Booking Done'), 'meetingDone');
+      expect(getBackendKeyForStageName('Meeting Done'), 'meetingDone');
+      // Case and whitespace variations
+      expect(getBackendKeyForStageName('site visit planned'), 'siteVisitDate');
+      expect(getBackendKeyForStageName('SITE_VISIT_DONE'), 'siteVisitDone');
+      expect(getBackendKeyForStageName('bookingdone'), 'meetingDone');
+      expect(getBackendKeyForStageName('meetingdone'), 'meetingDone');
+      // Other statuses return null
+      expect(getBackendKeyForStageName('Follow Up'), isNull);
+      expect(getBackendKeyForStageName('New'), isNull);
+      expect(getBackendKeyForStageName('Call Back'), isNull);
+      expect(getBackendKeyForStageName(null), isNull);
+    });
+
+    test('getDisplayLabelForStageName returns correct user labels', () {
+      expect(
+        getDisplayLabelForStageName('Site Visit Planned'),
+        'Site Visit Planned',
+      );
+      expect(
+        getDisplayLabelForStageName('Site Visit Done'),
+        'Site Visit Done',
+      );
+      expect(
+        getDisplayLabelForStageName('Booking Done'),
+        'Booking Done',
+      );
+      expect(
+        getDisplayLabelForStageName('Meeting Done'),
+        'Booking Done',
+      );
+      expect(getDisplayLabelForStageName('Follow Up'), isNull);
+      expect(getDisplayLabelForStageName(null), isNull);
+    });
+
+    test('isTargetStageName correctly identifies only the 3 target statuses', () {
+      expect(isTargetStageName('Site Visit Planned'), isTrue);
+      expect(isTargetStageName('Site Visit Done'), isTrue);
+      expect(isTargetStageName('Booking Done'), isTrue);
+      expect(isTargetStageName('Meeting Done'), isTrue);
+      expect(isTargetStageName('Follow Up'), isFalse);
+      expect(isTargetStageName('New'), isFalse);
+      expect(isTargetStageName('Dead'), isFalse);
+      expect(isTargetStageName(null), isFalse);
+    });
+  });
+
+  group('7. Value Preservation and filterTextStageFieldValues', () {
+    test('filterTextStageFieldValues preserves only valid text stage fields', () {
+      final existing = [
+        {
+          'fieldId': 'f-1',
+          'fieldName': 'siteVisitDate',
+          'fieldType': 'datetime',
+          'value': '2026-11-05T10:30:00.000',
+        },
+        {
+          'fieldId': 'f-2',
+          'fieldName': 'remarks',
+          'fieldType': 'text',
+          'value': 'Initial remark',
+        },
+        {
+          // Text field without fieldId should be excluded
+          'fieldName': 'noId',
+          'fieldType': 'text',
+          'value': 'Discard me',
+        },
+        {
+          'fieldId': 'f-3',
+          'fieldName': 'meetingDone',
+          'fieldType': 'datetime',
+          'value': '2026-11-07T16:00:00.000',
+        },
+      ];
+
+      final filtered = filterTextStageFieldValues(existing);
+
+      // Only f-2 remarks text field should remain
+      expect(filtered.length, 1);
+      expect(filtered.first['fieldId'], 'f-2');
+      expect(filtered.first['fieldName'], 'remarks');
+      expect(filtered.first['fieldType'], 'text');
+      expect(filtered.first['value'], 'Initial remark');
+    });
+
+    test('updateStageFieldValuesList returns sanitized text fields only', () {
+      final existing = [
+        {
+          'fieldId': 'f-1',
+          'fieldName': 'budget',
+          'fieldType': 'text',
+          'value': '50000',
+        },
+        {
+          'fieldId': 'f-2',
+          'fieldName': 'siteVisitDate',
+          'fieldType': 'datetime',
+          'value': '2026-11-05T10:30:00.000',
+        },
+      ];
+
+      final updated = updateStageFieldValuesList(
+        existingList: existing,
+        targetKey: 'siteVisitDate',
+        combinedIso: '2026-11-08T11:00:00.000',
+      );
+
+      // Only text field budget is returned; datetime is never put in stageFieldValues
+      expect(updated.length, 1);
+      expect(updated.first['fieldName'], 'budget');
+      expect(updated.first['fieldType'], 'text');
+    });
+
+    test('findSavedStageValueByKey extracts from Map, List, or top-level with aliases', () {
+      final mapData = {
+        'siteVisitDate': '2026-11-05T10:30:00.000',
+        'meetingDone': '2026-11-07T11:00:00.000',
+      };
+
+      expect(
+        findSavedStageValueByKey(mapData, 'siteVisitDate'),
+        '2026-11-05T10:30:00.000',
+      );
+      expect(
+        findSavedStageValueByKey(mapData, 'meetingDone'),
+        '2026-11-07T11:00:00.000',
+      );
+      expect(findSavedStageValueByKey(mapData, 'siteVisitDone'), isNull);
+
+      final aliasData = {
+        'bookingDone': '2026-11-09T15:00:00.000',
+      };
+      expect(
+        findSavedStageValueByKey(aliasData, 'meetingDone'),
+        '2026-11-09T15:00:00.000',
+      );
     });
   });
 }

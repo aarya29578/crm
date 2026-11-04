@@ -234,6 +234,9 @@ class Data {
   List<dynamic> customList = [];
   String? followUpDate;
   List<dynamic>? stageFieldValues;
+  String? siteVisitDate;
+  String? siteVisitDone;
+  String? meetingDone;
   LeadSubStatusId? subStatusId;
   List<all_leads.Timeline>? timeline;
 
@@ -336,6 +339,10 @@ class Data {
     if (json['stageFieldValues'] is List) {
       stageFieldValues = json['stageFieldValues'];
     }
+    siteVisitDate = json['siteVisitDate']?.toString();
+    siteVisitDone = json['siteVisitDone']?.toString();
+    meetingDone =
+        (json['meetingDone'] ?? json['bookingDone'])?.toString();
     if (json['timeline'] is List) {
       timeline = (json['timeline'] as List)
           .map(
@@ -388,6 +395,9 @@ class Data {
       'customList': customList,
       'followUpDate': followUpDate,
       'stageFieldValues': stageFieldValues,
+      'siteVisitDate': siteVisitDate,
+      'siteVisitDone': siteVisitDone,
+      'meetingDone': meetingDone,
       'sub_status_id': subStatusId?.toJson(),
       'timeline': timeline?.map((item) => item.toJson()).toList(),
     };
