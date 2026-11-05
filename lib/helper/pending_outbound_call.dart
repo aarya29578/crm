@@ -17,6 +17,9 @@ class PendingOutboundCall {
   final DateTime? submissionStartedAt;
   final bool startCallApiSent;
   final Map<String, dynamic>? callData;
+  final String? status;
+  final String? archiveReason;
+  final DateTime? archivedAt;
 
   const PendingOutboundCall({
     required this.sessionId,
@@ -29,6 +32,9 @@ class PendingOutboundCall {
     this.submissionStartedAt,
     this.startCallApiSent = false,
     this.callData,
+    this.status,
+    this.archiveReason,
+    this.archivedAt,
   });
 
   factory PendingOutboundCall.create({
@@ -54,6 +60,7 @@ class PendingOutboundCall {
       phoneNumber: phoneNumber,
       stageName: stageName,
       startedAt: startedAt,
+      status: 'pending',
     );
   }
 
@@ -63,6 +70,9 @@ class PendingOutboundCall {
     DateTime? submissionStartedAt,
     bool? startCallApiSent,
     Map<String, dynamic>? callData,
+    String? status,
+    String? archiveReason,
+    DateTime? archivedAt,
   }) {
     return PendingOutboundCall(
       sessionId: sessionId,
@@ -75,6 +85,9 @@ class PendingOutboundCall {
       submissionStartedAt: submissionStartedAt ?? this.submissionStartedAt,
       startCallApiSent: startCallApiSent ?? this.startCallApiSent,
       callData: callData ?? this.callData,
+      status: status ?? this.status,
+      archiveReason: archiveReason ?? this.archiveReason,
+      archivedAt: archivedAt ?? this.archivedAt,
     );
   }
 
@@ -89,6 +102,9 @@ class PendingOutboundCall {
     'submissionStartedAt': submissionStartedAt?.toIso8601String(),
     'startCallApiSent': startCallApiSent,
     'callData': callData,
+    'status': status,
+    'archiveReason': archiveReason,
+    'archivedAt': archivedAt?.toIso8601String(),
   };
 
   factory PendingOutboundCall.fromJson(Map<String, dynamic> json) {
@@ -118,6 +134,9 @@ class PendingOutboundCall {
       ),
       startCallApiSent: json['startCallApiSent'] == true,
       callData: callData is Map ? Map<String, dynamic>.from(callData) : null,
+      status: json['status']?.toString(),
+      archiveReason: json['archiveReason']?.toString(),
+      archivedAt: DateTime.tryParse(json['archivedAt']?.toString() ?? ''),
     );
   }
 
@@ -200,6 +219,8 @@ class PendingOutboundCall {
 }
 
 class PendingOutboundCallStore {
+  static const archiveStorageKey = 'archived_outbound_calls';
+
   final SharedPreferences preferences;
 
   const PendingOutboundCallStore(this.preferences);
@@ -237,5 +258,72 @@ class PendingOutboundCallStore {
     if (!removed) {
       throw StateError('Unable to clear saved call session');
     }
+  }
+
+  Future<List<PendingOutboundCall>> loadArchived() async {
+    final encoded = preferences.getString(archiveStorageKey);
+    if (encoded == null || encoded.isEmpty) return const [];
+
+    try {
+      final decoded = jsonDecode(encoded);
+      if (decoded is! List) return const [];
+      return decoded
+          .whereType<Map>()
+          .map((item) => PendingOutboundCall.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> archive(
+    PendingOutboundCall session, {
+    required String reason,
+    String? status,
+  }) async {
+    final archivedList = (await loadArchived()).toList();
+    final index = archivedList.indexWhere((s) => s.sessionId == session.sessionId);
+    final archivedStatus = status ??
+        (reason.contains('unresolved')
+            ? 'unresolved'
+            : session.status == 'pending'
+                ? 'archived'
+                : session.status ?? 'archived');
+    final archivedSession = session.copyWith(
+      archiveReason: reason,
+      archivedAt: DateTime.now(),
+      status: archivedStatus,
+    );
+    if (index >= 0) {
+      archivedList[index] = archivedSession;
+    } else {
+      archivedList.add(archivedSession);
+    }
+
+    final encoded = jsonEncode(archivedList.map((s) => s.toJson()).toList());
+    final saved = await preferences.setString(archiveStorageKey, encoded);
+    if (!saved) {
+      throw StateError('Unable to persist archived call session');
+    }
+  }
+
+  Future<void> archiveAndRelease(
+    PendingOutboundCall session, {
+    required String reason,
+    String? status,
+  }) async {
+    await archive(session, reason: reason, status: status);
+    await clear(session.sessionId);
+  }
+
+  Future<void> clearArchived([String? sessionId]) async {
+    if (sessionId == null) {
+      await preferences.remove(archiveStorageKey);
+      return;
+    }
+    final archivedList = (await loadArchived()).toList();
+    archivedList.removeWhere((s) => s.sessionId == sessionId);
+    final encoded = jsonEncode(archivedList.map((s) => s.toJson()).toList());
+    await preferences.setString(archiveStorageKey, encoded);
   }
 }
