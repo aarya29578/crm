@@ -79,6 +79,9 @@ class MissedFUpsData {
   DateTime? followUpDate;
   List<Timeline>? timeline;
   List<dynamic>? stageFieldValues;
+  String? siteVisitDate;
+  String? siteVisitDone;
+  String? meetingDone;
 
   MissedFUpsData({
     this.sId,
@@ -111,6 +114,9 @@ class MissedFUpsData {
     this.followUpDate,
     this.timeline,
     this.stageFieldValues,
+    this.siteVisitDate,
+    this.siteVisitDone,
+    this.meetingDone,
   });
 
   MissedFUpsData.fromJson(Map<String, dynamic> json) {
@@ -183,6 +189,10 @@ class MissedFUpsData {
         ? DateTime.tryParse(json['followUpDate'])
         : null;
     stageFieldValues = json['stageFieldValues'];
+    siteVisitDate = json['siteVisitDate']?.toString();
+    siteVisitDone = json['siteVisitDone']?.toString();
+    meetingDone =
+        (json['meetingDone'] ?? json['bookingDone'])?.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -240,6 +250,9 @@ class MissedFUpsData {
     data['listId'] = listId;
     data['followUpDate'] = followUpDate?.toIso8601String();
     data['stageFieldValues'] = stageFieldValues;
+    data['siteVisitDate'] = siteVisitDate;
+    data['siteVisitDone'] = siteVisitDone;
+    data['meetingDone'] = meetingDone;
     return data;
   }
 }

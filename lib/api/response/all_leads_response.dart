@@ -460,6 +460,9 @@ class Data {
   String? listId;
   DateTime? followUpDate;
   List<dynamic>? stageFieldValues;
+  String? siteVisitDate;
+  String? siteVisitDone;
+  String? meetingDone;
   List<Timeline>? timeline;
 
   Data({
@@ -494,6 +497,9 @@ class Data {
     this.listId,
     this.followUpDate,
     this.stageFieldValues, // Add this line
+    this.siteVisitDate,
+    this.siteVisitDone,
+    this.meetingDone,
     this.timeline, // <-- ADD THIS LINE
   });
 
@@ -582,7 +588,11 @@ class Data {
         : null;
     stageFieldValues = json['stageFieldValues'] is List
         ? json['stageFieldValues']
-        : null; // Add this line
+        : null;
+    siteVisitDate = json['siteVisitDate']?.toString();
+    siteVisitDone = json['siteVisitDone']?.toString();
+    meetingDone =
+        (json['meetingDone'] ?? json['bookingDone'])?.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -645,7 +655,10 @@ class Data {
     }
     data['listId'] = listId;
     data['followUpDate'] = followUpDate?.toIso8601String();
-    data['stageFieldValues'] = stageFieldValues; // Add this line
+    data['stageFieldValues'] = stageFieldValues;
+    data['siteVisitDate'] = siteVisitDate;
+    data['siteVisitDone'] = siteVisitDone;
+    data['meetingDone'] = meetingDone;
     return data;
   }
 }

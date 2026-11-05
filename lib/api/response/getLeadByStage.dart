@@ -100,6 +100,9 @@ class LeadDetails {
   List<Null>? documents;
   String? followUpDate; // Add this line
   List<dynamic>? stageFieldValues; // Add this line
+  String? siteVisitDate;
+  String? siteVisitDone;
+  String? meetingDone;
 
   LeadDetails({
     this.location,
@@ -128,6 +131,9 @@ class LeadDetails {
     this.documents,
     this.followUpDate, // Add this line
     this.stageFieldValues, // Add this line
+    this.siteVisitDate,
+    this.siteVisitDone,
+    this.meetingDone,
   });
 
   LeadDetails.fromJson(Map<String, dynamic> json) {
@@ -172,6 +178,10 @@ class LeadDetails {
     }
     followUpDate = json['followUpDate']; // Add this line
     stageFieldValues = json['stageFieldValues']; // Add this line
+    siteVisitDate = json['siteVisitDate']?.toString();
+    siteVisitDone = json['siteVisitDone']?.toString();
+    meetingDone =
+        (json['meetingDone'] ?? json['bookingDone'])?.toString();
   }
 
   Map<String, dynamic> toJson() {
@@ -217,6 +227,9 @@ class LeadDetails {
     // }
     data['followUpDate'] = followUpDate; // Add this line
     data['stageFieldValues'] = stageFieldValues; // Add this line
+    data['siteVisitDate'] = siteVisitDate;
+    data['siteVisitDone'] = siteVisitDone;
+    data['meetingDone'] = meetingDone;
     return data;
   }
 }

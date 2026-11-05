@@ -1,9 +1,11 @@
 package com.example.crm_flutter
 
+import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import android.telephony.TelephonyManager
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -155,6 +157,21 @@ class MainActivity : FlutterActivity() {
                 result ->
 
             when (call.method) {
+
+                "getTelephonyCallState" -> {
+                    try {
+                        val tm = getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+                        val state = when (tm?.callState) {
+                            TelephonyManager.CALL_STATE_OFFHOOK -> "CALL_STARTED"
+                            TelephonyManager.CALL_STATE_RINGING -> "CALL_INCOMING"
+                            TelephonyManager.CALL_STATE_IDLE -> "CALL_ENDED"
+                            else -> "NOTHING"
+                        }
+                        result.success(state)
+                    } catch (e: Exception) {
+                        result.success("NOTHING")
+                    }
+                }
 
                 "getLatestIncomingCall" -> {
 

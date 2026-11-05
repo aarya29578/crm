@@ -37,6 +37,9 @@ class CallLogCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final bool isEditing;
   final DateTime? followUp;
+  final dynamic siteVisitDate;
+  final dynamic siteVisitDone;
+  final dynamic meetingDone;
   final String time;
   final int? phone;
   final String? source;
@@ -61,6 +64,9 @@ class CallLogCard extends StatelessWidget {
     this.onEdit,
     this.isEditing = false,
     this.followUp,
+    this.siteVisitDate,
+    this.siteVisitDone,
+    this.meetingDone,
     this.time = "no time found",
     this.onTap,
     this.phone,
@@ -176,6 +182,16 @@ class CallLogCard extends StatelessWidget {
           // Pre-fill
           final leadData = leadDetailsController.allLeadDetailRes.value.data;
           if (leadData != null) {
+            for (final key in ['siteVisitDate', 'siteVisitDone', 'meetingDone']) {
+              final savedValue = findSavedStageValueByKey(leadData, key);
+              if (savedValue != null && savedValue.toString().isNotEmpty) {
+                final parsed = DateTime.tryParse(savedValue.toString())?.toLocal();
+                if (parsed != null) {
+                  dynamicDates[key] = DateTime(parsed.year, parsed.month, parsed.day);
+                  dynamicTimes[key] = TimeOfDay(hour: parsed.hour, minute: parsed.minute);
+                }
+              }
+            }
             for (var field in fields) {
               final fieldId = field['_id']?.toString() ?? '';
               final fieldType = field['fieldType'];
@@ -222,38 +238,79 @@ class CallLogCard extends StatelessWidget {
       }
     }
 
+    Future<void> saveTargetStatusDateTime(
+      String targetKey,
+      String targetLabel, {
+      bool isClear = false,
+    }) async {
+      if (leadId == null) return;
+      try {
+        final d = dynamicDates[targetKey];
+        final t = dynamicTimes[targetKey];
+        final combinedIso =
+            (!isClear && d != null && t != null) ? combineDateAndTime(d, t) : null;
+
+        final Map<String, dynamic> patchPayload = {};
+        if (combinedIso != null) {
+          patchPayload[targetKey] = combinedIso;
+        } else if (isClear) {
+          patchPayload[targetKey] = null;
+        }
+
+        if (patchPayload.isNotEmpty) {
+          await DioApi().patchLead(leadId!, patchPayload);
+          await leadDetailsController.getAllLeadDetails(context, leadId!);
+        }
+        Get.snackbar(
+          "Success",
+          isClear
+              ? "$targetLabel cleared successfully"
+              : "$targetLabel updated successfully",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } catch (e) {
+        Get.snackbar(
+          "Error",
+          "Failed to update $targetLabel: $e",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
+
     Future<void> saveStageFields() async {
       if (leadId == null) return;
       try {
-        final List<Map<String, dynamic>> fieldsPayload = [];
+        final List<Map<String, dynamic>> textFieldsPayload = [];
+        String? dynamicFollowUpIso;
         for (var f in stageFields) {
           final fId = f['_id']?.toString() ?? '';
           final fType = f['fieldType'];
           final isTarget = isTargetStageDateTimeField(f);
           final key = getStageFieldKey(f);
 
-          if (fType == 'datetime' || isTarget) {
-            final d = dynamicDates[fId];
-            final t = dynamicTimes[fId];
-            if (d != null && t != null) {
-              final combined = DateTime(
-                d.year,
-                d.month,
-                d.day,
-                t.hour,
-                t.minute,
-              );
-              fieldsPayload.add({
-                if (f['_id'] != null) "fieldId": f['_id'],
-                "fieldName": key,
-                "fieldType": "datetime",
-                "value": combined.toIso8601String(),
-              });
+          if (fType == 'datetime') {
+            if (!isTarget) {
+              final d = dynamicDates[fId];
+              final t = dynamicTimes[fId];
+              if (d != null && t != null) {
+                final combined = DateTime(
+                  d.year,
+                  d.month,
+                  d.day,
+                  t.hour,
+                  t.minute,
+                );
+                dynamicFollowUpIso = combined.toIso8601String();
+              }
             }
           } else if (fType == 'text') {
             final c = textControllers[fId];
             if (c != null && c.text.isNotEmpty) {
-              fieldsPayload.add({
+              textFieldsPayload.add({
                 if (f['_id'] != null) "fieldId": f['_id'],
                 "fieldName": key,
                 "fieldType": "text",
@@ -263,10 +320,18 @@ class CallLogCard extends StatelessWidget {
           }
         }
 
-        await DioApi().patchLead(leadId!, {
-          "stageFieldValues": fieldsPayload,
-        });
-        await leadDetailsController.getAllLeadDetails(context, leadId!);
+        final Map<String, dynamic> patchData = {};
+        if (textFieldsPayload.isNotEmpty) {
+          patchData["stageFieldValues"] = textFieldsPayload;
+        }
+        if (dynamicFollowUpIso != null) {
+          patchData["followUpDate"] = dynamicFollowUpIso;
+        }
+
+        if (patchData.isNotEmpty) {
+          await DioApi().patchLead(leadId!, patchData);
+          await leadDetailsController.getAllLeadDetails(context, leadId!);
+        }
       } catch (e) {
         print("Error saving stage fields: $e");
       }
@@ -630,6 +695,12 @@ class CallLogCard extends StatelessWidget {
                                     (e) => e.sId == currentStageId,
                                   )
                                 : null;
+                            final currentStageName =
+                                selectedStageObj?.name ?? leadData?.leadStageId?.name;
+                            final targetKey =
+                                getBackendKeyForStageName(currentStageName);
+                            final targetLabel =
+                                getDisplayLabelForStageName(currentStageName);
                             final hasSubStatus =
                                 selectedStageObj?.hasSubStatus == true;
                             final subStatusLabel = subStatusLabelForStage(
@@ -873,8 +944,37 @@ class CallLogCard extends StatelessWidget {
                                   ],
                                 ],
 
-                                // Dynamic Fields Section
-                                if (isLoadingFields.value)
+                                if (targetKey != null && targetLabel != null) ...[
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 20),
+                                    child: StageDateTimePicker(
+                                      fieldKey: targetKey,
+                                      label: targetLabel,
+                                      date: dynamicDates[targetKey],
+                                      time: dynamicTimes[targetKey],
+                                      isRequired: false,
+                                      isDark: isDark,
+                                      onDateChanged: (newDate) async {
+                                        dynamicDates[targetKey] = newDate;
+                                        if (dynamicTimes[targetKey] != null) {
+                                          await saveTargetStatusDateTime(targetKey, targetLabel);
+                                        }
+                                      },
+                                      onTimeChanged: (newTime) async {
+                                        dynamicTimes[targetKey] = newTime;
+                                        if (dynamicDates[targetKey] != null) {
+                                          await saveTargetStatusDateTime(targetKey, targetLabel);
+                                        }
+                                      },
+                                      onClear: () async {
+                                        dynamicDates.remove(targetKey);
+                                        dynamicTimes.remove(targetKey);
+                                        await saveTargetStatusDateTime(targetKey, targetLabel, isClear: true);
+                                      },
+                                    ),
+                                  ),
+                                  buildRemarksField(),
+                                ] else if (isLoadingFields.value)
                                   const Padding(
                                     padding: EdgeInsets.symmetric(vertical: 20),
                                     child: Center(
@@ -1111,7 +1211,21 @@ class CallLogCard extends StatelessWidget {
                         ),
 
                         Obx(() {
-                          if (isLoadingFields.value ||
+                          final leadData = leadDetailsController.allLeadDetailRes.value.data;
+                          final currentStageId = leadData?.leadStageId?.sId;
+                          final stages = homeController.allLeadStageRes.value.data ?? [];
+                          final selectedStageObj = stages
+                                  .where((e) => e.sId == currentStageId)
+                                  .isNotEmpty
+                              ? stages.firstWhere(
+                                  (e) => e.sId == currentStageId,
+                                )
+                              : null;
+                          final currentStageName = selectedStageObj?.name ?? leadData?.leadStageId?.name;
+                          final targetKey = getBackendKeyForStageName(currentStageName);
+
+                          if (targetKey != null ||
+                              isLoadingFields.value ||
                               stageFields.any(
                                 (field) =>
                                     field['fieldType'] == 'datetime' ||
@@ -2539,8 +2653,175 @@ class CallLogCard extends StatelessWidget {
     );
   }
 
+  DateTime? _parseDate(dynamic val) {
+    if (val == null) return null;
+    if (val is DateTime) return val;
+    if (val is String) {
+      final trimmed = val.trim();
+      if (trimmed.isEmpty) return null;
+      return DateTime.tryParse(trimmed);
+    }
+    return null;
+  }
+
+  dynamic _extractStageDate(String targetKey) {
+    if (stageFieldValues == null || stageFieldValues!.isEmpty) return null;
+    for (final item in stageFieldValues!) {
+      if (item is Map) {
+        final fName = item['fieldName'] ?? item['name'] ?? item['key'];
+        final mappedKey =
+            getBackendKeyForStageName(fName?.toString()) ?? fName?.toString();
+        if (mappedKey != null &&
+            mappedKey.toLowerCase() == targetKey.toLowerCase()) {
+          return item['value'];
+        }
+      }
+    }
+    return null;
+  }
+
+  Widget? _buildStatusDateChip() {
+    final clean = tag.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    String? label;
+    dynamic dateRaw;
+
+    if (clean == 'followup') {
+      label = 'Follow up date';
+      dateRaw = followUp ?? _extractStageDate('followUpDate');
+    } else if (clean == 'sitevisitplanned' || clean == 'sitevisitdate') {
+      label = 'Site Visit Planned date';
+      dateRaw = siteVisitDate ?? _extractStageDate('siteVisitDate');
+    } else if (clean == 'sitevisitdone') {
+      label = 'Site Visit Done date';
+      dateRaw = siteVisitDone ?? _extractStageDate('siteVisitDone');
+    } else if (clean == 'bookingdone' || clean == 'meetingdone') {
+      label = 'Booking Done date';
+      dateRaw = meetingDone ?? _extractStageDate('meetingDone');
+    } else {
+      return null;
+    }
+
+    final parsed = _parseDate(dateRaw);
+    if (parsed == null) return null;
+
+    final formatted = DateFormat('dd/MM/yyyy  hh:mm a').format(parsed.toLocal());
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        border: Border.all(
+          color: Colors.red.withOpacity(0.3),
+          width: 0.5,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        "$label: $formatted",
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Colors.red.shade900,
+        ),
+        softWrap: true,
+      ),
+    );
+  }
+
+  Widget? _buildSecondaryStageFields() {
+    if (stageFieldValues == null || stageFieldValues!.isEmpty) return null;
+
+    final secondaryFields = stageFieldValues!.where((field) {
+      if (field == null) return false;
+      final fName =
+          (field['fieldName'] ?? field['name'] ?? field['key'])?.toString();
+      final mappedKey = getBackendKeyForStageName(fName) ?? fName;
+      if (mappedKey != null &&
+          (mappedKey.toLowerCase() == 'followupdate' ||
+              mappedKey.toLowerCase() == 'sitevisitdate' ||
+              mappedKey.toLowerCase() == 'sitevisitdone' ||
+              mappedKey.toLowerCase() == 'meetingdone')) {
+        return false;
+      }
+      if (isTargetStageDateTimeField(field)) return false;
+      return true;
+    }).toList();
+
+    if (secondaryFields.isEmpty) return null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        ...secondaryFields.map((field) {
+          final isDateTime = field['fieldType'] == 'datetime' ||
+              isTargetStageDateTimeField(field);
+          final displayLabel = getStageFieldDisplayLabel(field);
+          final rawVal = field['value']?.toString() ?? '';
+          final formattedVal = isDateTime
+              ? formatDisplayDateTime(rawVal)
+              : (rawVal.isNotEmpty ? rawVal : 'N/A');
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4.0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDateTime
+                    ? Colors.blue.shade50.withOpacity(0.7)
+                    : Colors.red.shade50.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isDateTime
+                        ? Icons.event_available_outlined
+                        : Icons.comment_outlined,
+                    size: 12,
+                    color: isDateTime
+                        ? Colors.blue.shade700
+                        : Colors.red.shade700,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: isDateTime
+                              ? Colors.blue.shade900
+                              : Colors.red.shade900,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: "$displayLabel: ",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(text: formattedVal),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final statusDateChip = _buildStatusDateChip();
+    final secondaryStageFields = _buildSecondaryStageFields();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     // Example timestamp
@@ -2887,99 +3168,15 @@ class CallLogCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 7),
-
-                      if (followUp != null) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            border: Border.all(
-                              color: Colors.red.withOpacity(0.3),
-                              width: 0.5,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            "Follow up date: ${DateFormat('dd/MM/yyyy  hh:mm a').format(followUp!.toLocal())}",
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.red.shade900,
-                            ),
-                            softWrap: true,
-                          ),
-                        ),
+                      if (statusDateChip != null) ...[
+                        const SizedBox(height: 7),
+                        statusDateChip,
                       ],
+                      if (secondaryStageFields != null) secondaryStageFields,
                     ],
                   ),
                 ),
               ),
-
-              if (stageFieldValues != null && stageFieldValues!.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                ...stageFieldValues!.map((field) {
-                  final isDateTime = field['fieldType'] == 'datetime' ||
-                      isTargetStageDateTimeField(field);
-                  final displayLabel = getStageFieldDisplayLabel(field);
-                  final rawVal = field['value']?.toString() ?? '';
-                  final formattedVal = isDateTime
-                      ? formatDisplayDateTime(rawVal)
-                      : (rawVal.isNotEmpty ? rawVal : 'N/A');
-
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 16.0, bottom: 4.0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isDateTime
-                            ? Colors.blue.shade50.withOpacity(0.7)
-                            : Colors.red.shade50.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isDateTime
-                                ? Icons.event_available_outlined
-                                : Icons.comment_outlined,
-                            size: 12,
-                            color: isDateTime
-                                ? Colors.blue.shade700
-                                : Colors.red.shade700,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: RichText(
-                              text: TextSpan(
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDateTime
-                                      ? Colors.blue.shade900
-                                      : Colors.red.shade900,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: "$displayLabel: ",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  TextSpan(text: formattedVal),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-              ],
 
               const SizedBox(width: 12),
 

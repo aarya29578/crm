@@ -56,6 +56,9 @@ class LeadEditHelper {
         'listId': details.listId,
         'followUpDate': details.followUpDate,
         'stageFieldValues': details.stageFieldValues,
+        'siteVisitDate': details.siteVisitDate,
+        'siteVisitDone': details.siteVisitDone,
+        'meetingDone': details.meetingDone,
         'timeline': details.timeline?.map((item) => item.toJson()).toList(),
       });
       debugPrint('Lead edit: details loaded for leadId=$normalizedLeadId');

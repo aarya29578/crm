@@ -1479,11 +1479,15 @@ class DioApi {
     String? currentDateTime,
     int page = 1,
     int limit = 50,
+    String search = "",
     DateTime? startDate,
     DateTime? endDate,
   }) async {
     try {
       Map<String, dynamic> queryParams = {'page': page, 'limit': limit};
+      if (search.trim().isNotEmpty) {
+        queryParams['search'] = search.trim();
+      }
       if (currentDateTime != null) queryParams['currentTime'] = currentDateTime;
 
       if (startDate != null) {
@@ -1645,10 +1649,12 @@ class DioApi {
   }) async {
     try {
       Map<String, dynamic> queryParams = {
-        'search': search,
         'page': page,
         'limit': limit,
       };
+      if (search.trim().isNotEmpty) {
+        queryParams['search'] = search.trim();
+      }
 
       if (startDate != null) {
         final startDateTime = DateTime(
