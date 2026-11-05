@@ -9,6 +9,7 @@ import 'package:crm_flutter/pages/home/components/time_tab.dart';
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:crm_flutter/widgets/add.dart';
@@ -100,6 +101,11 @@ class _AllocationPageState extends State<AllocationPage> {
                     allocationController.selectedStatusIds.contains(stage.sId),
                 onTap: () {
                   final statusId = stage.sId;
+                  if (kDebugMode) {
+                    debugPrint(
+                      '--- CHIP TAPPED: Name: ${stage.name}, ID: ${stage.sId} ---',
+                    );
+                  }
                   if (statusId != null && statusId.isNotEmpty) {
                     allocationController.toggleStatus(statusId, context);
                   }

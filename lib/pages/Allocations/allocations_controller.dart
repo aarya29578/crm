@@ -8,6 +8,7 @@ import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:crm_flutter/pages/home/components/date_range_picker_dialog.dart';
 import 'package:crm_flutter/pages/home/components/status_filter_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 class AllocationController extends GetxController {
@@ -220,6 +221,11 @@ class AllocationController extends GetxController {
         const Duration(milliseconds: 10),
       );
 
+      if (kDebugMode) {
+        debugPrint(
+          '--- CONTROLLER getAllLeads: Passing statusIds: $filterStatusIds ---',
+        );
+      }
       final response = await DioApi().getAllLeads(
         page: currentPage,
         startDate: filterStartDate,

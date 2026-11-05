@@ -1262,6 +1262,11 @@ class DioApi {
         queryParams['lead_source_id'] = leadSourceId;
       }
 
+      if (kDebugMode) {
+        debugPrint(
+          '--- DIO REQUEST: Triggering /lead/all with queryParams: $queryParams ---',
+        );
+      }
       final response = await DioUtil.dio.get(
         "$link/lead/all?page=$page",
         queryParameters: queryParams.isNotEmpty ? queryParams : null,
@@ -1269,7 +1274,16 @@ class DioApi {
 // Old comments , before Nov 3 2026 Tuesday.
       // print(response);
       if (response.statusCode == 200) {
-        return AllLeadsResponse.fromJson(response.data);
+        final parsedResponse = AllLeadsResponse.fromJson(response.data);
+        if (kDebugMode) {
+          final firstLead = parsedResponse.data?.isNotEmpty == true
+              ? parsedResponse.data!.first
+              : null;
+          debugPrint(
+            '--- DIO RESPONSE: URL: ${response.realUri}; First lead stage ID returned: ${firstLead?.leadStageId?.sId} ---',
+          );
+        }
+        return parsedResponse;
       } else {
         throw Exception('Failed to load lead stages: ${response.statusCode}');
       }
