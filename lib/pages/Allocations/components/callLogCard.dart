@@ -209,7 +209,8 @@ class CallLogCard extends StatelessWidget {
                   try {
                     date = DateTime.parse(leadData.followUpDate!).toLocal();
                   } catch (e) {
-                    print("Error parsing followUpDate: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+                    // print("Error parsing followUpDate: $e");
                   }
                 }
                 if (date != null) {
@@ -232,7 +233,8 @@ class CallLogCard extends StatelessWidget {
           }
         }
       } catch (e) {
-        print("Error fetching stage fields: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Error fetching stage fields: $e");
       } finally {
         isLoadingFields.value = false;
       }
@@ -333,7 +335,8 @@ class CallLogCard extends StatelessWidget {
           await leadDetailsController.getAllLeadDetails(context, leadId!);
         }
       } catch (e) {
-        print("Error saving stage fields: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Error saving stage fields: $e");
       }
     }
 
@@ -1423,7 +1426,8 @@ class CallLogCard extends StatelessWidget {
                           if (removedFiles.isEmpty && documents.isEmpty) {
                             return const SizedBox();
                           }
-                          print('removedfiles$removedFiles');
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print('removedfiles$removedFiles');
                           return Column(
                             children: [
                               Padding(
@@ -2372,7 +2376,8 @@ class CallLogCard extends StatelessWidget {
   }
 
   void onWhatsApp(BuildContext context) {
-    print("WhatsApp clicked");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("WhatsApp clicked");
     WhatsAppHelper.showWhatsAppTemplates(
       context: context,
       leadId: leadId,
@@ -2398,7 +2403,8 @@ class CallLogCard extends StatelessWidget {
   }
 
   void onSms(BuildContext context) {
-    print("SMS clicked");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("SMS clicked");
 
     _whatsappSmsController.currentPage = 1;
     _whatsappSmsController.wsData.clear();
@@ -2520,13 +2526,16 @@ class CallLogCard extends StatelessWidget {
                             channel: "sms",
                           );
 
-                          print(
-                            "========== TEMPLATE USAGE RESPONSE ==========",
-                          );
-                          print(response);
-                          print(
-                            "=============================================",
-                          );
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(
+                            // "========== TEMPLATE USAGE RESPONSE ==========",
+                          // );
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(
+                            // "=============================================",
+                          // );
                           if (Get.isRegistered<AllocationController>()) {
           await Get.find<AllocationController>().refreshData();
         }
@@ -2630,12 +2639,14 @@ class CallLogCard extends StatelessWidget {
   Future<void> openSMS(String phone, String message) async {
     final url = "sms:$phone?body=${Uri.encodeComponent(message)}";
 
-    print('SmsURL : $url');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('SmsURL : $url');
 
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url));
     } else {
-      print("Could not launch SMS");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Could not launch SMS");
     }
   }
 

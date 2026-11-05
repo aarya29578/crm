@@ -30,10 +30,12 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
 
   Future<void> loadData() async {
     try {
-      print("leadiddetailpage:${widget.leadId}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("leadiddetailpage:${widget.leadId}");
       await leadDetailsController.getAllLeadDetails(context, widget.leadId);
     } catch (e) {
-      print("Error in loadData: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error in loadData: $e");
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Failed to load data: $e")));

@@ -50,7 +50,8 @@ class _HomePageState extends State<HomePage> {
             await homeController.getAllLeads();
             homeController.refreshData();
           } catch (e) {
-            print("Error refreshing home page: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+            // print("Error refreshing home page: $e");
           }
         },
         child: SingleChildScrollView(

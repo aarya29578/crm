@@ -65,10 +65,11 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
   Map<String, String?> dynamicDateErrors = {};
 
   void _logCallFormEvent(String event, {String? detail}) {
-    debugPrint(
-      '[call-session] ${DateTime.now().toIso8601String()} '
-      'event=$event${detail == null ? '' : ' detail=$detail'}',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // debugPrint(
+      // '[call-session] ${DateTime.now().toIso8601String()} '
+      // 'event=$event${detail == null ? '' : ' detail=$detail'}',
+    // );
   }
 
   @override
@@ -82,9 +83,10 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
       final stages = homeController.allLeadStageRes.value.data ?? [];
       final leadData = leadDetailsController.allLeadDetailRes.value.data;
 
-      print(
-        "PopupAfterCallUi: initState - stages: ${stages.length}, leadData: ${leadData != null}",
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // "PopupAfterCallUi: initState - stages: ${stages.length}, leadData: ${leadData != null}",
+      // );
 
       if (leadData != null) {
         setState(() {
@@ -103,7 +105,8 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
         });
       }
 
-      print("PopupAfterCallUi: initState - selectedStageId: $selectedStageId");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("PopupAfterCallUi: initState - selectedStageId: $selectedStageId");
 
       if (selectedStageId != null) {
         await fetchStageFields(selectedStageId!);
@@ -114,9 +117,10 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
             : null;
 
         if (selectedStageObj != null) {
-          print(
-            "PopupAfterCallUi: initState - stage name: ${selectedStageObj.name}, hasSubStatus: ${selectedStageObj.hasSubStatus}",
-          );
+// Old comments , before Nov 3 2026 Tuesday.
+          // print(
+            // "PopupAfterCallUi: initState - stage name: ${selectedStageObj.name}, hasSubStatus: ${selectedStageObj.hasSubStatus}",
+          // );
         }
 
         if (selectedStageObj?.hasSubStatus == true) {
@@ -157,7 +161,8 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
         });
       }
     } catch (e) {
-      print("Error fetching stage fields: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error fetching stage fields: $e");
     } finally {
       setState(() {
         isLoadingFields = false;
@@ -174,7 +179,8 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
       try {
         dt = DateTime.parse(leadData.followUpDate!).toLocal();
       } catch (e) {
-        print("Error parsing leadData.followUpDate: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Error parsing leadData.followUpDate: $e");
       }
     }
 
@@ -196,7 +202,8 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
           try {
             date = DateTime.parse(leadData.followUpDate!).toLocal();
           } catch (e) {
-            print("Error parsing dynamic datetime: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+            // print("Error parsing dynamic datetime: $e");
           }
         }
         if (date != null) {
@@ -628,9 +635,10 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
                       selectedStageObj?.name,
                     );
       
-                    print(
-                      "PopupAfterCallUi Obx rebuild: selectedStageId: $selectedStageId, hasSubStatus: $hasSubStatus",
-                    );
+// Old comments , before Nov 3 2026 Tuesday.
+                    // print(
+                      // "PopupAfterCallUi Obx rebuild: selectedStageId: $selectedStageId, hasSubStatus: $hasSubStatus",
+                    // );
       
                     final leadData =
                         leadDetailsController.allLeadDetailRes.value.data;
@@ -638,8 +646,10 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
                     final filteredStages = stages
                         .where((stage) => stage.name?.toLowerCase() != 'new')
                         .toList();
-      debugPrint('Current-stage options: ${filteredStages.length}');
-debugPrint('selectedStageId: $selectedStageId');
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint('Current-stage options: ${filteredStages.length}');
+// Old comments , before Nov 3 2026 Tuesday.
+// debugPrint('selectedStageId: $selectedStageId');
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -719,9 +729,10 @@ debugPrint('selectedStageId: $selectedStageId');
                             (() {
                               final subStatuses =
                                   homeController.allSubLStageRes.value.data ?? [];
-                              print(
-                                "PopupAfterCallUi subStatus Obx render: subStatuses count = ${subStatuses.length}",
-                              );
+// Old comments , before Nov 3 2026 Tuesday.
+                              // print(
+                                // "PopupAfterCallUi subStatus Obx render: subStatuses count = ${subStatuses.length}",
+                              // );
       
                               if (subStatuses.isEmpty) {
                                 return Padding(

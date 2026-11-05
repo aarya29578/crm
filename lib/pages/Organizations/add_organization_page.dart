@@ -168,10 +168,12 @@ class _AddOrganizationPageState extends State<AddOrganizationPage> {
                             // );
 
                             final formData = _formKey.currentState!.value;
-                            print(
-                              "++++++++++++++++++++++++++++++++++++++++++++++++++",
-                            );
-                            print(formData);
+// Old comments , before Nov 3 2026 Tuesday.
+                            // print(
+                              // "++++++++++++++++++++++++++++++++++++++++++++++++++",
+                            // );
+// Old comments , before Nov 3 2026 Tuesday.
+                            // print(formData);
                             // Structure the data as required
                             final structuredData = {
                               'name': formData['name'],
@@ -183,7 +185,8 @@ class _AddOrganizationPageState extends State<AddOrganizationPage> {
                               },
                             };
 
-                            print(structuredData);
+// Old comments , before Nov 3 2026 Tuesday.
+                            // print(structuredData);
 
                             //orgController.createOrganization(structuredData);
                             widget.isEdit == true

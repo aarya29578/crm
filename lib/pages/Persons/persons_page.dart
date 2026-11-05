@@ -285,7 +285,8 @@ class _PersonsPageState extends State<PersonsPage> {
               // Implement delete functionality
               // Example: pcontroller.deletePerson(person.sId!);
               pcontroller.deletePerson(person.sId!);
-              print('Delete person: ${person.name}');
+// Old comments , before Nov 3 2026 Tuesday.
+              // print('Delete person: ${person.name}');
               Navigator.pop(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),

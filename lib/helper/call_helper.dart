@@ -51,11 +51,12 @@ class CallHelper {
 
   static void _log(String event, {String? sessionId, String? detail}) {
     final timestamp = DateTime.now().toIso8601String();
-    debugPrint(
-      '[call-session] $timestamp event=$event'
-      '${sessionId == null ? '' : ' session=$sessionId'}'
-      '${detail == null ? '' : ' detail=$detail'}',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // debugPrint(
+      // '[call-session] $timestamp event=$event'
+      // '${sessionId == null ? '' : ' session=$sessionId'}'
+      // '${detail == null ? '' : ' detail=$detail'}',
+    // );
   }
 
   static void _showMessage(String message) {
@@ -463,17 +464,19 @@ class CallHelper {
     DateTime attemptAt,
   ) async {
     final timeline = await DioApi().getLeadTimeline(session.leadId);
-    debugPrint(
-      '[call-session] ${DateTime.now().toIso8601String()} '
-      'event=timeline_verification_response '
-      'success=${timeline.success} entries=${timeline.data.length}',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // debugPrint(
+      // '[call-session] ${DateTime.now().toIso8601String()} '
+      // 'event=timeline_verification_response '
+      // 'success=${timeline.success} entries=${timeline.data.length}',
+    // );
     if (timeline.success != true) {
-      debugPrint(
-        '[call-session] ${DateTime.now().toIso8601String()} '
-        'event=timeline_verification_result result=false '
-        'failed_conditions=[timeline.success_is_true]',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint(
+        // '[call-session] ${DateTime.now().toIso8601String()} '
+        // 'event=timeline_verification_result result=false '
+        // 'failed_conditions=[timeline.success_is_true]',
+      // );
       return false;
     }
 
@@ -527,24 +530,25 @@ class CallHelper {
           .map((condition) => condition.key)
           .toList();
       failedConditions.addAll(candidateFailures);
-      debugPrint(
-        '[call-session] ${DateTime.now().toIso8601String()} '
-        'event=timeline_verification_candidate '
-        'candidate=$candidateCount '
-        'lead_id_matches=$leadMatches '
-        'expected_direction=outbound actual_direction=$actualDirection '
-        'direction_matches=$directionMatches '
-        'expected_duration=$expectedDuration actual_duration=$actualDuration '
-        'expected_duration_seconds=$expectedSeconds '
-        'actual_duration_seconds=$seconds duration_matches=$durationMatches '
-        'expected_status=$expectedStatus actual_status=$actualStatus '
-        'status_matches=$statusMatches '
-        'expected_created_at_window=$earliestCreatedAt..$latestCreatedAt '
-        'actual_created_at=$createdAt '
-        'created_at_after_start=$createdAtAfterStart '
-        'created_at_before_end=$createdAtBeforeEnd '
-        'condition_results=$conditions',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint(
+        // '[call-session] ${DateTime.now().toIso8601String()} '
+        // 'event=timeline_verification_candidate '
+        // 'candidate=$candidateCount '
+        // 'lead_id_matches=$leadMatches '
+        // 'expected_direction=outbound actual_direction=$actualDirection '
+        // 'direction_matches=$directionMatches '
+        // 'expected_duration=$expectedDuration actual_duration=$actualDuration '
+        // 'expected_duration_seconds=$expectedSeconds '
+        // 'actual_duration_seconds=$seconds duration_matches=$durationMatches '
+        // 'expected_status=$expectedStatus actual_status=$actualStatus '
+        // 'status_matches=$statusMatches '
+        // 'expected_created_at_window=$earliestCreatedAt..$latestCreatedAt '
+        // 'actual_created_at=$createdAt '
+        // 'created_at_after_start=$createdAtAfterStart '
+        // 'created_at_before_end=$createdAtBeforeEnd '
+        // 'condition_results=$conditions',
+      // );
       return createdAt != null &&
           callLog != null &&
           leadMatches &&
@@ -561,12 +565,13 @@ class CallHelper {
         : candidateCount == 0
         ? <String>['no_timeline_entries']
         : failedConditions.toList();
-    debugPrint(
-      '[call-session] ${DateTime.now().toIso8601String()} '
-      'event=timeline_verification_result result=$verified '
-      'candidates_checked=$candidateCount '
-      'failed_conditions=$finalFailures',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // debugPrint(
+      // '[call-session] ${DateTime.now().toIso8601String()} '
+      // 'event=timeline_verification_result result=$verified '
+      // 'candidates_checked=$candidateCount '
+      // 'failed_conditions=$finalFailures',
+    // );
     return verified;
   }
 

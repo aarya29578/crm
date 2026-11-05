@@ -88,7 +88,8 @@ class Claimedcontroller extends GetxController {
 
   Future getLeadbyStage(String stageId) async {
     stateload.value = PageState.loading;
-    print('Fetching leads for stage: $stageId');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('Fetching leads for stage: $stageId');
     try {
       await Future.delayed(Duration(seconds: 1));
       final response = await DioApi().getLeadbyStage(stageId);
@@ -105,7 +106,8 @@ class Claimedcontroller extends GetxController {
 
   Future getLeadsByMultipleStages(List<String> stageIds) async {
     stateload.value = PageState.loading;
-    print('Fetching leads for multiple stages: $stageIds');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('Fetching leads for multiple stages: $stageIds');
     try {
       await Future.delayed(Duration(milliseconds: 500));
       List<dynamic> allLeads = [];

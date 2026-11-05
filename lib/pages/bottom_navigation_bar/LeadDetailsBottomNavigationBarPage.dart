@@ -62,7 +62,8 @@ class _LeadDetailsBottomNavigationBarPageState
           recent.timestamp ?? 0,
         ).toString();
       });
-      print("ToNumberfromdetailnav:${recent.number}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("ToNumberfromdetailnav:${recent.number}");
       final Map<String, dynamic> callData = {
         "lead_id": widget.LeadID,
         "to_number": recent.number ?? "Unknown number",
@@ -99,7 +100,8 @@ class _LeadDetailsBottomNavigationBarPageState
 
   @override
   Widget build(BuildContext context) {
-    print("LEADIDFROMNAVI: ${widget.LeadID}");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("LEADIDFROMNAVI: ${widget.LeadID}");
     return Scaffold(
       body: LeadDetailsPage(leadId: widget.LeadID), // Only one main screen
       bottomNavigationBar: SafeArea(
@@ -237,14 +239,16 @@ class _LeadDetailsBottomNavigationBarPageState
                           '',
                         );
                         // await CallHelper.callAndTrack(recent.number!);
-                        print("callingg***********");
+// Old comments , before Nov 3 2026 Tuesday.
+                        // print("callingg***********");
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text("No number found!")),
                         );
                       }
                     } catch (e) {
-                      print("Error making call: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+                      // print("Error making call: $e");
                       Get.snackbar(
                         "Error",
                         "Failed to make call: ${e.toString()}",

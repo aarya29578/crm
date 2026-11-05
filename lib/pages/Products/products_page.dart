@@ -192,7 +192,8 @@ class _ProductsPageState extends State<ProductsPage> {
           TextButton(
             onPressed: () {
               productsController.deleteProduct(product.sId!);
-              print('Deleted Product: ${product.name}');
+// Old comments , before Nov 3 2026 Tuesday.
+              // print('Deleted Product: ${product.name}');
               Navigator.pop(context);
 
               //Get.back();

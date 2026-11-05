@@ -9,7 +9,8 @@ class RoleController extends GetxController {
   Future getAllRoles() async {
     try {
       final response = await DioApi().getAllRoles();
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.success == true) {
         allRoleRes.value = response;
       }

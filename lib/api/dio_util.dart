@@ -51,7 +51,8 @@ class DioUtil {
                     }
                   }
                 } catch (e) {
-                  print('Error appending global campaign: $e');
+// Old comments , before Nov 3 2026 Tuesday.
+                  // print('Error appending global campaign: $e');
                 }
 
                 requestInterceptorHandler.next(requestOptions);

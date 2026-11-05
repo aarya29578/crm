@@ -14,9 +14,10 @@ class IncomingCallService {
   static final DioApi _dioApi = DioApi();
 
   static void _log(String event) {
-    debugPrint(
-      '[incoming-call] ${DateTime.now().toIso8601String()} event=$event',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // debugPrint(
+      // '[incoming-call] ${DateTime.now().toIso8601String()} event=$event',
+    // );
   }
 
   static void initialize() {

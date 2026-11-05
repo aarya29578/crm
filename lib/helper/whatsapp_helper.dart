@@ -49,7 +49,8 @@ class WhatsAppHelper {
       "whatsapp://send?phone=91$cleanPhone&text=$encodedMessage",
     );
 
-    print("whatsappURL : $uri");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("whatsappURL : $uri");
 
     final canLaunchFn =
         canLaunchChecker ?? defaultCanLaunchChecker ?? canLaunchUrl;
@@ -63,7 +64,8 @@ class WhatsAppHelper {
         LaunchMode.externalApplication,
       );
     } else {
-      print("WhatsApp not installed or cannot open");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("WhatsApp not installed or cannot open");
 
       /// Fallback to browser (always works)
       final fallback = Uri.parse(
@@ -247,13 +249,16 @@ class WhatsAppHelper {
                             channel: "whatsapp",
                           );
 
-                          print(
-                            "========== TEMPLATE USAGE RESPONSE ==========",
-                          );
-                          print(response);
-                          print(
-                            "=============================================",
-                          );
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(
+                            // "========== TEMPLATE USAGE RESPONSE ==========",
+                          // );
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(
+                            // "=============================================",
+                          // );
 
                           if (onTemplateSent != null) {
                             await onTemplateSent();
@@ -272,7 +277,8 @@ class WhatsAppHelper {
                             canLaunchChecker: canLaunchChecker,
                           );
                         } catch (e) {
-                          print("Template usage error: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print("Template usage error: $e");
 
                           Get.snackbar(
                             "Error",

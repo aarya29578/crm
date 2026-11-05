@@ -9,7 +9,8 @@ class CallsHistoryController extends GetxController {
   Future getAllCallsHistory(idLead) async {
     try {
       final response = await DioApi().getAllCallsHistory(idLead);
-      print("CallsHistoryController:$response");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("CallsHistoryController:$response");
       if (response.success == true) {
         allCallsHistoryRes.value = response;
       }
@@ -21,9 +22,11 @@ class CallsHistoryController extends GetxController {
   Future<void> createCallHistory(req) async {
     try {
       var data = req;
-      print(data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(data);
       final response = await DioApi().createCallHistory(data);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.success == true) {
         Get.back();
         await getAllCallsHistory(null);
@@ -37,12 +40,16 @@ class CallsHistoryController extends GetxController {
     final lastCall = await getLastDialedCall();
 
     if (lastCall != null) {
-      print("Last call was from: ${lastCall.number}");
-      print("Call type: ${lastCall.callType}");
-      print("Duration: ${lastCall.duration} seconds");
-      print(
-        "Time: ${DateTime.fromMillisecondsSinceEpoch(lastCall.timestamp!)}",
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Last call was from: ${lastCall.number}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Call type: ${lastCall.callType}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Duration: ${lastCall.duration} seconds");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // "Time: ${DateTime.fromMillisecondsSinceEpoch(lastCall.timestamp!)}",
+      // );
 
       //3. Prepare data for API
       final Map<String, dynamic> callData = {
@@ -78,7 +85,8 @@ class CallsHistoryController extends GetxController {
 
       await createCallHistory(callData);
     } else {
-      print("No call logs found.");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("No call logs found.");
     }
   }
 
@@ -105,7 +113,8 @@ class CallsHistoryController extends GetxController {
     );
 
     // Return the most recent outgoing call
-    print(outgoingCalls.first);
+// Old comments , before Nov 3 2026 Tuesday.
+    // print(outgoingCalls.first);
     return outgoingCalls.first;
   }
 
@@ -119,7 +128,8 @@ class CallsHistoryController extends GetxController {
     // Sort logs by timestamp (newest first) and pick the first one
     final lastCall = callLogs.toList()
       ..sort((a, b) => (b.timestamp ?? 0).compareTo(a.timestamp ?? 0));
-    print(lastCall.first);
+// Old comments , before Nov 3 2026 Tuesday.
+    // print(lastCall.first);
     return lastCall.first;
   }
 

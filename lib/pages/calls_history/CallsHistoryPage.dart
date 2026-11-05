@@ -164,7 +164,8 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
     super.initState();
     //callsHistoryController.checkLastCall(widget.leadId);
     callsHistoryController.getAllCallsHistory(widget.leadId);
-    print("Leadfromcallhistory: ${widget.leadId}");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("Leadfromcallhistory: ${widget.leadId}");
   }
 
   @override
@@ -191,10 +192,12 @@ class _CallsHistoryPageState extends State<CallsHistoryPage> {
           child: Obx(() {
             final response = callsHistoryController.allCallsHistoryRes.value;
 
-            print("responsefromhistory: ${response.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+            // print("responsefromhistory: ${response.data}");
 
             if (response.data == null) {
-              print("responsefromhistoryNull: ${response.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+              // print("responsefromhistoryNull: ${response.data}");
               return const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

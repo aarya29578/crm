@@ -47,7 +47,8 @@ class NotificationService {
 
     await androidPlugin?.createNotificationChannel(channel);
 
-    print('✅ NotificationService initialized');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('✅ NotificationService initialized');
   }
 
   // ============================================================
@@ -69,7 +70,8 @@ class NotificationService {
 
     await iosPlugin?.requestPermissions(alert: true, badge: true, sound: true);
 
-    print('✅ Notification permission requested');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('✅ Notification permission requested');
   }
 
   // ============================================================
@@ -86,10 +88,11 @@ class NotificationService {
     // ----------------------------------------------------------
 
     if (!isUserLoggedIn()) {
-      print(
-        '🔕 Instant notification blocked - '
-        'user is logged out',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // '🔕 Instant notification blocked - '
+        // 'user is logged out',
+      // );
       return;
     }
 
@@ -98,11 +101,16 @@ class NotificationService {
     // ----------------------------------------------------------
 
     try {
-      print('------------------------------------------');
-      print('🔔 SHOWING LOCAL NOTIFICATION');
-      print('🆔 ID: $id');
-      print('📌 TITLE: $title');
-      print('💬 BODY: $body');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('------------------------------------------');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('🔔 SHOWING LOCAL NOTIFICATION');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('🆔 ID: $id');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('📌 TITLE: $title');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('💬 BODY: $body');
 
       await _notifications.show(
         id: id,
@@ -126,10 +134,13 @@ class NotificationService {
         ),
       );
 
-      print('✅ LOCAL NOTIFICATION SHOWN');
-      print('------------------------------------------');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('✅ LOCAL NOTIFICATION SHOWN');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('------------------------------------------');
     } catch (e) {
-      print('❌ Failed to show local notification: $e');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('❌ Failed to show local notification: $e');
     }
   }
 
@@ -144,28 +155,39 @@ class NotificationService {
     required DateTime scheduledDate,
   }) async {
     if (!isUserLoggedIn()) {
-      print(
-        '🔕 Scheduled notification blocked - '
-        'user is logged out',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // '🔕 Scheduled notification blocked - '
+        // 'user is logged out',
+      // );
       return;
     }
 
     final localDate = scheduledDate.toLocal();
     final now = DateTime.now();
 
-    print('------------------------------------------');
-    print('⏰ SCHEDULING NOTIFICATION');
-    print('🆔 ID: $id');
-    print('📌 TITLE: $title');
-    print('💬 BODY: $body');
-    print('🌍 Original: $scheduledDate');
-    print('📱 Local: $localDate');
-    print('⏰ Now: $now');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('------------------------------------------');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('⏰ SCHEDULING NOTIFICATION');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🆔 ID: $id');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('📌 TITLE: $title');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('💬 BODY: $body');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🌍 Original: $scheduledDate');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('📱 Local: $localDate');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('⏰ Now: $now');
 
     if (localDate.isBefore(now)) {
-      print('⏭️ Scheduled time already passed');
-      print('------------------------------------------');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('⏭️ Scheduled time already passed');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('------------------------------------------');
       return;
     }
 
@@ -200,12 +222,15 @@ class NotificationService {
         matchDateTimeComponents: null,
       );
 
-      print('🎯 Notification scheduled successfully');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('🎯 Notification scheduled successfully');
     } catch (e) {
-      print('❌ Failed to schedule notification: $e');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('❌ Failed to schedule notification: $e');
     }
 
-    print('------------------------------------------');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('------------------------------------------');
   }
 
   // ============================================================
@@ -213,17 +238,25 @@ class NotificationService {
   // ============================================================
 
   static Future<void> cancelNotification(int id) async {
-    print('');
-    print('==========================================');
-    print('🔕 CANCEL NOTIFICATION CALLED');
-    print('🆔 ID: $id');
-    print('📍 CALL STACK:');
-    print(StackTrace.current);
-    print('==========================================');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('==========================================');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🔕 CANCEL NOTIFICATION CALLED');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🆔 ID: $id');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('📍 CALL STACK:');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print(StackTrace.current);
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('==========================================');
 
     await _notifications.cancel(id: id);
 
-    print('✅ Notification $id cancelled');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('✅ Notification $id cancelled');
   }
 
   // ============================================================
@@ -231,10 +264,12 @@ class NotificationService {
   // ============================================================
 
   static Future<void> cancelAllScheduledNotifications() async {
-    print('🔕 Cancelling all notifications...');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🔕 Cancelling all notifications...');
 
     await _notifications.cancelAll();
 
-    print('✅ All notifications cancelled');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('✅ All notifications cancelled');
   }
 }

@@ -41,7 +41,8 @@ class HomeController extends GetxController {
       campaignLoading.value = PageState.stable;
     } catch (e) {
       campaignLoading.value = PageState.error;
-      print("Error fetching campaigns: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error fetching campaigns: $e");
     }
   }
 
@@ -93,13 +94,15 @@ class HomeController extends GetxController {
           context,
         );
       } catch (e) {
-        print("Error refreshing AllocationController: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Error refreshing AllocationController: $e");
       }
     }
   }
 
   Future getAllLeadStage() async {
-    print("+++++++++++++++++++++++ GET ALL LEAD STAGES");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("+++++++++++++++++++++++ GET ALL LEAD STAGES");
 
     countLoading.value = PageState.loading;
     try {
@@ -107,7 +110,8 @@ class HomeController extends GetxController {
         campaignId: selectedCampaignId,
       );
       if (response.success == true) {
-        print(response.toJson());
+// Old comments , before Nov 3 2026 Tuesday.
+        // print(response.toJson());
         allLeadStageRes.value = response;
         countLoading.value = PageState.stable;
       }
@@ -118,7 +122,8 @@ class HomeController extends GetxController {
   }
 
   Future getFailedSubLStage({String? selectedStageId}) async {
-    print("+++++++++++++++++++++++ GET SUB LEAD STAGES");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("+++++++++++++++++++++++ GET SUB LEAD STAGES");
 
     subStageLoading.value = PageState.loading;
     try {
@@ -126,7 +131,8 @@ class HomeController extends GetxController {
         selectedStageId: selectedStageId,
       );
       if (response.success == true) {
-        print(response.toJson());
+// Old comments , before Nov 3 2026 Tuesday.
+        // print(response.toJson());
         allSubLStageRes.value = response;
         subStageLoading.value = PageState.stable;
       }
@@ -138,21 +144,26 @@ class HomeController extends GetxController {
 
   Future<void> getAllLeads() async {
     try {
-      print("+++++++++++++++++++++++ GET ALL LEADS");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("+++++++++++++++++++++++ GET ALL LEADS");
       final response = await DioApi().getAllLeads(
         campaignId: selectedCampaignId,
       );
       if (response.success == true) {
         allLeadsRes.value = response;
-        print(
-          "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++",
-        );
-        print(allLeadsRes.value);
-        print(
-          "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++",
-        );
+// Old comments , before Nov 3 2026 Tuesday.
+        // print(
+          // "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++",
+        // );
+// Old comments , before Nov 3 2026 Tuesday.
+        // print(allLeadsRes.value);
+// Old comments , before Nov 3 2026 Tuesday.
+        // print(
+          // "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++",
+        // );
       } else {
-        print("Leads API returned success = false");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Leads API returned success = false");
       }
     } catch (e) {
       rethrow;
@@ -189,7 +200,8 @@ class HomeController extends GetxController {
         dashboardData.value = response;
         dashboardLoading.value = PageState.stable;
       } else {
-        print("dashboard API returned success = false");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("dashboard API returned success = false");
         dashboardLoading.value = PageState.error;
       }
     } catch (e) {

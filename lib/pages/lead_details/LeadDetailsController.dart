@@ -19,11 +19,13 @@ class Leaddetailscontroller extends GetxController {
     pageState.value = PageState.loading;
 
     try {
-      print("Making API call for lead ID: $id");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Making API call for lead ID: $id");
 
       final response = await DioApi().getAllLeadDetails(id);
 
-      print("API Response: $response");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("API Response: $response");
 
       if (response.success == true) {
         // DEBUG: Check whether the API response contains timeline data.
@@ -31,20 +33,25 @@ class Leaddetailscontroller extends GetxController {
           final responseData = response.data;
 
           if (responseData == null) {
-            print("LEAD DETAILS TIMELINE: response.data is null");
+// Old comments , before Nov 3 2026 Tuesday.
+            // print("LEAD DETAILS TIMELINE: response.data is null");
           } else {
             final jsonData = responseData.toJson();
-            print("LEAD DETAILS RESPONSE KEYS: ${jsonData.keys.toList()}");
-            print("LEAD DETAILS TIMELINE: ${jsonData['timeline']}");
+// Old comments , before Nov 3 2026 Tuesday.
+            // print("LEAD DETAILS RESPONSE KEYS: ${jsonData.keys.toList()}");
+// Old comments , before Nov 3 2026 Tuesday.
+            // print("LEAD DETAILS TIMELINE: ${jsonData['timeline']}");
           }
         } catch (e) {
-          print("Could not inspect timeline in response: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+          // print("Could not inspect timeline in response: $e");
         }
 
         allLeadDetailRes.value = response;
         pageState.value = PageState.stable;
       } else {
-        print("API returned success=false");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("API returned success=false");
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -56,7 +63,8 @@ class Leaddetailscontroller extends GetxController {
       }
     } catch (e) {
       pageState.value = PageState.error;
-      print("Error in getAllLeadDetails: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error in getAllLeadDetails: $e");
       rethrow;
     }
   }
@@ -65,21 +73,25 @@ class Leaddetailscontroller extends GetxController {
     pageState.value = PageState.loading;
 
     try {
-      print("Making API call for lead ID: $id");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Making API call for lead ID: $id");
 
       final response = await DioApi().getAllLeadDetailsPatchA(id);
 
-      print("API Response: $response");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("API Response: $response");
 
       if (response.success == true) {
         allLeadDetailRes.value = response;
         pageState.value = PageState.stable;
       } else {
-        print("API returned success=false");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("API returned success=false");
       }
     } catch (e) {
       pageState.value = PageState.error;
-      print("Error in getAllLeadDetails: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error in getAllLeadDetails: $e");
       rethrow;
     }
   }
@@ -88,21 +100,25 @@ class Leaddetailscontroller extends GetxController {
     pageState.value = PageState.loading;
 
     try {
-      print("Making API call for lead ID: $id");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Making API call for lead ID: $id");
 
       final response = await DioApi().getAllLeadDetailsPatchD(id);
 
-      print("API Response: $response");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("API Response: $response");
 
       if (response.success == true) {
         allLeadDetailRes.value = response;
         pageState.value = PageState.stable;
       } else {
-        print("API returned success=false");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("API returned success=false");
       }
     } catch (e) {
       pageState.value = PageState.error;
-      print("Error in getAllLeadDetails: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error in getAllLeadDetails: $e");
       rethrow;
     }
   }
@@ -118,7 +134,8 @@ class Leaddetailscontroller extends GetxController {
   Future createCall(data) async {
     try {
       final response = await DioApi().createCallHistory(data);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
     } catch (e) {
       rethrow;
     }

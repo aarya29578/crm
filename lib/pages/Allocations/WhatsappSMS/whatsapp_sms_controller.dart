@@ -68,7 +68,8 @@ class WhatsappSmsController extends GetxController {
         return;
       }
       isLoading.value = PageState.error;
-      print("Error loading data: $err");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error loading data: $err");
     }
   }
 

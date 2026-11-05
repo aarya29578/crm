@@ -170,7 +170,8 @@ class AllMissFUpsController extends GetxController {
         stageCountLoading.value = PageState.error;
       }
     } catch (e) {
-      debugPrint('Error loading lead stages in follow-ups: $e');
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint('Error loading lead stages in follow-ups: $e');
       stageCountLoading.value = PageState.error;
     } finally {
       _isFetchingStages = false;
@@ -304,7 +305,8 @@ class AllMissFUpsController extends GetxController {
               ? loadedPage < totalPages
               : records.length >= _pageSize);
     } catch (e) {
-      debugPrint('Error loading follow-ups: $e');
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint('Error loading follow-ups: $e');
       if (generation == _requestGeneration) {
         hasMoreError.value = true;
       }

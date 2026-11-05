@@ -234,7 +234,8 @@ class _AddQuotePageState extends State<AddQuotePage> {
 
                     ElevatedButton(
                       onPressed: () {
-                        print(_formKey.currentState!.value['items']);
+// Old comments , before Nov 3 2026 Tuesday.
+                        // print(_formKey.currentState!.value['items']);
                         qcontroller.items.add(
                           Items(
                             name: _formKey.currentState!.value['items.title'],
@@ -634,10 +635,12 @@ class _AddQuotePageState extends State<AddQuotePage> {
                             };
                             //var formData = _formKey.currentState!.value;
                             //formData['items'] = qcontroller.items;
-                            print(payload);
+// Old comments , before Nov 3 2026 Tuesday.
+                            // print(payload);
                             //quotesController.createQuote(formData);
                           }
-                          print(qcontroller.items.toJson());
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(qcontroller.items.toJson());
                         },
 
                         child: Text(

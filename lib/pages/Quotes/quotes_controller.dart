@@ -17,7 +17,8 @@ class QuotesController extends GetxController {
   Future getAllQuotes() async {
     try {
       final response = await DioApi().getAllQuotes();
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.status == 200) {
         allQuotesRes.value = response;
       }
@@ -29,7 +30,8 @@ class QuotesController extends GetxController {
   Future createQuote(data) async {
     try {
       final response = await DioApi().createProduct(data);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
 
       if (response['success'] == true) {
         Get.back();

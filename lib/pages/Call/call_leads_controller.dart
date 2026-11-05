@@ -95,7 +95,8 @@ class CallLeadsController extends GetxController {
       callApiState.value = PageState.stable;
     } catch (e) {
       callApiState.value = PageState.error;
-      debugPrint("Error fetching call leads: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint("Error fetching call leads: $e");
     }
   }
 

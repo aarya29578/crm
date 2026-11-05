@@ -401,9 +401,10 @@ class DioApi {
       if (response.statusCode != null &&
           response.statusCode! >= 200 &&
           response.statusCode! < 300) {
-        debugPrint(
-          'Lead detail GET /lead/$leadIdValue status=${response.statusCode}',
-        );
+// Old comments , before Nov 3 2026 Tuesday.
+        // debugPrint(
+          // 'Lead detail GET /lead/$leadIdValue status=${response.statusCode}',
+        // );
         return AllLeadDetailResponse.fromJson(response.data);
       } else {
         throw Exception(
@@ -411,10 +412,11 @@ class DioApi {
         );
       }
     } on DioException catch (error) {
-      debugPrint(
-        'Lead detail GET /lead/$leadIdValue failed '
-        'status=${error.response?.statusCode} message=${error.message}',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint(
+        // 'Lead detail GET /lead/$leadIdValue failed '
+        // 'status=${error.response?.statusCode} message=${error.message}',
+      // );
       rethrow;
     } catch (e) {
       throw Exception('An error occurred while fetching lead id details: $e');
@@ -539,15 +541,17 @@ class DioApi {
           response.statusCode! >= 200 &&
           response.statusCode! < 300 &&
           !(responseBody is Map && responseBody['success'] == false)) {
-        debugPrint('Lead update PATCH $endpoint status=${response.statusCode}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // debugPrint('Lead update PATCH $endpoint status=${response.statusCode}');
         return response.data;
       } else {
         final message = bodyMessage ?? 'Failed to update lead';
         responseFailureLogged = true;
-        debugPrint(
-          'Lead update PATCH $endpoint failed '
-          'status=${response.statusCode} message=$message',
-        );
+// Old comments , before Nov 3 2026 Tuesday.
+        // debugPrint(
+          // 'Lead update PATCH $endpoint failed '
+          // 'status=${response.statusCode} message=$message',
+        // );
         throw Exception('$message (HTTP ${response.statusCode ?? 'unknown'})');
       }
     } on DioException catch (error) {
@@ -556,20 +560,22 @@ class DioApi {
           ? responseBody['message']?.toString()
           : null;
       final message = responseMessage ?? error.message ?? 'Request failed';
-      debugPrint(
-        'Lead update PATCH $endpoint failed '
-        'status=${error.response?.statusCode} message=$message',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint(
+        // 'Lead update PATCH $endpoint failed '
+        // 'status=${error.response?.statusCode} message=$message',
+      // );
       throw Exception(
         'Update lead error (HTTP '
         '${error.response?.statusCode ?? 'unknown'}): $message',
       );
     } catch (error) {
       if (!responseFailureLogged) {
-        debugPrint(
-          'Lead update PATCH $endpoint failed '
-          'status=unknown message=$error',
-        );
+// Old comments , before Nov 3 2026 Tuesday.
+        // debugPrint(
+          // 'Lead update PATCH $endpoint failed '
+          // 'status=unknown message=$error',
+        // );
       }
       rethrow;
     }
@@ -578,8 +584,10 @@ class DioApi {
   Future<AllLeadDetailResponse> getAllLeadDetailsPatchA(leadId) async {
     try {
       final response = await DioUtil.dio.patch("$link/lead/$leadId/accept");
-      print('++++++++ dio +++++++++');
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('++++++++ dio +++++++++');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.statusCode == 200) {
         return AllLeadDetailResponse.fromJson(response.data);
       } else {
@@ -595,8 +603,10 @@ class DioApi {
   Future<AllLeadDetailResponse> getAllLeadDetailsPatchD(leadId) async {
     try {
       final response = await DioUtil.dio.patch("$link/lead/$leadId/reject");
-      print('++++++++ dio +++++++++');
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('++++++++ dio +++++++++');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.statusCode == 200) {
         return AllLeadDetailResponse.fromJson(response.data);
       } else {
@@ -950,13 +960,16 @@ class DioApi {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      print(
-        "+++++++++++++++++++++ Quote create start ++++++++++++++++++++++++++",
-      );
-      print(response.data);
-      print(
-        "+++++++++++++++++++++ Quote create end ++++++++++++++++++++++++++",
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // "+++++++++++++++++++++ Quote create start ++++++++++++++++++++++++++",
+      // );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response.data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // "+++++++++++++++++++++ Quote create end ++++++++++++++++++++++++++",
+      // );
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
       } else {
@@ -1011,9 +1024,12 @@ class DioApi {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      print("+++++++++++++++ Source ++++++++++++++++++++++++++++++++");
-      print(response.data);
-      print("+++++++++++++++++++++++++++++++++++++++++++++++");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("+++++++++++++++ Source ++++++++++++++++++++++++++++++++");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response.data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("+++++++++++++++++++++++++++++++++++++++++++++++");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
@@ -1032,11 +1048,14 @@ class DioApi {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      print(
-        "+++++++++++++++ Type create start ++++++++++++++++++++++++++++++++",
-      );
-      print(response.data);
-      print("+++++++++++++++ Type create end ++++++++++++++++++++++++++++++++");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // "+++++++++++++++ Type create start ++++++++++++++++++++++++++++++++",
+      // );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response.data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("+++++++++++++++ Type create end ++++++++++++++++++++++++++++++++");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
@@ -1056,13 +1075,16 @@ class DioApi {
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
-      print(
-        "+++++++++++++++ Group create start ++++++++++++++++++++++++++++++++",
-      );
-      print(response.data);
-      print(
-        "++++++++++++++++ Group create end +++++++++++++++++++++++++++++++",
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // "+++++++++++++++ Group create start ++++++++++++++++++++++++++++++++",
+      // );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response.data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // "++++++++++++++++ Group create end +++++++++++++++++++++++++++++++",
+      // );
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
       } else {
@@ -1081,13 +1103,16 @@ class DioApi {
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
-      print(
-        "+++++++++++++++ Lead Role create start ++++++++++++++++++++++++++++++++",
-      );
-      print(response.data);
-      print(
-        "++++++++++++++++ Lead Role create end +++++++++++++++++++++++++++++++",
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // "+++++++++++++++ Lead Role create start ++++++++++++++++++++++++++++++++",
+      // );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response.data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // "++++++++++++++++ Lead Role create end +++++++++++++++++++++++++++++++",
+      // );
     } catch (e) {
       throw Exception('An error occurred while creating lead role: $e');
     }
@@ -1100,9 +1125,12 @@ class DioApi {
         data: data,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
-      print("+++++++++++++++++++++++++++++++++++++++++++++++");
-      print(response.data);
-      print("+++++++++++++++++++++++++++++++++++++++++++++++");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("+++++++++++++++++++++++++++++++++++++++++++++++");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response.data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("+++++++++++++++++++++++++++++++++++++++++++++++");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
@@ -1238,7 +1266,8 @@ class DioApi {
         "$link/lead/all?page=$page",
         queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.statusCode == 200) {
         return AllLeadsResponse.fromJson(response.data);
       } else {
@@ -1318,10 +1347,11 @@ class DioApi {
   // POST INCOMING CALL
   // POST INCOMING CALL
   Future postIncomingCall(Map<String, dynamic> data) async {
-    debugPrint(
-      '[incoming-call] ${DateTime.now().toIso8601String()} '
-      'event=api_request',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // debugPrint(
+      // '[incoming-call] ${DateTime.now().toIso8601String()} '
+      // 'event=api_request',
+    // );
 
     final incomingCallUrl = "$link/call/incoming";
 
@@ -1332,10 +1362,11 @@ class DioApi {
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
-      debugPrint(
-        '[incoming-call] ${DateTime.now().toIso8601String()} '
-        'event=api_response status=${response.statusCode}',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint(
+        // '[incoming-call] ${DateTime.now().toIso8601String()} '
+        // 'event=api_response status=${response.statusCode}',
+      // );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (response.data is Map && response.data['success'] == false) {
@@ -1348,11 +1379,12 @@ class DioApi {
 
       throw Exception('Failed to post incoming call: ${response.statusCode}');
     } on DioException catch (e) {
-      debugPrint(
-        '[incoming-call] ${DateTime.now().toIso8601String()} '
-        'event=api_transport_error '
-        'status=${e.response?.statusCode ?? 'none'}',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint(
+        // '[incoming-call] ${DateTime.now().toIso8601String()} '
+        // 'event=api_transport_error '
+        // 'status=${e.response?.statusCode ?? 'none'}',
+      // );
 
       throw Exception(
         'Incoming call post failed (status ${e.response?.statusCode ?? 'unknown'})',
@@ -1378,11 +1410,12 @@ class DioApi {
         data: data,
         options: Options(headers: headers),
       );
-      debugPrint(
-        '[call-session] ${DateTime.now().toIso8601String()} '
-        'event=call_api_response status=${response.statusCode} '
-        'response_structure=${_responseStructure(response.data)}',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint(
+        // '[call-session] ${DateTime.now().toIso8601String()} '
+        // 'event=call_api_response status=${response.statusCode} '
+        // 'response_structure=${_responseStructure(response.data)}',
+      // );
       if (response.statusCode != 201 && response.statusCode != 200) {
         throw Exception(
           'Failed to create call history: ${response.statusCode}',
@@ -1393,12 +1426,13 @@ class DioApi {
       }
       return response.data;
     } on DioException catch (error) {
-      debugPrint(
-        '[call-session] ${DateTime.now().toIso8601String()} '
-        'event=call_api_transport_error '
-        'status=${error.response?.statusCode ?? 'none'} '
-        'response_structure=${_responseStructure(error.response?.data)}',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint(
+        // '[call-session] ${DateTime.now().toIso8601String()} '
+        // 'event=call_api_transport_error '
+        // 'status=${error.response?.statusCode ?? 'none'} '
+        // 'response_structure=${_responseStructure(error.response?.data)}',
+      // );
       rethrow;
     }
   }
@@ -1416,11 +1450,12 @@ class DioApi {
       }
       throw Exception('Failed to start call tracking: ${response.statusCode}');
     } on DioException catch (error) {
-      debugPrint(
-        '[call-session] ${DateTime.now().toIso8601String()} '
-        'event=start_call_api_transport_error '
-        'status=${error.response?.statusCode ?? 'none'}',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint(
+        // '[call-session] ${DateTime.now().toIso8601String()} '
+        // 'event=start_call_api_transport_error '
+        // 'status=${error.response?.statusCode ?? 'none'}',
+      // );
       rethrow;
     }
   }
@@ -1470,7 +1505,8 @@ class DioApi {
         return [];
       }
     } catch (e) {
-      print("Follow-up API error: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Follow-up API error: $e");
       return [];
     }
   }
@@ -1599,22 +1635,30 @@ class DioApi {
         }
       }
 
-      print("======================================");
-      print("CREATE LEAD REQUEST");
-      print("======================================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("======================================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("CREATE LEAD REQUEST");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("======================================");
 
-      print("Fields:");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Fields:");
       for (final field in formData.fields) {
-        print("${field.key}: ${field.value}");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("${field.key}: ${field.value}");
       }
 
-      print("Documents: ${formData.files.length}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Documents: ${formData.files.length}");
 
       for (final file in formData.files) {
-        print("Document: ${file.value.filename}");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Document: ${file.value.filename}");
       }
 
-      print("======================================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("======================================");
 
       final response = await DioUtil.dio.post(
         "$link/lead",
@@ -1622,11 +1666,16 @@ class DioApi {
         options: Options(contentType: "multipart/form-data"),
       );
 
-      print("======================================");
-      print("CREATE LEAD RESPONSE");
-      print("======================================");
-      print(response.data);
-      print("======================================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("======================================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("CREATE LEAD RESPONSE");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("======================================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response.data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("======================================");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
@@ -1698,13 +1747,17 @@ class DioApi {
     try {
       final response = await DioUtil.dio.get("$link/location/countries");
 
-      print("STATUS : ${response.statusCode}");
-      print("BODY : ${response.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("STATUS : ${response.statusCode}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("BODY : ${response.data}");
 
       return LocationResponse.fromJson(response.data);
     } on DioException catch (e) {
-      print("ERROR STATUS : ${e.response?.statusCode}");
-      print("ERROR BODY : ${e.response?.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("ERROR STATUS : ${e.response?.statusCode}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("ERROR BODY : ${e.response?.data}");
       rethrow;
     }
   }
@@ -1715,12 +1768,15 @@ class DioApi {
         "$link/location/states/$countryId",
       );
 
-      print("STATE STATUS : ${response.statusCode}");
-      print("STATE BODY : ${response.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("STATE STATUS : ${response.statusCode}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("STATE BODY : ${response.data}");
 
       return LocationResponse.fromJson(response.data);
     } on DioException catch (e) {
-      print("STATE ERROR : ${e.response?.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("STATE ERROR : ${e.response?.data}");
       rethrow;
     }
   }
@@ -1729,12 +1785,15 @@ class DioApi {
     try {
       final response = await DioUtil.dio.get("$link/location/cities/$stateId");
 
-      print("CITY STATUS : ${response.statusCode}");
-      print("CITY BODY : ${response.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("CITY STATUS : ${response.statusCode}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("CITY BODY : ${response.data}");
 
       return LocationResponse.fromJson(response.data);
     } on DioException catch (e) {
-      print("CITY ERROR : ${e.response?.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("CITY ERROR : ${e.response?.data}");
       rethrow;
     }
   }

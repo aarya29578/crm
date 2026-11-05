@@ -32,17 +32,21 @@ class AuthController extends GetxController {
   // ============================================================
 
   Future<void> requestRequiredPermissions() async {
-    print("🔐 Requesting required permissions...");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("🔐 Requesting required permissions...");
 
     final statuses = await [
       Permission.phone,
       Permission.contacts,
     ].request();
 
-    print("📱 Phone permission: ${statuses[Permission.phone]}");
-    print("👤 Contacts permission: ${statuses[Permission.contacts]}");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("📱 Phone permission: ${statuses[Permission.phone]}");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("👤 Contacts permission: ${statuses[Permission.contacts]}");
 
-    print("✅ Permission request completed");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("✅ Permission request completed");
   }
   // ============================================================
   // REGISTER
@@ -58,7 +62,8 @@ class AuthController extends GetxController {
         successPopup(context, "User registered Successfully.");
       }
     } catch (e) {
-      print("Register Error : $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Register Error : $e");
     }
   }
 
@@ -67,15 +72,19 @@ class AuthController extends GetxController {
   // ============================================================
 
   Future login(data, context) async {
-    print("🔥 LOGIN BUTTON HAS CALLED SUCCESSFULLY");
-    print("🔥 LOGIN DATA: $data");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("🔥 LOGIN BUTTON HAS CALLED SUCCESSFULLY");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("🔥 LOGIN DATA: $data");
 
     try {
-      print("🔥 CALLING LOGIN API...");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("🔥 CALLING LOGIN API...");
 
       final response = await DioApi().login(data);
 
-      print("🔥 LOGIN API RESPONSE: $response");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("🔥 LOGIN API RESPONSE: $response");
 
       // ========================================================
       // LOGIN SUCCESS
@@ -187,11 +196,13 @@ class AuthController extends GetxController {
         // ======================================================
 
         if (Get.isRegistered<NotificationController>()) {
-          print("🔔 Starting notification polling after login...");
+// Old comments , before Nov 3 2026 Tuesday.
+          // print("🔔 Starting notification polling after login...");
 
           Get.find<NotificationController>().startNotificationPolling();
         } else {
-          print("❌ NOTIFICATION CONTROLLER NOT REGISTERED.");
+// Old comments , before Nov 3 2026 Tuesday.
+          // print("❌ NOTIFICATION CONTROLLER NOT REGISTERED.");
         }
 
         // ------------------------------------------------------
@@ -214,7 +225,8 @@ class AuthController extends GetxController {
     on DioException catch (e) {
       final status = e.response?.statusCode;
 
-      print("LOGIN ERROR STATUS: $status");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("LOGIN ERROR STATUS: $status");
 
       if (status == 400) {
         ScaffoldMessenger.of(
@@ -230,18 +242,25 @@ class AuthController extends GetxController {
         ).showSnackBar(const SnackBar(content: Text("Server error")));
       }
 
-      print("TYPE: ${e.type}");
-      print("STATUS: ${e.response?.statusCode}");
-      print("DATA: ${e.response?.data}");
-      print("MESSAGE: ${e.message}");
-      print("ERROR OBJECT: ${e.error}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("TYPE: ${e.type}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("STATUS: ${e.response?.statusCode}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("DATA: ${e.response?.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("MESSAGE: ${e.message}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("ERROR OBJECT: ${e.error}");
     }
     // ============================================================
     // GENERAL ERROR
     // ============================================================
     catch (e, stackTrace) {
-      print("Login Error: $e");
-      print("Stack Trace: $stackTrace");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Login Error: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Stack Trace: $stackTrace");
 
       ScaffoldMessenger.of(Get.context!).showSnackBar(
         SnackBar(content: Text("Something went wrong: ${e.toString()}")),
@@ -255,7 +274,8 @@ class AuthController extends GetxController {
 
   Future<void> logout() async {
     try {
-      print("Starting Logout...");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Starting Logout...");
 
       // ========================================================
       // BACKEND LOGOUT
@@ -264,9 +284,11 @@ class AuthController extends GetxController {
       try {
         final response = await DioApi().logout();
 
-        print("Logout API Response: $response");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Logout API Response: $response");
       } on DioException catch (e) {
-        print("Logout API Error: ${e.response?.data}");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Logout API Error: ${e.response?.data}");
 
         // Continue local logout even if API fails.
       }
@@ -276,7 +298,8 @@ class AuthController extends GetxController {
       // ========================================================
 
       if (Get.isRegistered<NotificationController>()) {
-        print("🛑 Stopping notification polling...");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("🛑 Stopping notification polling...");
 
         Get.find<NotificationController>().stopNotificationPolling();
 
@@ -301,13 +324,16 @@ class AuthController extends GetxController {
 
       final token = LocalStorage.sharedPreferences?.getString('token');
 
-      print("TOKEN AFTER LOGOUT: $token");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("TOKEN AFTER LOGOUT: $token");
 
       Get.offAll(() => const LoginPage());
 
-      print("Logout completed");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Logout completed");
     } catch (e) {
-      print("Logout Error: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Logout Error: $e");
 
       Get.snackbar(
         "Logout Error",

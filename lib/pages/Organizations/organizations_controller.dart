@@ -9,7 +9,8 @@ class OrganizationsController extends GetxController {
   Future getAllOrganizations() async {
     try {
       final response = await DioApi().getAllOrganizations();
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.status == 200) {
         allOrganizationRes.value = response;
       }
@@ -35,9 +36,11 @@ class OrganizationsController extends GetxController {
 
   Future<void> updateOrganization(data, id) async {
     try {
-      print(data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(data);
       final response = await DioApi().updateOrganization(data, id);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       // This update has a problem
       if (response['success'] == false) {
         Get.back();
