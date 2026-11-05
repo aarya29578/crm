@@ -29,6 +29,7 @@ void main() {
       expect(restored?.leadId, 'lead-1');
       expect(restored?.startedAt, session.startedAt);
       expect(restored?.phoneNumber, session.phoneNumber);
+      expect(restored?.status, 'pending');
     },
   );
 
@@ -166,5 +167,62 @@ void main() {
 
     await store.clear(session.sessionId);
     expect(await store.load(), isNull);
+  });
+
+  test('archives unresolved session and prevents duplicate archive entries', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final store = PendingOutboundCallStore(preferences);
+    final session = PendingOutboundCall.create(
+      leadId: 'lead-archive-1',
+      phoneNumber: '4155550100',
+      stageName: null,
+      startedAt: DateTime(2026, 1, 1, 10),
+    );
+
+    await store.archive(session, reason: 'unresolved_no_call_log');
+    var archived = await store.loadArchived();
+    expect(archived.length, 1);
+    expect(archived.first.sessionId, session.sessionId);
+    expect(archived.first.leadId, 'lead-archive-1');
+    expect(archived.first.archiveReason, 'unresolved_no_call_log');
+    expect(archived.first.status, 'unresolved');
+    expect(archived.first.archivedAt, isNotNull);
+
+    // Archiving again with same sessionId updates the entry without creating a duplicate
+    await store.archive(session, reason: 'updated_reason');
+    archived = await store.loadArchived();
+    expect(archived.length, 1);
+    expect(archived.first.archiveReason, 'updated_reason');
+  });
+
+  test('clearing archived session removes the specific session or all', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final store = PendingOutboundCallStore(preferences);
+    final session1 = PendingOutboundCall.create(
+      leadId: 'lead-1',
+      phoneNumber: '4155550101',
+      stageName: null,
+      startedAt: DateTime(2026),
+    );
+    final session2 = PendingOutboundCall.create(
+      leadId: 'lead-2',
+      phoneNumber: '4155550102',
+      stageName: null,
+      startedAt: DateTime(2026),
+    );
+
+    await store.archive(session1, reason: 'reason_1');
+    await store.archive(session2, reason: 'reason_2');
+    expect((await store.loadArchived()).length, 2);
+
+    await store.clearArchived(session1.sessionId);
+    final remaining = await store.loadArchived();
+    expect(remaining.length, 1);
+    expect(remaining.first.sessionId, session2.sessionId);
+
+    await store.clearArchived();
+    expect((await store.loadArchived()).isEmpty, isTrue);
   });
 }
