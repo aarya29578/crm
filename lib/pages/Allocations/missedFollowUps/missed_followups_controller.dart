@@ -12,13 +12,22 @@ class AllMissFUpsController extends GetxController {
   RxList<dynamic> leads = <dynamic>[].obs;
   RxBool isInitialLoading = false.obs;
   RxBool isLoadingMore = false.obs;
+  RxBool isBackgroundPaging = false.obs;
   RxBool hasMoreError = false.obs;
   RxBool isMoreDataAvailable = true.obs;
   int currentPage = 1;
   static const int _pageSize = 50;
   int _requestGeneration = 0;
+  bool _isFetchingPage = false;
 
   RxString followUpType = 'Missed'.obs; // 'All' or 'Missed'
+
+  // Selected status filter state
+  Rx<String?> selectedStatusId = Rx<String?>(null);
+  Rx<String?> selectedStatusName = Rx<String?>(null);
+
+  // Total lead count from API for active date/search/type
+  Rx<int?> totalApiLeadCount = Rx<int?>(null);
 
   // Independent search queries for All Follow-Ups and Missed Follow-Ups
   RxString searchQueryAll = ''.obs;
@@ -30,8 +39,104 @@ class AllMissFUpsController extends GetxController {
 
   List<dynamic> get displayLeads {
     final query = currentSearchQuery.trim();
-    if (query.isEmpty) return leads;
-    return leads.where((lead) => matchesLeadSearch(lead, query)).toList();
+    final statusId = selectedStatusId.value;
+    final statusName = selectedStatusName.value;
+
+    if (statusId == null && statusName == null && query.isEmpty) {
+      return leads;
+    }
+
+    return leads.where((lead) {
+      if (statusId != null || statusName != null) {
+        if (!matchesLeadStatus(lead, statusId: statusId, statusName: statusName)) {
+          return false;
+        }
+      }
+      if (query.isNotEmpty) {
+        if (!matchesLeadSearch(lead, query)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  int get totalMatchingLeadCount {
+    final hasStatus = selectedStatusId.value != null || selectedStatusName.value != null;
+    final hasSearch = currentSearchQuery.trim().isNotEmpty;
+
+    if (hasStatus || hasSearch) {
+      return displayLeads.length;
+    }
+    return totalApiLeadCount.value ?? leads.length;
+  }
+
+  static String? _getLeadId(dynamic lead) {
+    if (lead == null) return null;
+    if (lead is Map) {
+      return (lead['_id'] ?? lead['id'] ?? lead['sId'])?.toString();
+    }
+    try {
+      return (lead as dynamic).sId?.toString();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool matchesLeadStatus(
+    dynamic lead, {
+    String? statusId,
+    String? statusName,
+  }) {
+    if (lead == null) return false;
+    if (statusId == null && statusName == null) return true;
+
+    final targetId = statusId?.trim();
+    final targetName = statusName?.trim().toLowerCase();
+
+    String? actualId;
+    String? actualName;
+
+    if (lead is Map) {
+      final rawStage = lead['lead_stage_id'] ?? lead['leadStageId'];
+      if (rawStage is Map) {
+        actualId = (rawStage['_id'] ?? rawStage['id'] ?? rawStage['sId'])?.toString();
+        actualName = (rawStage['name'] ?? rawStage['stageName'])?.toString();
+      } else if (rawStage is String) {
+        actualId = rawStage;
+        actualName = rawStage;
+      }
+    } else {
+      try {
+        final rawStage = (lead as dynamic).leadStageId;
+        if (rawStage is String) {
+          actualId = rawStage;
+          actualName = rawStage;
+        } else if (rawStage is Map) {
+          actualId = (rawStage['_id'] ?? rawStage['id'] ?? rawStage['sId'])?.toString();
+          actualName = (rawStage['name'] ?? rawStage['stageName'])?.toString();
+        } else if (rawStage != null) {
+          try {
+            actualId = (rawStage as dynamic).sId?.toString();
+          } catch (_) {}
+          try {
+            actualName = (rawStage as dynamic).name?.toString();
+          } catch (_) {}
+        }
+      } catch (_) {}
+    }
+
+    // Exact ID match
+    if (targetId != null && targetId.isNotEmpty && actualId != null && actualId.isNotEmpty) {
+      if (actualId == targetId) return true;
+    }
+
+    // Exact case-insensitive trimmed Name match
+    if (targetName != null && targetName.isNotEmpty && actualName != null && actualName.isNotEmpty) {
+      if (actualName.trim().toLowerCase() == targetName) return true;
+    }
+
+    return false;
   }
 
   static bool matchesLeadSearch(dynamic lead, String query) {
@@ -96,6 +201,30 @@ class AllMissFUpsController extends GetxController {
     return false;
   }
 
+  void selectStatus(String? statusId, String? statusName) {
+    if (selectedStatusId.value == statusId ||
+        (selectedStatusName.value != null &&
+            statusName != null &&
+            selectedStatusName.value!.trim().toLowerCase() ==
+                statusName.trim().toLowerCase())) {
+      // Toggle off to restore unfiltered
+      selectedStatusId.value = null;
+      selectedStatusName.value = null;
+    } else {
+      selectedStatusId.value = statusId;
+      selectedStatusName.value = statusName;
+    }
+
+    // If remaining pages exist and background paging is not currently active,
+    // ensure background pagination continues to collect all leads
+    if (isMoreDataAvailable.value &&
+        !isBackgroundPaging.value &&
+        !hasMoreError.value &&
+        !isInitialLoading.value) {
+      unawaited(_fetchRemainingPages(_requestGeneration));
+    }
+  }
+
   void onSearchChanged(String query) {
     _searchDebounce?.cancel();
 
@@ -142,13 +271,13 @@ class AllMissFUpsController extends GetxController {
   Rx<DateTime?> selectedStartDate = Rx<DateTime?>(null);
   Rx<DateTime?> selectedEndDate = Rx<DateTime?>(null);
 
-  // Status-Wise Lead Count State (matching Home dashboard)
+  // Status-Wise Lead Count State
   Rx<AllLeadStageResponse> allLeadStageRes = AllLeadStageResponse().obs;
   Rx<PageState> stageCountLoading = PageState.loading.obs;
   RxBool isStatusBreakdownExpanded = true.obs;
   bool _isFetchingStages = false;
 
-  /// Fetches overall lead stages and counts across all leads globally
+  /// Fetches overall lead stages across all leads globally
   Future<void> fetchLeadStages({bool forceRefresh = false}) async {
     if (_isFetchingStages) return;
     if (!forceRefresh &&
@@ -161,7 +290,6 @@ class AllMissFUpsController extends GetxController {
     stageCountLoading.value = PageState.loading;
 
     try {
-      // Calls getAllLeadStage() without campaignId to obtain global counts across all leads
       final response = await DioApi().getAllLeadStage();
       if (response.success == true) {
         allLeadStageRes.value = response;
@@ -188,7 +316,7 @@ class AllMissFUpsController extends GetxController {
         selectedEndDate.value = now;
         break;
       case 'Yesterday':
-        final yesterday = now.subtract(Duration(days: 1));
+        final yesterday = now.subtract(const Duration(days: 1));
         selectedStartDate.value = DateTime(
           yesterday.year,
           yesterday.month,
@@ -198,10 +326,10 @@ class AllMissFUpsController extends GetxController {
           now.year,
           now.month,
           now.day,
-        ).subtract(Duration(seconds: 1));
+        ).subtract(const Duration(seconds: 1));
         break;
       case 'Last 30 Days':
-        selectedStartDate.value = now.subtract(Duration(days: 30));
+        selectedStartDate.value = now.subtract(const Duration(days: 30));
         selectedEndDate.value = now;
         break;
       case 'Select Range':
@@ -229,13 +357,17 @@ class AllMissFUpsController extends GetxController {
       _requestGeneration++;
       currentPage = 1;
       leads.clear();
+      totalApiLeadCount.value = null;
       isMoreDataAvailable.value = true;
       hasMoreError.value = false;
       isLoadingMore.value = false;
+      isBackgroundPaging.value = false;
       isInitialLoading.value = true;
     } else {
       if (isInitialLoading.value ||
           isLoadingMore.value ||
+          isBackgroundPaging.value ||
+          _isFetchingPage ||
           !isMoreDataAvailable.value) {
         return;
       }
@@ -248,7 +380,42 @@ class AllMissFUpsController extends GetxController {
     }
 
     final generation = _requestGeneration;
-    final requestedPage = currentPage;
+    final success = await _fetchPage(generation, currentPage, isRefresh: isRefresh);
+
+    if (generation == _requestGeneration) {
+      isInitialLoading.value = false;
+      isLoadingMore.value = false;
+      // If initial page was successfully fetched and more pages are available,
+      // trigger background fetch for remaining pages to ensure complete dataset
+      if (isRefresh && success && isMoreDataAvailable.value) {
+        unawaited(_fetchRemainingPages(generation));
+      }
+    }
+  }
+
+  Future<void> _fetchRemainingPages(int generation) async {
+    if (isBackgroundPaging.value) return;
+    isBackgroundPaging.value = true;
+
+    try {
+      while (isMoreDataAvailable.value &&
+          generation == _requestGeneration &&
+          !hasMoreError.value) {
+        final success = await _fetchPage(generation, currentPage);
+        if (!success) break;
+      }
+    } finally {
+      if (generation == _requestGeneration) {
+        isBackgroundPaging.value = false;
+      }
+    }
+  }
+
+  Future<bool> _fetchPage(int generation, int pageToFetch, {bool isRefresh = false}) async {
+    if (_isFetchingPage) return false;
+    if (generation != _requestGeneration) return false;
+
+    _isFetchingPage = true;
     final isMissed = followUpType.value == 'Missed';
     final search = currentSearchQuery.trim();
     final startDate = selectedStartDate.value;
@@ -258,14 +425,17 @@ class AllMissFUpsController extends GetxController {
       final List<dynamic>? responseData;
       final int? responseCurrentPage;
       final int? totalPages;
+      final int? responseTotal;
 
       if (isMissed) {
-        if (requestedPage == 1) {
-          await Get.find<FollowUpController>().syncWithApi();
+        if (pageToFetch == 1) {
+          try {
+            await Get.find<FollowUpController>().syncWithApi();
+          } catch (_) {}
         }
         final response = await DioApi().getMissedFUps(
           currentDateTime: DateTime.now().toUtc().toIso8601String(),
-          page: requestedPage,
+          page: pageToFetch,
           limit: _pageSize,
           search: search,
           startDate: startDate,
@@ -277,9 +447,10 @@ class AllMissFUpsController extends GetxController {
         responseData = response.data;
         responseCurrentPage = response.currentPage;
         totalPages = response.totalPages;
+        responseTotal = response.total;
       } else {
         final response = await DioApi().getAllFollowUps(
-          page: requestedPage,
+          page: pageToFetch,
           limit: _pageSize,
           search: search,
           startDate: startDate,
@@ -291,28 +462,41 @@ class AllMissFUpsController extends GetxController {
         responseData = response.data;
         responseCurrentPage = response.currentPage;
         totalPages = response.totalPages;
+        responseTotal = response.total;
       }
 
-      if (generation != _requestGeneration) return;
+      if (generation != _requestGeneration) return false;
+
+      if (responseTotal != null) {
+        totalApiLeadCount.value = responseTotal;
+      }
 
       final records = responseData ?? const [];
-      leads.addAll(records);
-      final loadedPage = responseCurrentPage ?? requestedPage;
+      final existingIds = leads.map((l) => _getLeadId(l)).whereType<String>().toSet();
+      for (final r in records) {
+        final id = _getLeadId(r);
+        if (id == null || !existingIds.contains(id)) {
+          leads.add(r);
+          if (id != null) existingIds.add(id);
+        }
+      }
+
+      final loadedPage = responseCurrentPage ?? pageToFetch;
       currentPage = loadedPage + 1;
       isMoreDataAvailable.value = records.isNotEmpty &&
           (totalPages != null
               ? loadedPage < totalPages
               : records.length >= _pageSize);
+
+      return true;
     } catch (e) {
       debugPrint('Error loading follow-ups: $e');
       if (generation == _requestGeneration) {
         hasMoreError.value = true;
       }
+      return false;
     } finally {
-      if (generation == _requestGeneration) {
-        isInitialLoading.value = false;
-        isLoadingMore.value = false;
-      }
+      _isFetchingPage = false;
     }
   }
 }

@@ -1,8 +1,8 @@
 import 'package:crm_flutter/helper/call_helper.dart';
 import 'package:crm_flutter/helper/lead_edit_helper.dart';
 import 'package:crm_flutter/api/response/all_leads_response.dart' as lead_model;
-import 'package:crm_flutter/models/enums.dart';
 import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
+import 'package:crm_flutter/pages/Allocations/components/custom_chip.dart';
 import 'package:crm_flutter/pages/Allocations/components/edit_allocation_lead_dialog.dart';
 import 'package:crm_flutter/pages/Allocations/missedFollowUps/missed_followups_controller.dart';
 import 'package:crm_flutter/styles/color_palette.dart';
@@ -114,7 +114,8 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
         _scrollController.position.maxScrollExtent - 200) {
       if (_allMissFUpsController.isMoreDataAvailable.value &&
           !_allMissFUpsController.isInitialLoading.value &&
-          !_allMissFUpsController.isLoadingMore.value) {
+          !_allMissFUpsController.isLoadingMore.value &&
+          !_allMissFUpsController.isBackgroundPaging.value) {
         _allMissFUpsController.fetchData();
       }
     }
@@ -179,191 +180,111 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
     );
   }
 
-  Widget _buildStatusBreakdownSection() {
+  Widget _buildStatusFilterChips() {
     return Obx(() {
-      final state = _allMissFUpsController.stageCountLoading.value;
       final stages = _allMissFUpsController.allLeadStageRes.value.data ?? [];
-      final isExpanded = _allMissFUpsController.isStatusBreakdownExpanded.value;
+      if (stages.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      final selectedId = _allMissFUpsController.selectedStatusId.value;
+      final selectedName =
+          _allMissFUpsController.selectedStatusName.value?.toLowerCase();
 
       return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+        height: 50,
+        margin: const EdgeInsets.symmetric(vertical: 2.0),
+        child: SingleChildScrollView(
+          key: const ValueKey('followups-status-filters-scroll'),
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              for (final stage in stages)
+                buildCustomChip(
+                  text: (stage.name != null && stage.name!.trim().isNotEmpty)
+                      ? stage.name!.trim()
+                      : 'Unknown',
+                  isSelected: (stage.sId != null && stage.sId == selectedId) ||
+                      (stage.name != null &&
+                          stage.name!.trim().toLowerCase() == selectedName),
+                  onTap: () {
+                    _allMissFUpsController.selectStatus(stage.sId, stage.name);
+                  },
+                ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildLeadCount() {
+    return Obx(() {
+      final isInitialLoading = _allMissFUpsController.isInitialLoading.value;
+      final isBackgroundPaging = _allMissFUpsController.isBackgroundPaging.value;
+      final isLoading = isInitialLoading || isBackgroundPaging;
+      final count = _allMissFUpsController.totalMatchingLeadCount;
+
+      return Container(
+        key: const ValueKey('followups-lead-count'),
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(10, 2, 10, 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: ColorConstants.MainPurpleBackground.withValues(alpha: 0.12),
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
-            InkWell(
-              onTap: () {
-                _allMissFUpsController.isStatusBreakdownExpanded.toggle();
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14.0,
-                  vertical: 10.0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total Leads Breakdown',
+            Icon(
+              Icons.people_outline,
+              size: 17,
+              color: ColorConstants.MainPurpleBackground,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: isLoading
+                  ? Text(
+                      'Loading leads…',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
                       ),
-                    ),
-                    Row(
-                      children: [
-                        if (stages.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: ColorConstants.MainPurpleBackground
-                                  .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${stages.length} Statuses',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: ColorConstants.MainPurpleBackground,
-                              ),
+                    )
+                  : Text.rich(
+                      TextSpan(
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                        ),
+                        children: [
+                          const TextSpan(text: 'Total Leads: '),
+                          TextSpan(
+                            text: '$count',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: ColorConstants.MainPurpleBackground,
                             ),
                           ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          isExpanded
-                              ? Icons.keyboard_arrow_up
-                              : Icons.keyboard_arrow_down,
-                          color: Colors.grey.shade700,
-                          size: 22,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ],
+            ),
+            if (isLoading && _allMissFUpsController.leads.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: ColorConstants.MainPurpleBackground,
                 ),
               ),
-            ),
-            if (isExpanded) ...[
-              if (state == PageState.loading && stages.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: ColorConstants.MainPurpleBackground,
-                      ),
-                    ),
-                  ),
-                )
-              else if (state == PageState.error && stages.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8.0,
-                    horizontal: 14.0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Failed to load status counts',
-                        style: TextStyle(
-                          color: Colors.redAccent,
-                          fontSize: 13,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => _allMissFUpsController
-                            .fetchLeadStages(forceRefresh: true),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              else if (stages.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(12.0),
-                  child: Center(
-                    child: Text(
-                      'No status data available',
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
-                    ),
-                  ),
-                )
-              else
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 200),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    itemCount: stages.length,
-                    itemBuilder: (context, index) {
-                      final data = stages[index];
-                      return Card(
-                        elevation: 0,
-                        surfaceTintColor: Colors.transparent,
-                        margin: const EdgeInsets.symmetric(vertical: 3),
-                        color: ColorConstants.MainPurpleBackground.withValues(
-                          alpha: 0.01,
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 16,
-                          ),
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: ColorConstants.MainPurpleBackground
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                data.name?.toString() ?? '',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                data.count?.toString() ?? '0',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              const SizedBox(height: 6),
             ],
           ],
         ),
@@ -542,8 +463,10 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                   ),
                 ),
               ),
-              // Overall Status-Wise Lead Count Section (matching Home dashboard)
-              _buildStatusBreakdownSection(),
+              // Horizontal status filter chips (Allocation style)
+              _buildStatusFilterChips(),
+              // Lead count bar (Allocation style)
+              _buildLeadCount(),
               Expanded(
                 child:
                     _allMissFUpsController.isInitialLoading.value &&
@@ -626,9 +549,8 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                                 ? data.name
                                 : "${data.name?.first ?? ''} ${data.name?.last ?? ''}";
 
-                            return Container(
-                              child: CallLogCard(
-                                isMissedFUps: true,
+                            return CallLogCard(
+                              isMissedFUps: true,
                                 isEditing: _editingLeadIds.contains(data.sId),
                                 name: name,
                                 leadId: data.sId,
@@ -674,10 +596,9 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
                                         '',
                                   );
                                 },
-                              ),
-                            );
-                          },
-                        ),
+                              );
+                            },
+                          ),
                       ),
               ),
             ],
