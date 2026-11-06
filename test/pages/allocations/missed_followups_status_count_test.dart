@@ -230,7 +230,7 @@ void main() {
     expect(requestedPaths.where((p) => p.endsWith('/leadstage/all')), hasLength(2));
   });
 
-  testWidgets('MissedFollowupsPage displays horizontal status chips and Total Leads count bar', (tester) async {
+  testWidgets('MissedFollowupsPage displays status counts inside horizontal chips with no separate count card', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -251,13 +251,15 @@ void main() {
 
     // Verify horizontal status chips exist
     expect(find.byKey(const ValueKey('followups-status-filters-scroll')), findsOneWidget);
-    expect(find.text('Fresh'), findsOneWidget);
-    expect(find.text('Interested'), findsOneWidget);
-    expect(find.text('Follow Up'), findsWidgets);
 
-    // Verify Allocation-style Total Leads count card
-    expect(find.byKey(const ValueKey('followups-lead-count')), findsOneWidget);
-    expect(find.text('Total Leads: 4'), findsOneWidget); // 4 total leads in missed (pages 1 + 2)
+    // Format: '<Status Name> : <Count>' directly inside chips across all pages
+    expect(find.text('Fresh : 2'), findsOneWidget);
+    expect(find.text('Interested : 1'), findsOneWidget);
+    expect(find.text('Follow Up : 1'), findsWidgets);
+
+    // Verify NO separate Total Leads count card exists
+    expect(find.byKey(const ValueKey('followups-lead-count')), findsNothing);
+    expect(find.textContaining('Total Leads'), findsNothing);
 
     // Verify lead cards from both pages are rendered
     expect(find.text('Alice Smith'), findsOneWidget);
@@ -266,7 +268,7 @@ void main() {
     expect(find.text('Emma Davis'), findsOneWidget);
   });
 
-  testWidgets('Selecting Fresh status displays only Fresh leads and exact matching count', (tester) async {
+  testWidgets('Chip styling adheres to selected and unselected pill specifications', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -282,8 +284,52 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Tap 'Fresh' chip
-    await tester.tap(find.text('Fresh'));
+    // Before selection: Unselected chip has white background and blue text
+    final unselectedText = tester.widget<Text>(find.text('Fresh : 2'));
+    expect(unselectedText.style?.color, const Color(0xFF1471FF));
+
+    final unselectedContainer = tester.widget<Container>(
+      find.ancestor(of: find.text('Fresh : 2'), matching: find.byType(Container)).first,
+    );
+    final unselectedDecoration = unselectedContainer.decoration as BoxDecoration;
+    expect(unselectedDecoration.color, Colors.white);
+    expect(unselectedDecoration.borderRadius, BorderRadius.circular(25));
+    expect(unselectedDecoration.border?.top.color, const Color(0xFF1471FF));
+
+    // Tap Fresh chip to select it
+    await tester.tap(find.text('Fresh : 2'));
+    await tester.pumpAndSettle();
+
+    // After selection: Selected chip has blue background and white text
+    final selectedText = tester.widget<Text>(find.text('Fresh : 2'));
+    expect(selectedText.style?.color, Colors.white);
+
+    final selectedContainer = tester.widget<Container>(
+      find.ancestor(of: find.text('Fresh : 2'), matching: find.byType(Container)).first,
+    );
+    final selectedDecoration = selectedContainer.decoration as BoxDecoration;
+    expect(selectedDecoration.color, const Color(0xFF1471FF));
+    expect(selectedDecoration.borderRadius, BorderRadius.circular(25));
+  });
+
+  testWidgets('Selecting Fresh status displays only Fresh leads and keeps chip counts intact', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    Get.put(AllMissFUpsController());
+    await tester.pumpWidget(
+      const GetMaterialApp(
+        home: MissedFollowupsPage(initialType: 'Missed'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap 'Fresh : 2' chip
+    await tester.tap(find.text('Fresh : 2'));
     await tester.pumpAndSettle();
 
     // Only Fresh leads should appear
@@ -292,20 +338,23 @@ void main() {
     expect(find.text('Alice Smith'), findsNothing); // Follow Up - hidden!
     expect(find.text('David Wilson'), findsNothing); // Interested - hidden!
 
-    // Count must be 2 (exact matching count across all pages)
-    expect(find.text('Total Leads: 2'), findsOneWidget);
-    expect(find.text('42'), findsNothing); // Does NOT use global count!
+    // Chips still show counts matching their statuses
+    expect(find.text('Fresh : 2'), findsOneWidget);
+    expect(find.text('Interested : 1'), findsOneWidget);
+    expect(find.text('Follow Up : 1'), findsWidgets);
 
-    // Tap 'Fresh' again to toggle off -> restores all leads
-    await tester.tap(find.text('Fresh'));
+    // No separate Total Leads count card
+    expect(find.textContaining('Total Leads'), findsNothing);
+
+    // Tap 'Fresh : 2' again to toggle off -> restores all leads
+    await tester.tap(find.text('Fresh : 2'));
     await tester.pumpAndSettle();
 
     expect(find.text('Alice Smith'), findsOneWidget);
     expect(find.text('David Wilson'), findsOneWidget);
-    expect(find.text('Total Leads: 4'), findsOneWidget);
   });
 
-  testWidgets('Switching between All and Missed preserves selected status', (tester) async {
+  testWidgets('Switching between All and Missed recalculates counts for each tab across pages', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -321,22 +370,27 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Select 'Fresh' on Missed tab
-    await tester.tap(find.text('Fresh'));
+    // Select 'Fresh : 2' on Missed tab
+    await tester.tap(find.text('Fresh : 2'));
     await tester.pumpAndSettle();
 
     expect(find.text('Charlie Brown'), findsOneWidget);
-    expect(find.text('Total Leads: 2'), findsOneWidget);
+    expect(find.text('Emma Davis'), findsOneWidget);
 
     // Switch to 'All'
     await tester.tap(find.widgetWithText(ElevatedButton, 'All'));
     await tester.pumpAndSettle();
 
-    // Fresh should remain selected on All tab!
     // In 'All', Frank Miller is Fresh, Bob Jones is Interested
+    // Counts inside chips recalculate across all pages in All:
+    expect(find.text('Fresh : 1'), findsOneWidget);
+    expect(find.text('Interested : 1'), findsOneWidget);
+    expect(find.text('Follow Up : 0'), findsWidgets);
+
+    // Fresh remains selected on All tab, displaying Frank Miller
     expect(find.text('Frank Miller'), findsOneWidget);
     expect(find.text('Bob Jones'), findsNothing);
-    expect(find.text('Total Leads: 1'), findsOneWidget); // 1 Fresh lead in All
+    expect(find.textContaining('Total Leads'), findsNothing);
   });
 
   testWidgets('Switching between statuses repeatedly isolates records cleanly', (tester) async {
@@ -356,23 +410,21 @@ void main() {
     await tester.pumpAndSettle();
 
     // Select Interested
-    await tester.tap(find.text('Interested'));
+    await tester.tap(find.text('Interested : 1'));
     await tester.pumpAndSettle();
 
     expect(find.text('David Wilson'), findsOneWidget);
     expect(find.text('Charlie Brown'), findsNothing);
-    expect(find.text('Total Leads: 1'), findsOneWidget);
 
     // Switch to Follow Up
-    await tester.tap(find.widgetWithText(GestureDetector, 'Follow Up').first);
+    await tester.tap(find.widgetWithText(GestureDetector, 'Follow Up : 1').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Alice Smith'), findsOneWidget);
     expect(find.text('David Wilson'), findsNothing);
-    expect(find.text('Total Leads: 1'), findsOneWidget);
   });
 
-  testWidgets('Search works together with active status filter', (tester) async {
+  testWidgets('Search recalculates status counts and filters list', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -389,7 +441,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Select Fresh (2 leads: Charlie Brown, Emma Davis)
-    await tester.tap(find.text('Fresh'));
+    await tester.tap(find.text('Fresh : 2'));
     await tester.pumpAndSettle();
 
     expect(find.text('Charlie Brown'), findsOneWidget);
@@ -401,7 +453,12 @@ void main() {
 
     expect(find.text('Charlie Brown'), findsOneWidget);
     expect(find.text('Emma Davis'), findsNothing);
-    expect(find.text('Total Leads: 1'), findsOneWidget);
+
+    // Chips update to reflect matching search query
+    expect(find.text('Fresh : 1'), findsOneWidget);
+    expect(find.text('Interested : 0'), findsOneWidget);
+    expect(find.text('Follow Up : 0'), findsWidgets);
+    expect(find.textContaining('Total Leads'), findsNothing);
   });
 
   testWidgets('Changing date filter preserves active status filter', (tester) async {
@@ -421,7 +478,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Select Fresh
-    await tester.tap(find.text('Fresh'));
+    await tester.tap(find.text('Fresh : 2'));
     await tester.pumpAndSettle();
     expect(controller.selectedStatusName.value, 'Fresh');
 
@@ -432,6 +489,44 @@ void main() {
     // Status filter is still Fresh!
     expect(controller.selectedStatusName.value, 'Fresh');
     expect(find.text('Yesterday'), findsOneWidget);
+  });
+
+  testWidgets('While background pagination is running, shows loading indicator in chip rather than incomplete count', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final controller = Get.put(AllMissFUpsController());
+    await tester.pumpWidget(
+      const GetMaterialApp(
+        home: MissedFollowupsPage(initialType: 'Missed'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify initial complete state
+    expect(find.text('Fresh : 2'), findsOneWidget);
+
+    // Simulate background pagination is currently fetching remaining pages
+    controller.isBackgroundPaging.value = true;
+    await tester.pump();
+
+    // When background paging is active, chips display '<Status Name> : ' with loading indicator
+    expect(find.text('Fresh : '), findsOneWidget);
+    expect(find.byKey(const ValueKey('chip-loading-indicator')), findsWidgets);
+    // Incomplete count is NOT displayed as final
+    expect(find.text('Fresh : 2'), findsNothing);
+
+    // Pagination completes
+    controller.isBackgroundPaging.value = false;
+    await tester.pump();
+
+    // Final count across all pages is displayed
+    expect(find.text('Fresh : 2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('chip-loading-indicator')), findsNothing);
   });
 
   test('Background pagination error keeps already loaded records intact', () async {

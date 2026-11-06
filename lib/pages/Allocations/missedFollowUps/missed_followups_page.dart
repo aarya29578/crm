@@ -190,6 +190,7 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
       final selectedId = _allMissFUpsController.selectedStatusId.value;
       final selectedName =
           _allMissFUpsController.selectedStatusName.value?.toLowerCase();
+      final isPaging = _allMissFUpsController.isBackgroundPaging.value;
 
       return Container(
         height: 50,
@@ -201,92 +202,44 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
             children: [
-              for (final stage in stages)
-                buildCustomChip(
-                  text: (stage.name != null && stage.name!.trim().isNotEmpty)
-                      ? stage.name!.trim()
-                      : 'Unknown',
-                  isSelected: (stage.sId != null && stage.sId == selectedId) ||
-                      (stage.name != null &&
-                          stage.name!.trim().toLowerCase() == selectedName),
-                  onTap: () {
-                    _allMissFUpsController.selectStatus(stage.sId, stage.name);
+              for (final stage in stages) ...[
+                Builder(
+                  builder: (context) {
+                    final rawName = stage.name?.trim();
+                    final stageName = (rawName != null && rawName.isNotEmpty)
+                        ? rawName
+                        : 'Unknown';
+                    final isSelected =
+                        (stage.sId != null && stage.sId == selectedId) ||
+                            (stage.name != null &&
+                                stage.name!.trim().toLowerCase() == selectedName);
+
+                    final count = _allMissFUpsController.countForStatus(
+                      statusId: stage.sId,
+                      statusName: stage.name,
+                    );
+
+                    final chipText = isPaging
+                        ? '$stageName : '
+                        : '$stageName : $count';
+
+                    return buildCustomChip(
+                      key: ValueKey('chip-$stageName'),
+                      text: chipText,
+                      isSelected: isSelected,
+                      isLoading: isPaging,
+                      onTap: () {
+                        _allMissFUpsController.selectStatus(
+                          stage.sId,
+                          stage.name,
+                        );
+                      },
+                    );
                   },
                 ),
+              ],
             ],
           ),
-        ),
-      );
-    });
-  }
-
-  Widget _buildLeadCount() {
-    return Obx(() {
-      final isInitialLoading = _allMissFUpsController.isInitialLoading.value;
-      final isBackgroundPaging = _allMissFUpsController.isBackgroundPaging.value;
-      final isLoading = isInitialLoading || isBackgroundPaging;
-      final count = _allMissFUpsController.totalMatchingLeadCount;
-
-      return Container(
-        key: const ValueKey('followups-lead-count'),
-        width: double.infinity,
-        margin: const EdgeInsets.fromLTRB(10, 2, 10, 6),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: ColorConstants.MainPurpleBackground.withValues(alpha: 0.12),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 17,
-              color: ColorConstants.MainPurpleBackground,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: isLoading
-                  ? Text(
-                      'Loading leads…',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    )
-                  : Text.rich(
-                      TextSpan(
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade700,
-                        ),
-                        children: [
-                          const TextSpan(text: 'Total Leads: '),
-                          TextSpan(
-                            text: '$count',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: ColorConstants.MainPurpleBackground,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-            ),
-            if (isLoading && _allMissFUpsController.leads.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: ColorConstants.MainPurpleBackground,
-                ),
-              ),
-            ],
-          ],
         ),
       );
     });
@@ -465,8 +418,6 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
               ),
               // Horizontal status filter chips (Allocation style)
               _buildStatusFilterChips(),
-              // Lead count bar (Allocation style)
-              _buildLeadCount(),
               Expanded(
                 child:
                     _allMissFUpsController.isInitialLoading.value &&

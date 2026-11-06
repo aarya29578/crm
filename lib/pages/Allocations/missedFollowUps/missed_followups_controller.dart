@@ -71,6 +71,20 @@ class AllMissFUpsController extends GetxController {
     return totalApiLeadCount.value ?? leads.length;
   }
 
+  int countForStatus({String? statusId, String? statusName}) {
+    final query = currentSearchQuery.trim();
+    int count = 0;
+    for (final lead in leads) {
+      if (query.isNotEmpty && !matchesLeadSearch(lead, query)) {
+        continue;
+      }
+      if (matchesLeadStatus(lead, statusId: statusId, statusName: statusName)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
   static String? _getLeadId(dynamic lead) {
     if (lead == null) return null;
     if (lead is Map) {
@@ -473,12 +487,16 @@ class AllMissFUpsController extends GetxController {
 
       final records = responseData ?? const [];
       final existingIds = leads.map((l) => _getLeadId(l)).whereType<String>().toSet();
+      final List<dynamic> toAdd = [];
       for (final r in records) {
         final id = _getLeadId(r);
         if (id == null || !existingIds.contains(id)) {
-          leads.add(r);
+          toAdd.add(r);
           if (id != null) existingIds.add(id);
         }
+      }
+      if (toAdd.isNotEmpty) {
+        leads.addAll(toAdd);
       }
 
       final loadedPage = responseCurrentPage ?? pageToFetch;
