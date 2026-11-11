@@ -26,6 +26,7 @@ import 'package:velocity_x/velocity_x.dart';
 class CallLogCard extends StatelessWidget {
   final context;
   final bool? isMissedFUps;
+  final bool showFollowUpDate;
   final String name;
   final String? leadId;
   final String? campaignId;
@@ -53,6 +54,7 @@ class CallLogCard extends StatelessWidget {
     super.key,
     this.context,
     this.isMissedFUps = false,
+    this.showFollowUpDate = false,
     required this.name,
     this.leadId,
     this.campaignId,
@@ -2684,10 +2686,12 @@ class CallLogCard extends StatelessWidget {
     final clean = tag.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
     String? label;
     dynamic dateRaw;
+    final isFollowUpDate = showFollowUpDate || clean == 'followup';
 
-    if (clean == 'followup') {
+    if (isFollowUpDate) {
       label = 'Follow up date';
-      dateRaw = followUp ?? _extractStageDate('followUpDate');
+      dateRaw = followUp ??
+          (showFollowUpDate ? null : _extractStageDate('followUpDate'));
     } else if (clean == 'sitevisitplanned' || clean == 'sitevisitdate') {
       label = 'Site Visit Planned date';
       dateRaw = siteVisitDate ?? _extractStageDate('siteVisitDate');
@@ -2704,7 +2708,9 @@ class CallLogCard extends StatelessWidget {
     final parsed = _parseDate(dateRaw);
     if (parsed == null) return null;
 
-    final formatted = DateFormat('dd/MM/yyyy  hh:mm a').format(parsed.toLocal());
+    final formatted = showFollowUpDate
+        ? formatDisplayDateTime(parsed.toIso8601String())
+        : DateFormat('dd/MM/yyyy  hh:mm a').format(parsed.toLocal());
 
     return Container(
       padding: const EdgeInsets.symmetric(

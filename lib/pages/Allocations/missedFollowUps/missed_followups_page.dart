@@ -502,6 +502,7 @@ class _MissedFollowupsPageState extends State<MissedFollowupsPage> {
 
                             return CallLogCard(
                               isMissedFUps: true,
+                              showFollowUpDate: true,
                                 isEditing: _editingLeadIds.contains(data.sId),
                                 name: name,
                                 leadId: data.sId,
