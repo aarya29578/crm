@@ -1,4 +1,7 @@
 import 'package:crm_flutter/api/dio_api.dart';
+import 'package:crm_flutter/api/response/all_leads_response.dart' as all_leads;
+import 'package:crm_flutter/api/response/all_missed_followups_response.dart'
+    as missed_followups;
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
 import 'package:crm_flutter/pages/Allocations/components/callLogCard.dart';
@@ -33,6 +36,7 @@ void main() {
   Widget createCard({
     required String tag,
     DateTime? followUp,
+    bool showFollowUpDate = false,
     dynamic siteVisitDate,
     dynamic siteVisitDone,
     dynamic meetingDone,
@@ -46,6 +50,7 @@ void main() {
             tag: tag,
             leadId: 'lead-test-1',
             followUp: followUp,
+            showFollowUpDate: showFollowUpDate,
             siteVisitDate: siteVisitDate,
             siteVisitDone: siteVisitDone,
             meetingDone: meetingDone,
@@ -58,6 +63,50 @@ void main() {
   }
 
   group('Allocation Lead Card - Stage Specific Date Chips', () {
+    testWidgets('follow-up screens show the top-level date regardless of status', (
+      tester,
+    ) async {
+      final date = DateTime.parse('2026-11-05T14:21:00.000Z');
+      final expectedText =
+          'Follow up date: ${DateFormat('dd MMM yyyy, hh:mm a').format(date.toLocal())}';
+
+      await tester.pumpWidget(
+        createCard(
+          tag: 'Qualified',
+          followUp: date,
+          showFollowUpDate: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(expectedText), findsOneWidget);
+    });
+
+    testWidgets('follow-up screens omit missing and invalid dates', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createCard(
+          tag: 'Qualified',
+          showFollowUpDate: true,
+          followUp: null,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Follow up date:'), findsNothing);
+
+      expect(
+        all_leads.Data.fromJson({'followUpDate': 'not-a-date'}).followUpDate,
+        isNull,
+      );
+      expect(
+        missed_followups.MissedFUpsData.fromJson({
+          'followUpDate': 'not-a-date',
+        }).followUpDate,
+        isNull,
+      );
+    });
+
     testWidgets('1. Follow Up status displays "Follow up date" with exact matching UI', (
       tester,
     ) async {
