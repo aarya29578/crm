@@ -312,4 +312,76 @@ void main() {
       );
     });
   });
+
+  group('Lead History UI - Channel as Timeline Title', () {
+    testWidgets('renders channel value as timeline title instead of "Template"', (tester) async {
+      const messageBody = 'hello {{customer_name}} this is a message regarding property inquiry';
+      final entry = HistoryTimelineEntry.fromJson({
+        'action': 'Template',
+        'changedBy': {'name': 'Agent Smith'},
+        'createdAt': '2026-11-18T10:00:00.000Z',
+        'template_usage': {
+          'template_id': {
+            'name': 'Property follow-up',
+            'channel': 'whatsapp',
+            'body': messageBody,
+          },
+          'used_by': {'name': 'Agent One', 'channel': 'whatsapp'},
+        },
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.displayTitle,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Agent: ${entry.changedBy?.name ?? ''}'),
+                    Text('Template: ${entry.templateUsage?.template?.name ?? ''}'),
+                    Text('Sender: ${entry.templateUsage?.usedBy?.name ?? ''}'),
+                    Text(entry.templateUsage?.template?.body ?? ''),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      // Verify title is "whatsapp"
+      expect(find.text('whatsapp'), findsOneWidget);
+      // Verify "Template" is not the title
+      expect(find.text('Template'), findsNothing);
+      // Verify message content is preserved exactly
+      expect(find.text(messageBody), findsOneWidget);
+      // Verify template name and sender are preserved
+      expect(find.text('Template: Property follow-up'), findsOneWidget);
+      expect(find.text('Sender: Agent One'), findsOneWidget);
+      expect(find.text('Agent: Agent Smith'), findsOneWidget);
+    });
+
+    testWidgets('retains "Template" title when channel is unavailable', (tester) async {
+      final entry = HistoryTimelineEntry.fromJson({
+        'action': 'Template',
+        'template_usage': {
+          'template_id': {
+            'name': 'Property follow-up',
+            'body': 'message body',
+          },
+        },
+      });
+
+      expect(entry.displayTitle, equals('Template'));
+    });
+  });
 }

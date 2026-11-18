@@ -75,7 +75,9 @@ class Leaddetailscontroller extends GetxController {
         allLeadDetailRes.value = response;
         pageState.value = PageState.stable;
       } else {
-        print("API returned success=false");
+        throw StateError(
+          response.message ?? 'Lead acceptance was not successful',
+        );
       }
     } catch (e) {
       pageState.value = PageState.error;
@@ -98,7 +100,9 @@ class Leaddetailscontroller extends GetxController {
         allLeadDetailRes.value = response;
         pageState.value = PageState.stable;
       } else {
-        print("API returned success=false");
+        throw StateError(
+          response.message ?? 'Lead rejection was not successful',
+        );
       }
     } catch (e) {
       pageState.value = PageState.error;

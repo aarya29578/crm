@@ -1890,10 +1890,7 @@ class CallLogCard extends StatelessWidget {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  item.action?.isNotEmpty ==
-                                                          true
-                                                      ? item.action!
-                                                      : 'Activity',
+                                                  item.displayTitle,
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 16,

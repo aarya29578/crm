@@ -235,4 +235,52 @@ void main() {
       throwsFormatException,
     );
   });
+
+  group('Timeline Title and Channel Replacement', () {
+    test('replaces title "Template" with the API channel value (e.g. whatsapp)', () {
+      const messageBody = 'hello {{customer_name}} this is a message regarding property inquiry';
+      final entry = HistoryTimelineEntry.fromJson({
+        'action': 'Template',
+        'template_usage': {
+          'template_id': {
+            'name': 'Property follow-up',
+            'channel': 'whatsapp',
+            'body': messageBody,
+          },
+          'used_by': {'name': 'Agent One', 'channel': 'whatsapp'},
+        },
+      });
+
+      // Title must be the channel value
+      expect(entry.displayTitle, 'whatsapp');
+      // Message content must be completely untouched and preserved
+      expect(entry.templateUsage?.template?.body, messageBody);
+      // Template name must be completely untouched and preserved
+      expect(entry.templateUsage?.template?.name, 'Property follow-up');
+    });
+
+    test('retains existing title when channel is unavailable', () {
+      final entry = HistoryTimelineEntry.fromJson({
+        'action': 'Template',
+        'template_usage': {
+          'template_id': {
+            'name': 'Follow up',
+            'channel': null,
+            'body': 'some message',
+          },
+        },
+      });
+
+      // Retains existing title "Template"
+      expect(entry.displayTitle, 'Template');
+    });
+
+    test('retains action as title for non-template activities', () {
+      final callEntry = HistoryTimelineEntry(action: 'CALL');
+      expect(callEntry.displayTitle, 'CALL');
+
+      final updateEntry = HistoryTimelineEntry(action: 'UPDATE');
+      expect(updateEntry.displayTitle, 'UPDATE');
+    });
+  });
 }
