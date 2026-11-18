@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/response/all_lead_stage_response.dart';
 import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
@@ -17,6 +18,7 @@ class AllMissFUpsController extends GetxController {
   RxBool isMoreDataAvailable = true.obs;
   int currentPage = 1;
   static const int _pageSize = 50;
+  int _rawRecordsFetched = 0;
   int _requestGeneration = 0;
   bool _isFetchingPage = false;
 
@@ -95,6 +97,52 @@ class AllMissFUpsController extends GetxController {
     } catch (_) {
       return null;
     }
+  }
+
+  void _logDisplayDiagnostics(String source) {
+    if (!kDebugMode) return;
+
+    final stageId = selectedStatusId.value;
+    final stageName = selectedStatusName.value;
+    final stageFiltered = leads
+        .where(
+          (lead) =>
+              matchesLeadStatus(lead, statusId: stageId, statusName: stageName),
+        )
+        .toList();
+    final query = currentSearchQuery.trim();
+    final searchFiltered = query.isEmpty
+        ? stageFiltered
+        : stageFiltered
+              .where((lead) => matchesLeadSearch(lead, query))
+              .toList();
+    final stageRejectedIds = leads
+        .where(
+          (lead) => !matchesLeadStatus(
+            lead,
+            statusId: stageId,
+            statusName: stageName,
+          ),
+        )
+        .map((lead) => _getLeadId(lead) ?? '<missing>')
+        .toList();
+    final searchRejectedIds = query.isEmpty
+        ? const <String>[]
+        : stageFiltered
+              .where((lead) => !matchesLeadSearch(lead, query))
+              .map((lead) => _getLeadId(lead) ?? '<missing>')
+              .toList();
+
+    debugPrint(
+      '[MissedFUps][display][$source] '
+      'rawRecordsFetched=$_rawRecordsFetched afterDedup=${leads.length} '
+      'selectedStageId=${stageId ?? '<none>'} '
+      'selectedStageName=${stageName ?? '<none>'} '
+      'beforeStageFilter=${leads.length} afterStageFilter=${stageFiltered.length} '
+      'stageRejectedIds=$stageRejectedIds searchActive=${query.isNotEmpty} '
+      'afterSearch=${searchFiltered.length} '
+      'searchRejectedIds=$searchRejectedIds finalDisplayed=${searchFiltered.length}',
+    );
   }
 
   static bool matchesLeadStatus(
@@ -228,6 +276,8 @@ class AllMissFUpsController extends GetxController {
       selectedStatusId.value = statusId;
       selectedStatusName.value = statusName;
     }
+
+    _logDisplayDiagnostics('stage-selection');
 
     // If remaining pages exist and background paging is not currently active,
     // ensure background pagination continues to collect all leads
@@ -367,10 +417,13 @@ class AllMissFUpsController extends GetxController {
   }
 
   Future<void> fetchData({bool isRefresh = false}) async {
+    _logDisplayDiagnostics(isRefresh ? 'refresh-start' : 'load-more-start');
+
     if (isRefresh) {
       _requestGeneration++;
       currentPage = 1;
       leads.clear();
+      _rawRecordsFetched = 0;
       totalApiLeadCount.value = null;
       isMoreDataAvailable.value = true;
       hasMoreError.value = false;
@@ -486,13 +539,17 @@ class AllMissFUpsController extends GetxController {
       }
 
       final records = responseData ?? const [];
+      _rawRecordsFetched += records.length;
       final existingIds = leads.map((l) => _getLeadId(l)).whereType<String>().toSet();
       final List<dynamic> toAdd = [];
+      final List<String> discardedDuplicateIds = [];
       for (final r in records) {
         final id = _getLeadId(r);
         if (id == null || !existingIds.contains(id)) {
           toAdd.add(r);
           if (id != null) existingIds.add(id);
+        } else {
+          discardedDuplicateIds.add(id);
         }
       }
       if (toAdd.isNotEmpty) {
@@ -505,6 +562,17 @@ class AllMissFUpsController extends GetxController {
           (totalPages != null
               ? loadedPage < totalPages
               : records.length >= _pageSize);
+
+      if (kDebugMode) {
+        debugPrint(
+          '[MissedFUps][page] page=$loadedPage rawPageCount=${records.length} '
+          'backendTotal=$responseTotal totalPages=$totalPages '
+          'rawRecordsFetched=$_rawRecordsFetched afterDedup=${leads.length} '
+          'deduplicatedCount=${discardedDuplicateIds.length} '
+          'deduplicatedIds=$discardedDuplicateIds',
+        );
+      }
+      _logDisplayDiagnostics('page-$loadedPage');
 
       return true;
     } catch (e) {

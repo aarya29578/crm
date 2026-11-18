@@ -1484,6 +1484,15 @@ class DioApi {
     DateTime? endDate,
   }) async {
     try {
+      final currentUserId = LocalStorage.sharedPreferences
+          ?.getString('user_Id')
+          ?.trim();
+      if (currentUserId == null || currentUserId.isEmpty) {
+        throw StateError(
+          'Cannot fetch missed follow-ups without a logged-in user ID',
+        );
+      }
+
       Map<String, dynamic> queryParams = {'page': page, 'limit': limit};
       if (search.trim().isNotEmpty) {
         queryParams['search'] = search.trim();
@@ -1514,10 +1523,49 @@ class DioApi {
         queryParams['followUpEndDate'] = endDateTime.toUtc().toIso8601String();
       }
 
+      queryParams['assignedTo'] = currentUserId;
+
       final res = await DioUtil.dio.get(
         '$link/lead/followup/missed',
         queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
+
+      if (kDebugMode) {
+        final responseBody = res.data;
+        final rawData = responseBody is Map ? responseBody['data'] : null;
+        final rawRecords = rawData is List ? rawData : const <dynamic>[];
+        final backendTotal = responseBody is Map ? responseBody['total'] : null;
+        debugPrint(
+          '[MissedFUps][response] status=${res.statusCode} page=$page '
+          'backendTotal=$backendTotal rawPageCount=${rawRecords.length}',
+        );
+        final recordDiagnostics = rawRecords
+            .map((record) {
+              if (record is! Map) {
+                return 'non-map-record';
+              }
+              final leadId =
+                  record['_id'] ?? record['id'] ?? record['sId'] ?? '<missing>';
+              final followUp = record['followUp'] ?? record['followup'];
+              final followUpMap = followUp is Map ? followUp : const {};
+              final followUpId =
+                  record['followUpId'] ??
+                  record['followupId'] ??
+                  record['follow_up_id'] ??
+                  record['followup_id'] ??
+                  followUpMap['_id'] ??
+                  followUpMap['id'] ??
+                  '<missing>';
+              final followUpDate =
+                  record['followUpDate'] ??
+                  record['followupDate'] ??
+                  record['follow_up_date'] ??
+                  '<missing>';
+              return 'leadId=$leadId followUpId=$followUpId followUpDate=$followUpDate';
+            })
+            .join('; ');
+        debugPrint('[MissedFUps][response] records=[$recordDiagnostics]');
+      }
 
       if (res.statusCode == 200) {
         return AllMissedFupsRes.fromJson(res.data);

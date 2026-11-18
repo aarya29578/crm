@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:crm_flutter/access_storage/access_storage.dart';
 import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Auth/LoginPage.dart';
@@ -54,6 +55,23 @@ class DioUtil {
                   print('Error appending global campaign: $e');
                 }
 
+                if (kDebugMode &&
+                    requestOptions.uri.path.endsWith('/lead/followup/missed')) {
+                  final diagnosticQuery = requestOptions.queryParameters.map(
+                    (key, value) => MapEntry(
+                      key,
+                      key == 'search' ? '<redacted>' : value.toString(),
+                    ),
+                  );
+                  final diagnosticUri = requestOptions.uri.replace(
+                    queryParameters: diagnosticQuery,
+                  );
+                  debugPrint(
+                    '[MissedFUps][request] ${requestOptions.method} $diagnosticUri',
+                  );
+                  debugPrint('[MissedFUps][request] query=$diagnosticQuery');
+                }
+
                 requestInterceptorHandler.next(requestOptions);
               },
           onResponse: (e, handler) {
@@ -78,6 +96,15 @@ class DioUtil {
             handler.next(e);
           },
           onError: (error, req) {
+            if (kDebugMode &&
+                error.requestOptions.uri.path.endsWith(
+                  '/lead/followup/missed',
+                )) {
+              debugPrint(
+                '[MissedFUps][response] status=${error.response?.statusCode ?? '<no response>'}',
+              );
+            }
+
             if (error.response?.statusCode == 401) {
               LocalStorage.sharedPreferences!.remove('token');
               Get.offAll(LoginPage());
@@ -87,7 +114,7 @@ class DioUtil {
             if (context != null) {
               errorPopup(context, error.toString());
             }
- 
+
             req.next(error);
           },
         ),

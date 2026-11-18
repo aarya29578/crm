@@ -31,7 +31,7 @@ void main() {
   setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     Get.reset();
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'user_Id': 'agent-1'});
     LocalStorage.sharedPreferences = await SharedPreferences.getInstance();
 
     dio = Dio();
