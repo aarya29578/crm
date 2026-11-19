@@ -52,6 +52,7 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
   bool isLoadingFields = false;
   String? selectedRating;
   bool isSubmitting = false;
+  bool isLoadingLeadDetails = true;
   bool _allowDialogClose=false;
   final List<String> ratingOptions = [
     "Hot",
@@ -65,10 +66,11 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
   Map<String, String?> dynamicDateErrors = {};
 
   void _logCallFormEvent(String event, {String? detail}) {
-    debugPrint(
-      '[call-session] ${DateTime.now().toIso8601String()} '
-      'event=$event${detail == null ? '' : ' detail=$detail'}',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // debugPrint(
+      // '[call-session] ${DateTime.now().toIso8601String()} '
+      // 'event=$event${detail == null ? '' : ' detail=$detail'}',
+    // );
   }
 
   @override
@@ -76,66 +78,70 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
     super.initState();
 
     Future.microtask(() async {
-      await homeController.getAllLeadStage();
-      await leadDetailsController.getAllLeadDetails(context, widget.leadId);
+      try {
+        await homeController.getAllLeadStage();
+        await leadDetailsController.getAllLeadDetails(context, widget.leadId);
 
-      final stages = homeController.allLeadStageRes.value.data ?? [];
-      final leadData = leadDetailsController.allLeadDetailRes.value.data;
+        final stages = homeController.allLeadStageRes.value.data ?? [];
+        final leadData = leadDetailsController.allLeadDetailRes.value.data;
 
-      print(
-        "PopupAfterCallUi: initState - stages: ${stages.length}, leadData: ${leadData != null}",
-      );
+        print(
+          "PopupAfterCallUi: initState - stages: ${stages.length}, leadData: ${leadData != null}",
+        );
 
-      if (leadData != null) {
-        setState(() {
-          final priority = leadData.priority;
+        if (leadData != null && leadData.sId == widget.leadId) {
+          setState(() {
+            final priority = leadData.priority;
 
-          selectedRating =
-              (priority != null && ratingOptions.contains(priority))
-              ? priority
-              : null;
-        });
-      }
-
-      if (selectedStageId == null && leadData?.leadStageId?.sId != null) {
-        setState(() {
-          selectedStageId = leadData!.leadStageId!.sId;
-        });
-      }
-
-      print("PopupAfterCallUi: initState - selectedStageId: $selectedStageId");
-
-      if (selectedStageId != null) {
-        await fetchStageFields(selectedStageId!);
-
-        final selectedStageObj =
-            stages.where((e) => e.sId == selectedStageId).isNotEmpty
-            ? stages.firstWhere((e) => e.sId == selectedStageId)
-            : null;
-
-        if (selectedStageObj != null) {
-          print(
-            "PopupAfterCallUi: initState - stage name: ${selectedStageObj.name}, hasSubStatus: ${selectedStageObj.hasSubStatus}",
-          );
+            selectedRating =
+                (priority != null && ratingOptions.contains(priority))
+                ? priority
+                : null;
+          });
         }
 
-        if (selectedStageObj?.hasSubStatus == true) {
-          await homeController.getFailedSubLStage(
-            selectedStageId: selectedStageId,
-          );
+        if (selectedStageId == null && leadData?.leadStageId?.sId != null && leadData?.sId == widget.leadId) {
+          setState(() {
+            selectedStageId = leadData!.leadStageId!.sId;
+          });
+        }
 
-          final subStatuses = homeController.allSubLStageRes.value.data ?? [];
+        print("PopupAfterCallUi: initState - selectedStageId: $selectedStageId");
 
-          if (leadData?.subStatusId?.sId != null) {
-            setState(() {
-              selectedSubStatusId = leadData!.subStatusId!.sId;
-            });
+        if (selectedStageId != null) {
+          await fetchStageFields(selectedStageId!);
+
+          final selectedStageObj =
+              stages.where((e) => e.sId == selectedStageId).isNotEmpty
+              ? stages.firstWhere((e) => e.sId == selectedStageId)
+              : null;
+
+          if (selectedStageObj != null) {
+            print(
+              "PopupAfterCallUi: initState - stage name: ${selectedStageObj.name}, hasSubStatus: ${selectedStageObj.hasSubStatus}",
+            );
+          }
+
+          if (selectedStageObj?.hasSubStatus == true) {
+            await homeController.getFailedSubLStage(
+              selectedStageId: selectedStageId,
+            );
+
+            if (leadData?.subStatusId?.sId != null && leadData?.sId == widget.leadId) {
+              setState(() {
+                selectedSubStatusId = leadData!.subStatusId!.sId;
+              });
+            }
           }
         }
-      }
-
-      if (mounted) {
-        setState(() {});
+      } catch (e) {
+        print("PopupAfterCallUi: initState error: $e");
+      } finally {
+        if (mounted) {
+          setState(() {
+            isLoadingLeadDetails = false;
+          });
+        }
       }
     });
   }
@@ -157,7 +163,8 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
         });
       }
     } catch (e) {
-      print("Error fetching stage fields: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error fetching stage fields: $e");
     } finally {
       setState(() {
         isLoadingFields = false;
@@ -174,7 +181,8 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
       try {
         dt = DateTime.parse(leadData.followUpDate!).toLocal();
       } catch (e) {
-        print("Error parsing leadData.followUpDate: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Error parsing leadData.followUpDate: $e");
       }
     }
 
@@ -196,7 +204,8 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
           try {
             date = DateTime.parse(leadData.followUpDate!).toLocal();
           } catch (e) {
-            print("Error parsing dynamic datetime: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+            // print("Error parsing dynamic datetime: $e");
           }
         }
         if (date != null) {
@@ -582,6 +591,83 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                    Builder(
+    builder: (context) {
+      final leadData =
+          leadDetailsController.allLeadDetailRes.value.data;
+      final isCurrentLead = leadData != null && leadData.sId == widget.leadId;
+
+      final name = isCurrentLead
+          ? [
+              leadData.name?.first,
+              leadData.name?.middle,
+              leadData.name?.last,
+            ].where((part) => part != null && part.trim().isNotEmpty).join(' ')
+          : '';
+
+      final fallbackPhone = PendingCallData.data?['phone_number']?.toString() ??
+          PendingCallData.data?['to_number']?.toString() ??
+          '';
+
+      final phone = isCurrentLead
+          ? (leadData.phone?.toString() ?? fallbackPhone)
+          : fallbackPhone;
+
+      final displayName = name.isNotEmpty
+          ? name
+          : (isLoadingLeadDetails ? 'Loading...' : 'Name not available');
+
+      final displayPhone = phone.isNotEmpty
+          ? phone
+          : (isLoadingLeadDetails ? 'Loading...' : 'Number not available');
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.person, color: Colors.blue),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    displayName,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.phone, color: Colors.blue, size: 20),
+                const SizedBox(width: 10),
+                Text(
+                  displayPhone,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
+  ),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       vertical: 8,
@@ -628,9 +714,10 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
                       selectedStageObj?.name,
                     );
       
-                    print(
-                      "PopupAfterCallUi Obx rebuild: selectedStageId: $selectedStageId, hasSubStatus: $hasSubStatus",
-                    );
+// Old comments , before Nov 3 2026 Tuesday.
+                    // print(
+                      // "PopupAfterCallUi Obx rebuild: selectedStageId: $selectedStageId, hasSubStatus: $hasSubStatus",
+                    // );
       
                     final leadData =
                         leadDetailsController.allLeadDetailRes.value.data;
@@ -638,8 +725,10 @@ class _PopupAfterCallUiState extends State<PopupAfterCallUi> {
                     final filteredStages = stages
                         .where((stage) => stage.name?.toLowerCase() != 'new')
                         .toList();
-      debugPrint('Current-stage options: ${filteredStages.length}');
-debugPrint('selectedStageId: $selectedStageId');
+// Old comments , before Nov 3 2026 Tuesday.
+      // debugPrint('Current-stage options: ${filteredStages.length}');
+// Old comments , before Nov 3 2026 Tuesday.
+// debugPrint('selectedStageId: $selectedStageId');
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -719,9 +808,10 @@ debugPrint('selectedStageId: $selectedStageId');
                             (() {
                               final subStatuses =
                                   homeController.allSubLStageRes.value.data ?? [];
-                              print(
-                                "PopupAfterCallUi subStatus Obx render: subStatuses count = ${subStatuses.length}",
-                              );
+// Old comments , before Nov 3 2026 Tuesday.
+                              // print(
+                                // "PopupAfterCallUi subStatus Obx render: subStatuses count = ${subStatuses.length}",
+                              // );
       
                               if (subStatuses.isEmpty) {
                                 return Padding(
@@ -981,7 +1071,7 @@ debugPrint('selectedStageId: $selectedStageId');
                                     backgroundColor: Colors.red,
                                     colorText: Colors.white,
                                   );
-                                  return;
+                                  return;                                                                                                                         
                                 }
                                 if (d != null && t != null) {
                                   final combinedIso = combineDateAndTime(d, t);

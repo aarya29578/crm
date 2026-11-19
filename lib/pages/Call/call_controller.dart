@@ -70,7 +70,8 @@ class CallLogController extends GetxController {
       callApiState.value = PageState.stable;
     } catch (e) {
       callApiState.value = PageState.error;
-      print(e);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(e);
     }
   }
 
@@ -209,17 +210,28 @@ class CallLogController extends GetxController {
         Iterable<device_call_log.CallLogEntry> entries =
             await device_call_log.CallLog.get();
         callLogs.assignAll(entries);
-        print('Name: ${callLogs[0].name}');
-        print('Number: ${callLogs[0].number}');
-        print('Formatted Number: ${callLogs[0].formattedNumber}');
-        print('Call Type: ${callLogs[0].callType}');
-        print('Duration: ${callLogs[0].duration}');
-        print('Timestamp: ${callLogs[0].timestamp}');
-        print('Cached Number Type: ${callLogs[0].cachedNumberType}');
-        print('Cached Number Label: ${callLogs[0].cachedNumberLabel}');
-        print('SIM Display Name: ${callLogs[0].simDisplayName}');
-        print('Phone Account ID: ${callLogs[0].phoneAccountId}');
-        print('ID: ${callLogs[0].id}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('Name: ${callLogs[0].name}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('Number: ${callLogs[0].number}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('Formatted Number: ${callLogs[0].formattedNumber}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('Call Type: ${callLogs[0].callType}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('Duration: ${callLogs[0].duration}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('Timestamp: ${callLogs[0].timestamp}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('Cached Number Type: ${callLogs[0].cachedNumberType}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('Cached Number Label: ${callLogs[0].cachedNumberLabel}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('SIM Display Name: ${callLogs[0].simDisplayName}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('Phone Account ID: ${callLogs[0].phoneAccountId}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('ID: ${callLogs[0].id}');
       } else {
         Get.snackbar(
           'Permission denied',

@@ -17,26 +17,31 @@ class SplashController extends GetxController {
 
     final token = LocalStorage.sharedPreferences?.getString("token");
 
-    print(
-      "🔐 Saved token exists: "
-      "${token != null && token.isNotEmpty}",
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // print(
+      // "🔐 Saved token exists: "
+      // "${token != null && token.isNotEmpty}",
+    // );
 
     if (token != null && token.isNotEmpty) {
-      print("✅ User already logged in");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("✅ User already logged in");
 
       // Start notifications for restored session.
       if (Get.isRegistered<NotificationController>()) {
-        print("🔔 Starting notification polling...");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("🔔 Starting notification polling...");
 
         Get.find<NotificationController>().startNotificationPolling();
       } else {
-        print("❌ NotificationController is not registered");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("❌ NotificationController is not registered");
       }
 
       Get.offAll(() => BottomNavigationBarPage());
     } else {
-      print("❌ User is not logged in");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("❌ User is not logged in");
 
       Get.offAll(() => const LoginPage());
     }

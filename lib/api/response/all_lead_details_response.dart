@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'all_leads_response.dart' as all_leads;
 
 // class AllLeadDetailResponse {
@@ -185,20 +187,60 @@ import 'all_leads_response.dart' as all_leads;
 
 class AllLeadDetailResponse {
   bool? success;
+  String? message;
   Data? data;
 
-  AllLeadDetailResponse({this.success, this.data});
+  AllLeadDetailResponse({this.success, this.message, this.data});
 
   AllLeadDetailResponse.fromJson(Map<String, dynamic> json) {
     success = json['success'] == true;
+    message = json['message']?.toString();
 
-    data = json['data'] is Map<String, dynamic>
-        ? Data.fromJson(json['data'])
+    data = json['data'] is Map
+        ? Data.fromJson(Map<String, dynamic>.from(json['data']))
         : null;
   }
 
+  factory AllLeadDetailResponse.fromResponseBody(Object? body) {
+    if (body is Map) {
+      return AllLeadDetailResponse.fromJson(Map<String, dynamic>.from(body));
+    }
+
+    if (body is String) {
+      final trimmedBody = body.trim();
+      if (trimmedBody.isEmpty) {
+        throw const FormatException('Lead action returned an empty response');
+      }
+
+      dynamic decodedBody;
+      try {
+        decodedBody = jsonDecode(trimmedBody);
+      } on FormatException {
+        return AllLeadDetailResponse(success: true, message: trimmedBody);
+      }
+
+      if (decodedBody is Map) {
+        return AllLeadDetailResponse.fromJson(
+          Map<String, dynamic>.from(decodedBody),
+        );
+      }
+      if (decodedBody is String) {
+        return AllLeadDetailResponse(success: true, message: decodedBody);
+      }
+
+      throw FormatException(
+        'Expected a JSON object or text response, got '
+        '${decodedBody.runtimeType}',
+      );
+    }
+
+    throw FormatException(
+      'Expected a Map or String response, got ${body.runtimeType}',
+    );
+  }
+
   Map<String, dynamic> toJson() {
-    return {'success': success, 'data': data?.toJson()};
+    return {'success': success, 'message': message, 'data': data?.toJson()};
   }
 }
 
@@ -319,7 +361,8 @@ class Data {
     /// Documents
     if (json['documents'] is List) {
       documents = (json['documents'] as List)
-          .map((e) => Document.fromJson(e))
+          .whereType<Map>()
+          .map((e) => Document.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     }
 
@@ -345,10 +388,10 @@ class Data {
         (json['meetingDone'] ?? json['bookingDone'])?.toString();
     if (json['timeline'] is List) {
       timeline = (json['timeline'] as List)
+          .whereType<Map>()
           .map(
-            (item) => all_leads.Timeline.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
+            (item) =>
+                all_leads.Timeline.fromJson(Map<String, dynamic>.from(item)),
           )
           .toList();
     } else {
@@ -502,9 +545,13 @@ class Country {
 
   Country({this.sId, this.name});
 
-  Country.fromJson(Map<String, dynamic> json) {
-    sId = json['_id'];
-    name = json['name'] ?? '';
+  Country.fromJson(dynamic json) {
+    if (json is Map) {
+      sId = (json['_id'] ?? json['id'])?.toString();
+      name = json['name']?.toString() ?? '';
+    } else {
+      sId = json?.toString();
+    }
   }
 
   Map<String, dynamic> toJson() {

@@ -15,9 +15,14 @@ ClaimedLeadCard(
   id,
   mail,
   followUpDate,
-  stageFieldValues,
-  {VoidCallback? onEdit, bool isEditing = false, String? campaignId}
-) {
+  stageFieldValues, {
+  VoidCallback? onEdit,
+  bool isEditing = false,
+  String? campaignId,
+  VoidCallback? onAccept,
+  VoidCallback? onReject,
+  String? actionInProgress,
+}) {
   return Column(
     children: [
       //Text(id),
@@ -40,6 +45,9 @@ ClaimedLeadCard(
           onEdit: onEdit,
           isEditing: isEditing,
           campaignId: campaignId,
+          onAccept: onAccept,
+          onReject: onReject,
+          actionInProgress: actionInProgress,
         ),
       ),
       // ScheduleCard(),
@@ -141,9 +149,14 @@ ClaimedLeads(
   id,
   mail,
   followUpDate,
-  stageFieldValues,
-  {VoidCallback? onEdit, bool isEditing = false, String? campaignId}
-) {
+  stageFieldValues, {
+  VoidCallback? onEdit,
+  bool isEditing = false,
+  String? campaignId,
+  VoidCallback? onAccept,
+  VoidCallback? onReject,
+  String? actionInProgress,
+}) {
   return Container(
     padding: EdgeInsets.all(16),
     decoration: BoxDecoration(
@@ -387,8 +400,6 @@ ClaimedLeads(
               margin: EdgeInsets.symmetric(vertical: 12),
               color: Colors.grey.shade200,
             ),
-
-
             // Assignment section
             Container(
               padding: EdgeInsets.all(10),
@@ -482,7 +493,8 @@ ClaimedLeads(
                           backgroundColor: Colors.blue,
                         ),
                         onPressed: () async {
-                          print("numberto$phone");
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print("numberto$phone");
                           await CallHelper.callAndTrack(
                             phone.toString(),
                             id,
@@ -520,6 +532,55 @@ ClaimedLeads(
                 ],
               ),
             ),
+            if (onAccept != null || onReject != null) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  if (onAccept != null)
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade400,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: actionInProgress == null ? onAccept : null,
+                        child: actionInProgress == 'Accept'
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Accept'),
+                      ),
+                    ),
+                  if (onAccept != null && onReject != null)
+                    const SizedBox(width: 8),
+                  if (onReject != null)
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade300,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: actionInProgress == null ? onReject : null,
+                        child: actionInProgress == 'Reject'
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Reject'),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ],

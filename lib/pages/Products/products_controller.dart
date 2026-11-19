@@ -8,9 +8,12 @@ class ProductsController extends GetxController {
   Future getAllProducts() async {
     try {
       final response = await DioApi().getAllProducts();
-      print("+++++++++++++++++++++++++++++++++++++++++++++++++++");
-      print(response.toJson());
-      print("+++++++++++++++++++++++++++++++++++++++++++++++++++");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("+++++++++++++++++++++++++++++++++++++++++++++++++++");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response.toJson());
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("+++++++++++++++++++++++++++++++++++++++++++++++++++");
       if (response.success == true) {
         allProductsRes.value = response;
       }
@@ -22,9 +25,11 @@ class ProductsController extends GetxController {
   Future<void> createProduct(req) async {
     try {
       var data = req;
-      print(data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(data);
       final response = await DioApi().createProduct(data);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
 
       if (response['success'] == true || response['success'] == 201) {
         Get.back();
@@ -37,10 +42,12 @@ class ProductsController extends GetxController {
 
   Future updateProduct(data, id) async {
     try {
-      print(data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(data);
       final response = await DioApi().updateProduct(data, id);
 
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response['success'] == true) {
         Get.back();
         await getAllProducts(); // Refresh the list

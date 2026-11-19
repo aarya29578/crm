@@ -54,9 +54,11 @@ class PersonsController extends GetxController {
     try {
       var data = req;
 
-      print(data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(data);
       final response = await DioApi().createPerson(data);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response['success'] == true) {
         Get.back();
         await getAllPersons(); // Refresh the list
@@ -71,7 +73,8 @@ class PersonsController extends GetxController {
   Future<void> updatePerson(data, id) async {
     try {
       final response = await DioApi().updatePerson(data, id);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response['success'] == true) {
         Get.back();
         await getAllPersons(); // Refresh the list

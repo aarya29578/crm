@@ -121,7 +121,8 @@ class SearchPage extends StatelessWidget {
                 ),
               ),
               onChanged: (value) {
-                print("Searching: $value");
+// Old comments , before Nov 3 2026 Tuesday.
+                // print("Searching: $value");
               },
             ),
           ),

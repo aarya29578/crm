@@ -225,7 +225,8 @@ class _OrganizationsPageState extends State<OrganizationsPage> {
           TextButton(
             onPressed: () {
               orgController.deleteOrganization(org.sId!);
-              print('Deleted Organization: ${org.name}');
+// Old comments , before Nov 3 2026 Tuesday.
+              // print('Deleted Organization: ${org.name}');
               Navigator.pop(context);
               //Get.back();
               //Get.snackbar('Deleted', '${org.name} deleted');

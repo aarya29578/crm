@@ -8,6 +8,7 @@ import 'package:crm_flutter/local_storage/up_coming_followups_controller.dart';
 import 'package:crm_flutter/pages/home/components/date_range_picker_dialog.dart';
 import 'package:crm_flutter/pages/home/components/status_filter_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 class AllocationController extends GetxController {
@@ -86,7 +87,8 @@ class AllocationController extends GetxController {
         searchResults.assignAll(response.data ?? []);
       }
     } catch (e) {
-      print("Search error: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Search error: $e");
     } finally {
       isSearchLoading.value = false;
     }
@@ -95,10 +97,11 @@ class AllocationController extends GetxController {
   Future<Data?> getLeadWithTimeline(String leadId) async {
     for (final lead in [...leads, ...searchResults]) {
       if (lead.sId == leadId && (lead.timeline?.isNotEmpty ?? false)) {
-        debugPrint(
-          'CALL LOG TIMELINE: leadId=$leadId '
-          'timelineCount=${lead.timeline!.length} source=allocation-cache',
-        );
+// Old comments , before Nov 3 2026 Tuesday.
+        // debugPrint(
+          // 'CALL LOG TIMELINE: leadId=$leadId '
+          // 'timelineCount=${lead.timeline!.length} source=allocation-cache',
+        // );
         return lead;
       }
     }
@@ -125,10 +128,11 @@ class AllocationController extends GetxController {
 
       for (final lead in response.data ?? <Data>[]) {
         if (lead.sId == leadId) {
-          debugPrint(
-            'CALL LOG TIMELINE: leadId=$leadId '
-            'timelineCount=${lead.timeline?.length ?? 0} source=lead/all',
-          );
+// Old comments , before Nov 3 2026 Tuesday.
+          // debugPrint(
+            // 'CALL LOG TIMELINE: leadId=$leadId '
+            // 'timelineCount=${lead.timeline?.length ?? 0} source=lead/all',
+          // );
           return lead;
         }
       }
@@ -138,9 +142,10 @@ class AllocationController extends GetxController {
       }
     }
 
-    debugPrint(
-      'CALL LOG TIMELINE: leadId=$leadId timelineCount=0 source=not-found',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // debugPrint(
+      // 'CALL LOG TIMELINE: leadId=$leadId timelineCount=0 source=not-found',
+    // );
     return null;
   }
 
@@ -216,6 +221,11 @@ class AllocationController extends GetxController {
         const Duration(milliseconds: 10),
       );
 
+      if (kDebugMode) {
+        debugPrint(
+          '--- CONTROLLER getAllLeads: Passing statusIds: $filterStatusIds ---',
+        );
+      }
       final response = await DioApi().getAllLeads(
         page: currentPage,
         startDate: filterStartDate,
@@ -234,17 +244,19 @@ class AllocationController extends GetxController {
         } else {
           leads.addAll(responseData);
           for (final lead in responseData) {
-  debugPrint(
-    'ALLOCATION TIMELINE CHECK: '
-    'leadId=${lead.sId}, '
-    'timelineCount=${lead.timeline?.length ?? 0}',
-  );
+// Old comments , before Nov 3 2026 Tuesday.
+  // debugPrint(
+    // 'ALLOCATION TIMELINE CHECK: '
+    // 'leadId=${lead.sId}, '
+    // 'timelineCount=${lead.timeline?.length ?? 0}',
+  // );
 }
           currentPage++;
         }
       }
     } catch (e) {
-      print("Error loading leads: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error loading leads: $e");
     } finally {
       isLoading.value = false;
       isPaginationLoading.value = false;
@@ -338,7 +350,8 @@ class AllocationController extends GetxController {
         );
       }
     } catch (e) {
-      print("Error fetching lead stages: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error fetching lead stages: $e");
     }
   }
 
@@ -360,7 +373,8 @@ class AllocationController extends GetxController {
         );
       }
     } catch (e) {
-      print("Error fetching lead sources: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Error fetching lead sources: $e");
     } finally {
       isLeadSourceLoading.value = false;
     }

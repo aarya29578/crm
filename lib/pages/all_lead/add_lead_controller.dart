@@ -133,11 +133,15 @@ class AddLeadController extends GetxController {
 
       sourceList.assignAll(response.data ?? []);
 
-      print("========== SOURCES ==========");
-      print(sourceList.length);
-      print("=============================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("========== SOURCES ==========");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(sourceList.length);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("=============================");
     } catch (e) {
-      print("Load Source Error: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Load Source Error: $e");
     }
   }
 
@@ -147,11 +151,15 @@ class AddLeadController extends GetxController {
 
       campaignList.assignAll(response.data ?? []);
 
-      print("========== CAMPAIGNS ==========");
-      print(campaignList.length);
-      print("===============================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("========== CAMPAIGNS ==========");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(campaignList.length);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("===============================");
     } catch (e) {
-      print("Load Campaign Error: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Load Campaign Error: $e");
     }
   }
 
@@ -161,11 +169,15 @@ class AddLeadController extends GetxController {
 
       leadStageList.assignAll(response.data ?? []);
 
-      print("========== LEAD STAGES ==========");
-      print(leadStageList.length);
-      print("=================================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("========== LEAD STAGES ==========");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(leadStageList.length);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("=================================");
     } catch (e) {
-      print("Load Lead Stage Error: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Load Lead Stage Error: $e");
     }
   }
 
@@ -175,9 +187,11 @@ class AddLeadController extends GetxController {
 
       countryList.assignAll(response.data ?? []);
 
-      print("Countries Loaded : ${countryList.length}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Countries Loaded : ${countryList.length}");
     } catch (e) {
-      print("Country Error : $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Country Error : $e");
     }
   }
 
@@ -193,7 +207,8 @@ class AddLeadController extends GetxController {
 
       stateList.assignAll(response.data ?? []);
     } catch (e) {
-      print("State Error : $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("State Error : $e");
     }
   }
 
@@ -207,9 +222,11 @@ class AddLeadController extends GetxController {
 
       cityList.assignAll(response.data ?? []);
 
-      print("Cities Loaded : ${cityList.length}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Cities Loaded : ${cityList.length}");
     } catch (e) {
-      print("City Error : $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("City Error : $e");
     }
   }
 
@@ -292,7 +309,8 @@ class AddLeadController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {
-      print("CREATE LEAD ERROR: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("CREATE LEAD ERROR: $e");
 
       Get.snackbar("Error", e.toString(), snackPosition: SnackPosition.BOTTOM);
     }
@@ -302,8 +320,10 @@ class AddLeadController extends GetxController {
     try {
       final response = await DioApi().getAllUsers();
 
-      print("========== ASSIGN USERS RESPONSE ==========");
-      print(response.data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("========== ASSIGN USERS RESPONSE ==========");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response.data);
 
       if (response.data is List) {
         assignUserList.assignAll(
@@ -317,15 +337,19 @@ class AddLeadController extends GetxController {
         }
       }
 
-      print("Assign Users Loaded : ${assignUserList.length}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Assign Users Loaded : ${assignUserList.length}");
 
       for (final user in assignUserList) {
-        print("${user["_id"]} - ${user["name"]}");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("${user["_id"]} - ${user["name"]}");
       }
 
-      print("============================================");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("============================================");
     } catch (e) {
-      print("Assign User Error : $e");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Assign User Error : $e");
     }
   }
 

@@ -153,12 +153,14 @@ class FollowUpController extends GetxController {
 
       // ⏰ BUFFER: keep if within 30 seconds
       if (diff.inSeconds.abs() <= 30) {
-        print("⏳ Keeping near-time item: ${localItem.id}");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("⏳ Keeping near-time item: ${localItem.id}");
         return false;
       }
 
       // ❌ Otherwise remove
-      print("❌ Removing deleted follow-up: ${localItem.id}");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("❌ Removing deleted follow-up: ${localItem.id}");
 
       // 🔥 Cancel notification also
       NotificationService.cancelNotification(localItem.id.hashCode);

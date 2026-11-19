@@ -8,7 +8,8 @@ class GroupController extends GetxController {
   Future getAllGroups() async {
     try {
       final response = await DioApi().getAllGroups();
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.status == 200) {
         allGroupRes.value = response;
       }
@@ -19,10 +20,12 @@ class GroupController extends GetxController {
 
   Future<void> createGroup(req) async {
     var data = req;
-    print(data);
+// Old comments , before Nov 3 2026 Tuesday.
+    // print(data);
     try {
       final response = await DioApi().createGroup(data);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response['success'] == true) {
         Get.back();
         await getAllGroups();
@@ -34,9 +37,11 @@ class GroupController extends GetxController {
 
   Future<void> updateGroup(data, id) async {
     try {
-      print(data);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(data);
       final response = await DioApi().updateGroup(data, id);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response['success'] == true) {
         Get.back();
         await getAllGroups(); // Refresh the list

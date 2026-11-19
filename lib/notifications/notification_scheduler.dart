@@ -19,21 +19,24 @@ class NotificationScheduler {
   /// Schedule one notification.
   Future<void> scheduleNotification(NotificationModel notification) async {
     if (notification.id.isEmpty) {
-      print('⚠️ Notification ID is empty');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('⚠️ Notification ID is empty');
       return;
     }
 
     if (notification.createdAt == null) {
-      print('⚠️ createdAt is null for ${notification.id}');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('⚠️ createdAt is null for ${notification.id}');
       return;
     }
 
     // Prevent duplicate scheduling.
     if (_scheduledNotificationIds.contains(notification.id)) {
-      print(
-        '⚠️ Notification already scheduled: '
-        '${notification.id}',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // '⚠️ Notification already scheduled: '
+        // '${notification.id}',
+      // );
       return;
     }
 
@@ -47,22 +50,31 @@ class NotificationScheduler {
 
     final now = DateTime.now();
 
-    print('--------------------------------------');
-    print('🔔 Preparing notification');
-    print('🆔 ID: ${notification.id}');
-    print('📌 Type: ${notification.type}');
-    print('💬 Message: ${notification.message}');
-    print('🌍 UTC: ${notification.createdAt}');
-    print('📱 Local: $scheduledDate');
-    print('🕐 Current: $now');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('--------------------------------------');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🔔 Preparing notification');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🆔 ID: ${notification.id}');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('📌 Type: ${notification.type}');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('💬 Message: ${notification.message}');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🌍 UTC: ${notification.createdAt}');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('📱 Local: $scheduledDate');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🕐 Current: $now');
 
     // If createdAt is already in the past,
     // don't schedule it.
     if (scheduledDate.isBefore(now)) {
-      print(
-        '⏭️ Notification time already passed: '
-        '${notification.id}',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // '⏭️ Notification time already passed: '
+        // '${notification.id}',
+      // );
 
       _scheduledNotificationIds.add(notification.id);
 
@@ -78,12 +90,14 @@ class NotificationScheduler {
 
     _scheduledNotificationIds.add(notification.id);
 
-    print(
-      '✅ Notification scheduled for '
-      '$scheduledDate',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // print(
+      // '✅ Notification scheduled for '
+      // '$scheduledDate',
+    // );
 
-    print('--------------------------------------');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('--------------------------------------');
   }
 
   /// Remove a notification from the local scheduled list.
@@ -96,10 +110,11 @@ class NotificationScheduler {
 
     _scheduledNotificationIds.remove(notification.id);
 
-    print(
-      '🗑️ Notification cancelled: '
-      '${notification.id}',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // print(
+      // '🗑️ Notification cancelled: '
+      // '${notification.id}',
+    // );
   }
 
   /// Cancel every scheduled notification.
@@ -108,7 +123,8 @@ class NotificationScheduler {
 
     _scheduledNotificationIds.clear();
 
-    print('🗑️ All notifications cancelled');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🗑️ All notifications cancelled');
   }
 
   void clearLocalCache() {

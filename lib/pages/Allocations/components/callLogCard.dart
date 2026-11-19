@@ -26,6 +26,7 @@ import 'package:velocity_x/velocity_x.dart';
 class CallLogCard extends StatelessWidget {
   final context;
   final bool? isMissedFUps;
+  final bool showFollowUpDate;
   final String name;
   final String? leadId;
   final String? campaignId;
@@ -53,6 +54,7 @@ class CallLogCard extends StatelessWidget {
     super.key,
     this.context,
     this.isMissedFUps = false,
+    this.showFollowUpDate = false,
     required this.name,
     this.leadId,
     this.campaignId,
@@ -209,7 +211,8 @@ class CallLogCard extends StatelessWidget {
                   try {
                     date = DateTime.parse(leadData.followUpDate!).toLocal();
                   } catch (e) {
-                    print("Error parsing followUpDate: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+                    // print("Error parsing followUpDate: $e");
                   }
                 }
                 if (date != null) {
@@ -232,7 +235,8 @@ class CallLogCard extends StatelessWidget {
           }
         }
       } catch (e) {
-        print("Error fetching stage fields: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Error fetching stage fields: $e");
       } finally {
         isLoadingFields.value = false;
       }
@@ -333,7 +337,8 @@ class CallLogCard extends StatelessWidget {
           await leadDetailsController.getAllLeadDetails(context, leadId!);
         }
       } catch (e) {
-        print("Error saving stage fields: $e");
+// Old comments , before Nov 3 2026 Tuesday.
+        // print("Error saving stage fields: $e");
       }
     }
 
@@ -1423,7 +1428,8 @@ class CallLogCard extends StatelessWidget {
                           if (removedFiles.isEmpty && documents.isEmpty) {
                             return const SizedBox();
                           }
-                          print('removedfiles$removedFiles');
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print('removedfiles$removedFiles');
                           return Column(
                             children: [
                               Padding(
@@ -1888,10 +1894,7 @@ class CallLogCard extends StatelessWidget {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  item.action?.isNotEmpty ==
-                                                          true
-                                                      ? item.action!
-                                                      : 'Activity',
+                                                  item.displayTitle,
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 16,
@@ -2372,7 +2375,8 @@ class CallLogCard extends StatelessWidget {
   }
 
   void onWhatsApp(BuildContext context) {
-    print("WhatsApp clicked");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("WhatsApp clicked");
     WhatsAppHelper.showWhatsAppTemplates(
       context: context,
       leadId: leadId,
@@ -2398,7 +2402,8 @@ class CallLogCard extends StatelessWidget {
   }
 
   void onSms(BuildContext context) {
-    print("SMS clicked");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("SMS clicked");
 
     _whatsappSmsController.currentPage = 1;
     _whatsappSmsController.wsData.clear();
@@ -2520,13 +2525,16 @@ class CallLogCard extends StatelessWidget {
                             channel: "sms",
                           );
 
-                          print(
-                            "========== TEMPLATE USAGE RESPONSE ==========",
-                          );
-                          print(response);
-                          print(
-                            "=============================================",
-                          );
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(
+                            // "========== TEMPLATE USAGE RESPONSE ==========",
+                          // );
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+                          // print(
+                            // "=============================================",
+                          // );
                           if (Get.isRegistered<AllocationController>()) {
           await Get.find<AllocationController>().refreshData();
         }
@@ -2630,12 +2638,14 @@ class CallLogCard extends StatelessWidget {
   Future<void> openSMS(String phone, String message) async {
     final url = "sms:$phone?body=${Uri.encodeComponent(message)}";
 
-    print('SmsURL : $url');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('SmsURL : $url');
 
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url));
     } else {
-      print("Could not launch SMS");
+// Old comments , before Nov 3 2026 Tuesday.
+      // print("Could not launch SMS");
     }
   }
 
@@ -2684,10 +2694,12 @@ class CallLogCard extends StatelessWidget {
     final clean = tag.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
     String? label;
     dynamic dateRaw;
+    final isFollowUpDate = showFollowUpDate || clean == 'followup';
 
-    if (clean == 'followup') {
+    if (isFollowUpDate) {
       label = 'Follow up date';
-      dateRaw = followUp ?? _extractStageDate('followUpDate');
+      dateRaw = followUp ??
+          (showFollowUpDate ? null : _extractStageDate('followUpDate'));
     } else if (clean == 'sitevisitplanned' || clean == 'sitevisitdate') {
       label = 'Site Visit Planned date';
       dateRaw = siteVisitDate ?? _extractStageDate('siteVisitDate');
@@ -2704,7 +2716,9 @@ class CallLogCard extends StatelessWidget {
     final parsed = _parseDate(dateRaw);
     if (parsed == null) return null;
 
-    final formatted = DateFormat('dd/MM/yyyy  hh:mm a').format(parsed.toLocal());
+    final formatted = showFollowUpDate
+        ? formatDisplayDateTime(parsed.toIso8601String())
+        : DateFormat('dd/MM/yyyy  hh:mm a').format(parsed.toLocal());
 
     return Container(
       padding: const EdgeInsets.symmetric(

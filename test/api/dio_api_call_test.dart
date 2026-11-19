@@ -1,13 +1,17 @@
 import 'package:crm_flutter/api/dio_api.dart';
 import 'package:crm_flutter/api/dio_util.dart';
 import 'package:crm_flutter/constants.dart';
+import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late Dio dio;
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    LocalStorage.sharedPreferences = await SharedPreferences.getInstance();
     dio = Dio();
     DioUtil.dio = dio;
   });
@@ -132,4 +136,79 @@ void main() {
 
     expect(requestPath, '${Uri.parse(link).path}/call/dial');
   });
+
+  test('sends the current user as assignedTo for missed follow-ups', () async {
+    final preferences = LocalStorage.sharedPreferences!;
+    final requestedUris = <Uri>[];
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          requestedUris.add(options.uri);
+          handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {'success': true, 'data': []},
+            ),
+          );
+        },
+      ),
+    );
+
+    await preferences.setString('user_Id', 'user-1');
+    await DioApi().getMissedFUps(
+      currentDateTime: '2026-11-12T11:11:39.025Z',
+      page: 1,
+      limit: 50,
+      search: 'first search',
+    );
+
+    await preferences.setString('user_Id', 'user-2');
+    await DioApi().getMissedFUps(
+      currentDateTime: '2026-11-12T11:11:39.025Z',
+      page: 2,
+      limit: 50,
+      search: 'second search',
+    );
+
+    expect(
+      requestedUris.map((uri) => uri.queryParameters['assignedTo']),
+      ['user-1', 'user-2'],
+    );
+    expect(requestedUris.first.queryParameters, {
+      'page': '1',
+      'limit': '50',
+      'search': 'first search',
+      'currentTime': '2026-11-12T11:11:39.025Z',
+      'assignedTo': 'user-1',
+    });
+    expect(requestedUris.last.queryParameters['page'], '2');
+    expect(requestedUris.last.queryParameters['search'], 'second search');
+  });
+
+  test(
+    'does not request missed follow-ups without a logged-in user ID',
+    () async {
+      var requestCount = 0;
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            requestCount++;
+            handler.reject(
+              DioException(
+                requestOptions: options,
+                type: DioExceptionType.cancel,
+              ),
+            );
+          },
+        ),
+      );
+
+      await expectLater(
+        DioApi().getMissedFUps(),
+        throwsA(isA<Exception>()),
+      );
+      expect(requestCount, 0);
+    },
+  );
 }

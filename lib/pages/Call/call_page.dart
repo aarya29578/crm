@@ -25,7 +25,8 @@ class _CallPageState extends State<CallPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // Register lifecycle observer
-    print("🐛 INIT STATE CALLED 🐛");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("🐛 INIT STATE CALLED 🐛");
   }
 
   @override
@@ -60,7 +61,8 @@ class _CallPageState extends State<CallPage> with WidgetsBindingObserver {
     // );
 
     bool? res = await FlutterPhoneDirectCaller.callNumber(number);
-    print("Call result: $res");
+// Old comments , before Nov 3 2026 Tuesday.
+    // print("Call result: $res");
   }
 
   void _onReturnFromCall() async {

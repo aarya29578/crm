@@ -13,10 +13,16 @@ class IncomingCallService {
 
   static final DioApi _dioApi = DioApi();
 
+  static bool isProcessingCall = false;
+  static String? _lastHandledDeviceCallId;
+  static DateTime? _lastHandledTime;
+  static String? _lastHandledPhone;
+
   static void _log(String event) {
-    debugPrint(
-      '[incoming-call] ${DateTime.now().toIso8601String()} event=$event',
-    );
+// Old comments , before Nov 3 2026 Tuesday.
+    // debugPrint(
+      // '[incoming-call] ${DateTime.now().toIso8601String()} event=$event',
+    // );
   }
 
   static void initialize() {
@@ -31,26 +37,41 @@ class IncomingCallService {
 
           _log('incoming_call_received');
 
-          // ============================================
-          // EXISTING SYNC API - DO NOT CHANGE
-          // ============================================
-
-          _log('incoming_call_payload_prepared');
-
-          // final response = await _dioApi.syncIncomingCall(payload);
-
-          //print("✅ API RESPONSE: $response");
-
-          // ============================================
-          // GET PHONE NUMBER
-          // ============================================
-
           final phoneNumber = data['phone_number']?.toString() ?? '';
+          final deviceCallId = data['device_call_id']?.toString();
 
           if (phoneNumber.isEmpty) {
             _log('incoming_phone_number_missing');
             return;
           }
+
+          // Debounce duplicate dispatches for the same call
+          final now = DateTime.now();
+          if (deviceCallId != null &&
+              deviceCallId.isNotEmpty &&
+              deviceCallId == _lastHandledDeviceCallId &&
+              _lastHandledTime != null &&
+              now.difference(_lastHandledTime!) < const Duration(seconds: 10)) {
+            _log('duplicate_incoming_call_ignored');
+            return;
+          }
+
+          if (isProcessingCall &&
+              phoneNumber == _lastHandledPhone &&
+              _lastHandledTime != null &&
+              now.difference(_lastHandledTime!) < const Duration(seconds: 5)) {
+            _log('incoming_call_already_in_processing');
+            return;
+          }
+
+          isProcessingCall = true;
+          _lastHandledDeviceCallId = deviceCallId;
+          _lastHandledTime = now;
+          _lastHandledPhone = phoneNumber;
+
+          // Requirement 3: Ensure each incoming call starts with clean incoming-call data
+          PendingCallData.data = null;
+          PendingCallData.outboundSessionId = null;
 
           _log('incoming_phone_number_available');
 
@@ -115,6 +136,8 @@ class IncomingCallService {
 
           if (isWorkRelated != true) {
             _log('call_marked_not_work_related');
+            PendingCallData.data = null;
+            PendingCallData.outboundSessionId = null;
             return;
           }
 
@@ -173,6 +196,8 @@ class IncomingCallService {
 
           if (matchedLead == null) {
             _log('lead_match_not_found');
+            PendingCallData.data = null;
+            PendingCallData.outboundSessionId = null;
 
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -189,6 +214,8 @@ class IncomingCallService {
 
           if (matchedLead.sId == null) {
             _log('matched_lead_id_missing');
+            PendingCallData.data = null;
+            PendingCallData.outboundSessionId = null;
             return;
           }
 
@@ -234,6 +261,8 @@ class IncomingCallService {
           _log('crm_popup_closed');
         } catch (e) {
           _log('incoming_call_processing_failed_${e.runtimeType}');
+        } finally {
+          isProcessingCall = false;
         }
       }
     });

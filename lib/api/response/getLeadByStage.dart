@@ -142,9 +142,7 @@ class LeadDetails {
         : null;
     sId = json['_id'];
     status = json['status'];
-    userId = json['user_id'] != null
-        ? UserId.fromJson(json['user_id'])
-        : null;
+    userId = json['user_id'] != null ? UserId.fromJson(json['user_id']) : null;
     leadSourceId = json['lead_source_id'] != null
         ? LeadSourceId.fromJson(json['lead_source_id'])
         : null;
@@ -180,8 +178,7 @@ class LeadDetails {
     stageFieldValues = json['stageFieldValues']; // Add this line
     siteVisitDate = json['siteVisitDate']?.toString();
     siteVisitDone = json['siteVisitDone']?.toString();
-    meetingDone =
-        (json['meetingDone'] ?? json['bookingDone'])?.toString();
+    meetingDone = (json['meetingDone'] ?? json['bookingDone'])?.toString();
   }
 
   Map<String, dynamic> toJson() {

@@ -7,7 +7,8 @@ class TypeController extends GetxController {
   Future getAllTypes() async {
     try {
       final response = await DioApi().getAllTypes();
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.status == 200) {
         allTypeRes.value = response;
       }
@@ -18,10 +19,12 @@ class TypeController extends GetxController {
 
   Future<void> createType(req) async {
     var data = req;
-    print(data);
+// Old comments , before Nov 3 2026 Tuesday.
+    // print(data);
     try {
       final response = await DioApi().createType(data);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response['success'] == true) {
         Get.back();
         await getAllTypes();

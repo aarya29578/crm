@@ -37,6 +37,7 @@ class HistoryTimelineEntry {
   String? leadId;
   String? tenantId;
   String? action;
+  String? _channel;
   HistoryTimelineAgent? changedBy;
   DateTime? createdAt;
   DateTime? updatedAt;
@@ -47,19 +48,22 @@ class HistoryTimelineEntry {
   HistoryTimelineEntry({
     this.id,
     this.action,
+    String? channel,
     this.changedBy,
     this.createdAt,
     this.updatedAt,
     Map<String, dynamic>? changes,
     this.callLog,
     this.templateUsage,
-  }) : changes = changes ?? {};
+  })  : _channel = channel,
+        changes = changes ?? {};
 
   HistoryTimelineEntry.fromJson(Map<String, dynamic> json) {
     id = json['_id']?.toString();
     leadId = json['lead_id']?.toString();
     tenantId = json['tenantId']?.toString();
     action = json['action']?.toString();
+    _channel = json['channel']?.toString();
 
     final changedByJson = _asStringKeyedMap(json['changedBy']);
     changedBy = changedByJson == null
@@ -79,6 +83,28 @@ class HistoryTimelineEntry {
     templateUsage = templateUsageJson == null
         ? null
         : HistoryTimelineTemplateUsage.fromJson(templateUsageJson);
+  }
+
+  String? get channel {
+    final direct = _channel?.trim();
+    if (direct != null && direct.isNotEmpty) return direct;
+    final tChannel = templateUsage?.template?.channel?.trim();
+    if (tChannel != null && tChannel.isNotEmpty) return tChannel;
+    final uChannel = templateUsage?.usedBy?.channel?.trim();
+    if (uChannel != null && uChannel.isNotEmpty) return uChannel;
+    final tuChannel = templateUsage?.channel?.trim();
+    if (tuChannel != null && tuChannel.isNotEmpty) return tuChannel;
+    return null;
+  }
+
+  String get displayTitle {
+    if (isWhatsAppTemplate || action?.toLowerCase().contains('template') == true) {
+      final ch = channel;
+      if (ch != null && ch.isNotEmpty) {
+        return ch;
+      }
+    }
+    return action?.isNotEmpty == true ? action! : 'Activity';
   }
 
   bool get isWhatsAppTemplate {
@@ -259,10 +285,13 @@ class HistoryTimelineCall {
 class HistoryTimelineTemplateUsage {
   HistoryTimelineTemplate? template;
   HistoryTimelineTemplateSender? usedBy;
+  String? channel;
 
-  HistoryTimelineTemplateUsage({this.template, this.usedBy});
+  HistoryTimelineTemplateUsage({this.template, this.usedBy, this.channel});
 
   HistoryTimelineTemplateUsage.fromJson(Map<String, dynamic> json) {
+    channel = json['channel'] is String ? json['channel'] as String : null;
+
     final templateJson = _asStringKeyedMap(json['template_id']);
     template = templateJson == null
         ? null

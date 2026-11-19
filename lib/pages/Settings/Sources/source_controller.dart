@@ -8,7 +8,8 @@ class SourceController extends GetxController {
   Future getAllSources() async {
     try {
       final response = await DioApi().getAllSources();
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response.status == 200) {
         allSourceRes.value = response;
       }
@@ -19,10 +20,12 @@ class SourceController extends GetxController {
 
   Future<void> createSource(req) async {
     var data = req;
-    print(data);
+// Old comments , before Nov 3 2026 Tuesday.
+    // print(data);
     try {
       final response = await DioApi().createSource(data);
-      print(response);
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(response);
       if (response['success'] == true) {
         Get.back();
         await getAllSources();

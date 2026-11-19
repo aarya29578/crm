@@ -19,7 +19,8 @@ class NotificationTimeChecker {
       _checkNotifications(notifications);
     });
 
-    print('⏰ Notification time checker started');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('⏰ Notification time checker started');
   }
 
   void updateNotifications(List<NotificationModel> notifications) {
@@ -68,13 +69,20 @@ class NotificationTimeChecker {
         continue;
       }
 
-      print('🔔 Notification time matched');
-      print('🆔 ID: ${notification.id}');
-      print('📌 Type: ${notification.type}');
-      print('💬 Message: ${notification.message}');
-      print('🕐 Created At UTC: ${notification.createdAt}');
-      print('🕐 Created At Local: $createdAtLocal');
-      print('🕐 Current Time: $now');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('🔔 Notification time matched');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('🆔 ID: ${notification.id}');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('📌 Type: ${notification.type}');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('💬 Message: ${notification.message}');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('🕐 Created At UTC: ${notification.createdAt}');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('🕐 Created At Local: $createdAtLocal');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('🕐 Current Time: $now');
 
       await _showLocalNotification(notification);
 
@@ -90,12 +98,14 @@ class NotificationTimeChecker {
         body: notification.message,
       );
 
-      print(
-        '✅ Local notification pushed: '
-        '${notification.title}',
-      );
+// Old comments , before Nov 3 2026 Tuesday.
+      // print(
+        // '✅ Local notification pushed: '
+        // '${notification.title}',
+      // );
     } catch (e) {
-      print('❌ Failed to show local notification: $e');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('❌ Failed to show local notification: $e');
     }
   }
 
@@ -103,7 +113,8 @@ class NotificationTimeChecker {
     _timer?.cancel();
     _timer = null;
 
-    print('🛑 Notification time checker stopped');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🛑 Notification time checker stopped');
   }
 
   void clearNotifiedIds() {

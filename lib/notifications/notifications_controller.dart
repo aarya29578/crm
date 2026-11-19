@@ -25,7 +25,8 @@ class NotificationController extends GetxController {
   Future<void> getNotifications({bool isInitialLoad = false}) async {
     // Prevent duplicate requests.
     if (_isCheckingNotifications) {
-      print('⚠️ Notification API call already running');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('⚠️ Notification API call already running');
       return;
     }
 
@@ -38,9 +39,12 @@ class NotificationController extends GetxController {
 
       errorMessage.value = '';
 
-      print('==========================================');
-      print('🔄 CHECKING NOTIFICATIONS');
-      print('==========================================');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('==========================================');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('🔄 CHECKING NOTIFICATIONS');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('==========================================');
 
       final response = await _service.getNotifications();
 
@@ -49,7 +53,8 @@ class NotificationController extends GetxController {
       unreadCount.value = response.unreadCount;
 
       if (isInitialLoad) {
-        print('📌 Registering existing notifications...');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('📌 Registering existing notifications...');
 
         for (final notification in response.notifications) {
           if (notification.id.isNotEmpty) {
@@ -57,12 +62,14 @@ class NotificationController extends GetxController {
           }
         }
 
-        print(
-          '✅ Existing notification IDs: '
-          '${_knownNotificationIds.length}',
-        );
+// Old comments , before Nov 3 2026 Tuesday.
+        // print(
+          // '✅ Existing notification IDs: '
+          // '${_knownNotificationIds.length}',
+        // );
 
-        print('==========================================');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('==========================================');
 
         return;
       }
@@ -77,11 +84,16 @@ class NotificationController extends GetxController {
           continue;
         }
 
-        print('🔔 NEW NOTIFICATION FOUND');
-        print('🆔 ID: ${notification.id}');
-        print('📌 TYPE: ${notification.type}');
-        print('💬 MESSAGE: ${notification.message}');
-        print('🕐 CREATED AT: ${notification.createdAt}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('🔔 NEW NOTIFICATION FOUND');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('🆔 ID: ${notification.id}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('📌 TYPE: ${notification.type}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('💬 MESSAGE: ${notification.message}');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('🕐 CREATED AT: ${notification.createdAt}');
 
         await NotificationService().showNotification(
           id: notification.id.hashCode,
@@ -92,14 +104,17 @@ class NotificationController extends GetxController {
         // Mark as known.
         _knownNotificationIds.add(notification.id);
 
-        print('✅ Notification processed');
+// Old comments , before Nov 3 2026 Tuesday.
+        // print('✅ Notification processed');
       }
 
-      print('==========================================');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('==========================================');
     } catch (e) {
       errorMessage.value = e.toString();
 
-      print('❌ Error fetching notifications: $e');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('❌ Error fetching notifications: $e');
     } finally {
       _isCheckingNotifications = false;
 
@@ -115,22 +130,29 @@ class NotificationController extends GetxController {
 
   void startNotificationPolling() {
     if (_notificationTimer != null) {
-      print('⚠️ Notification polling already running');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('⚠️ Notification polling already running');
       return;
     }
 
-    print('');
-    print('==========================================');
-    print('🚀 NOTIFICATION POLLING STARTED');
-    print('==========================================');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('==========================================');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🚀 NOTIFICATION POLLING STARTED');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('==========================================');
 
     // First API call.
     getNotifications(isInitialLoad: true);
 
     // Every 30 seconds.
     _notificationTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      print('');
-      print('⏰ 30 seconds completed');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('');
+// Old comments , before Nov 3 2026 Tuesday.
+      // print('⏰ 30 seconds completed');
 
       getNotifications();
     });
@@ -141,7 +163,8 @@ class NotificationController extends GetxController {
 
     _notificationTimer = null;
 
-    print('🛑 Notification polling stopped');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🛑 Notification polling stopped');
   }
 
   Future<void> refreshNotifications() async {
@@ -151,7 +174,8 @@ class NotificationController extends GetxController {
   void clearKnownNotificationIds() {
     _knownNotificationIds.clear();
 
-    print('🧹 Known notification IDs cleared');
+// Old comments , before Nov 3 2026 Tuesday.
+    // print('🧹 Known notification IDs cleared');
   }
 
   @override
