@@ -235,6 +235,7 @@ class _LoginPageState extends State<LoginPage> {
                               // ===========================================
 
                               if (!controller.isLogin.value) {
+                                debugPrint('[SIGNUP-FLOW] 1. UI Sign Up button tapped with formData: $formData');
                                 controller.register(
                                   formData,
                                   context,

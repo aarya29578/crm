@@ -85,8 +85,9 @@ class Leaddetailscontroller extends GetxController {
         allLeadDetailRes.value = response;
         pageState.value = PageState.stable;
       } else {
-// Old comments , before Nov 3 2026 Tuesday.
-        // print("API returned success=false");
+        throw StateError(
+          response.message ?? 'Lead acceptance was not successful',
+        );
       }
     } catch (e) {
       pageState.value = PageState.error;
@@ -112,8 +113,9 @@ class Leaddetailscontroller extends GetxController {
         allLeadDetailRes.value = response;
         pageState.value = PageState.stable;
       } else {
-// Old comments , before Nov 3 2026 Tuesday.
-        // print("API returned success=false");
+        throw StateError(
+          response.message ?? 'Lead rejection was not successful',
+        );
       }
     } catch (e) {
       pageState.value = PageState.error;

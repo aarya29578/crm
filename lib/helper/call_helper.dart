@@ -9,6 +9,7 @@ import 'package:crm_flutter/local_storage/local_storage.dart';
 import 'package:crm_flutter/pages/Allocations/allocations_controller.dart';
 import 'package:crm_flutter/pages/home/HomeController.dart';
 import 'package:crm_flutter/pages/lead_details/LeadDetailsController.dart';
+import 'package:crm_flutter/services/incoming_call_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
@@ -22,6 +23,8 @@ import 'package:record/record.dart';
 class CallHelper {
   static StreamSubscription<PhoneState>? _subscription;
   static bool _isCallInProgress = false;
+  static bool _isIncomingCallActive = false;
+  static DateTime? _lastIncomingCallEndedAt;
   static bool _reconcileInProgress = false;
   static bool _formOpen = false;
   static bool _submissionInProgress = false;
@@ -75,6 +78,20 @@ class CallHelper {
   static set isCallInProgress(bool value) => _isCallInProgress = value;
 
   @visibleForTesting
+  static bool get isIncomingCallActive => _isIncomingCallActive;
+
+  @visibleForTesting
+  static set isIncomingCallActive(bool value) =>
+      _isIncomingCallActive = value;
+
+  @visibleForTesting
+  static DateTime? get lastIncomingCallEndedAt => _lastIncomingCallEndedAt;
+
+  @visibleForTesting
+  static set lastIncomingCallEndedAt(DateTime? value) =>
+      _lastIncomingCallEndedAt = value;
+
+  @visibleForTesting
   static PhoneStateStatus? get lastPhoneStateStatus => _lastPhoneStateStatus;
 
   @visibleForTesting
@@ -90,6 +107,8 @@ class CallHelper {
     _subscription?.cancel();
     _subscription = null;
     _isCallInProgress = false;
+    _isIncomingCallActive = false;
+    _lastIncomingCallEndedAt = null;
     _reconcileInProgress = false;
     _formOpen = false;
     _submissionInProgress = false;
@@ -261,6 +280,8 @@ class CallHelper {
     required String leadId,
     required String? stageName,
   }) async {
+    _isIncomingCallActive = false;
+    _lastIncomingCallEndedAt = null;
     final session = PendingOutboundCall.create(
       leadId: leadId,
       phoneNumber: number,
@@ -528,9 +549,30 @@ class CallHelper {
       _lastPhoneStateStatus = event.status;
     }
 
+    if (event.status == PhoneStateStatus.CALL_INCOMING) {
+      _isIncomingCallActive = true;
+      _log('incoming_call_detected_by_phone_state');
+      return;
+    }
+
     if (event.status == PhoneStateStatus.CALL_STARTED) {
+      if (_isIncomingCallActive) {
+        _log('incoming_call_connected_ignored_by_outbound_tracker');
+        return;
+      }
       _isCallInProgress = true;
       if (session != null) {
+        // Guard: Do not attach to a session that already ended, has callData, or is stale!
+        final isSessionFresh =
+            DateTime.now().difference(session.startedAt) < const Duration(minutes: 5);
+        if (!isSessionFresh || session.callData != null || session.endedAt != null) {
+          _log(
+            'call_started_ignored_for_stale_or_resolved_session',
+            sessionId: session.sessionId,
+          );
+          return;
+        }
+
         _currentSession = session;
         if (session.connectedAt == null) {
           _currentSession = session.copyWith(
@@ -572,6 +614,12 @@ class CallHelper {
 
     if (event.status == PhoneStateStatus.CALL_ENDED) {
       _isCallInProgress = false;
+      if (_isIncomingCallActive) {
+        _isIncomingCallActive = false;
+        _lastIncomingCallEndedAt = DateTime.now();
+        _log('incoming_call_ended_ignored_by_outbound_tracker');
+        return;
+      }
       if (session == null) return;
       if (_endingSessionId == session.sessionId) return;
       _endingSessionId = session.sessionId;
@@ -635,6 +683,14 @@ class CallHelper {
     if (_reconcileInProgress) return;
     _reconcileInProgress = true;
     try {
+      // Do not restore or reopen an outgoing post-call form while an incoming call is active or being processed
+      final incomingEndedRecently = _lastIncomingCallEndedAt != null &&
+          DateTime.now().difference(_lastIncomingCallEndedAt!) < const Duration(seconds: 15);
+      if (_isIncomingCallActive || IncomingCallService.isProcessingCall || incomingEndedRecently) {
+        _log('reconcile_skipped_incoming_call_active');
+        return;
+      }
+
       // First retry any stranded archived API-pending submissions
       await syncArchivedApiPendingSessions();
 
@@ -1158,6 +1214,8 @@ class CallHelper {
       await _subscription?.cancel();
       _subscription = null;
       _isCallInProgress = false;
+      _isIncomingCallActive = false;
+      _lastIncomingCallEndedAt = null;
       _log('phone_state_listener_disposed');
     } catch (e) {
       _log('dispose_failed', detail: e.runtimeType.toString());

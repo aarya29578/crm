@@ -54,7 +54,10 @@ class AuthController extends GetxController {
 
   Future register(data, context) async {
     try {
+
       final response = await DioApi().register(data);
+
+      debugPrint('[SIGNUP-FLOW] 2. AuthController received response (${response.runtimeType}): $response');
 
       if (response['status'] == "success") {
         isLogin.value = true;
@@ -64,6 +67,8 @@ class AuthController extends GetxController {
     } catch (e) {
 // Old comments , before Nov 3 2026 Tuesday.
       // print("Register Error : $e");
+
+      debugPrint('[SIGNUP-FLOW] 3. AuthController caught error: $e');
     }
   }
 

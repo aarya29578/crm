@@ -51,6 +51,42 @@ String _responseStructure(Object? value, {int depth = 0}) {
   return value.runtimeType.toString();
 }
 
+String _leadActionBodySummary(Object? value) {
+  if (value == null) return '<empty>';
+  if (value is String) {
+    final trimmedValue = value.trim();
+    return trimmedValue.length <= 500
+        ? trimmedValue
+        : '${trimmedValue.substring(0, 500)}...';
+  }
+  if (value is Map) {
+    for (final key in ['message', 'error', 'detail']) {
+      final message = value[key];
+      if (message is String && message.isNotEmpty) {
+        return message.length <= 500
+            ? message
+            : '${message.substring(0, 500)}...';
+      }
+    }
+    return 'Map keys: ${value.keys.join(', ')}';
+  }
+  return _responseStructure(value);
+}
+
+String _leadActionRequestDetails(RequestOptions request) {
+  final hasAuthorization = request.headers.keys.any(
+    (key) => key.toLowerCase() == 'authorization',
+  );
+  final contentType = request.contentType ?? '<not set>';
+  final requestBody = request.data == null
+      ? '<none>'
+      : _leadActionBodySummary(request.data);
+  return '${request.method} ${request.uri}; '
+      'headers={Authorization: ${hasAuthorization ? '<redacted>' : '<absent>'}, '
+      'Content-Type: $contentType}; '
+      'query=${request.queryParameters}; body=$requestBody';
+}
+
 class DioApi {
   Future register(data) async {
     try {
@@ -581,41 +617,71 @@ class DioApi {
     }
   }
 
-  Future<AllLeadDetailResponse> getAllLeadDetailsPatchA(leadId) async {
-    try {
-      final response = await DioUtil.dio.patch("$link/lead/$leadId/accept");
-// Old comments , before Nov 3 2026 Tuesday.
-      // print('++++++++ dio +++++++++');
-// Old comments , before Nov 3 2026 Tuesday.
-      // print(response);
-      if (response.statusCode == 200) {
-        return AllLeadDetailResponse.fromJson(response.data);
-      } else {
-        throw Exception(
-          'Failed to load lead id details: ${response.statusCode}',
-        );
-      }
-    } catch (e) {
-      throw Exception('An error occurred while fetching lead id details: $e');
-    }
+  Future<AllLeadDetailResponse> getAllLeadDetailsPatchA(Object? leadId) {
+    return _patchLeadAction(leadId, 'accept');
   }
 
-  Future<AllLeadDetailResponse> getAllLeadDetailsPatchD(leadId) async {
+  Future<AllLeadDetailResponse> getAllLeadDetailsPatchD(Object? leadId) {
+    return _patchLeadAction(leadId, 'reject');
+  }
+
+  Future<AllLeadDetailResponse> _patchLeadAction(
+    Object? leadId,
+    String action,
+  ) async {
+    final id = leadId?.toString().trim() ?? '';
+    if (id.isEmpty || id == 'null' || id == 'undefined') {
+      throw ArgumentError.value(
+        leadId,
+        'leadId',
+        'A valid lead ID is required',
+      );
+    }
+    final endpoint = '$link/lead/${Uri.encodeComponent(id)}/$action';
+
     try {
-      final response = await DioUtil.dio.patch("$link/lead/$leadId/reject");
-// Old comments , before Nov 3 2026 Tuesday.
-      // print('++++++++ dio +++++++++');
-// Old comments , before Nov 3 2026 Tuesday.
-      // print(response);
-      if (response.statusCode == 200) {
-        return AllLeadDetailResponse.fromJson(response.data);
-      } else {
+      final response = await DioUtil.dio.patch(endpoint);
+      final statusCode = response.statusCode;
+      if (statusCode == null || statusCode < 200 || statusCode >= 300) {
         throw Exception(
-          'Failed to load lead id details: ${response.statusCode}',
+          '${_leadActionRequestDetails(response.requestOptions)}; '
+          'HTTP $statusCode; '
+          'response=${_leadActionBodySummary(response.data)}',
         );
       }
-    } catch (e) {
-      throw Exception('An error occurred while fetching lead id details: $e');
+
+      final result = response.data == null
+          ? AllLeadDetailResponse(success: true)
+          : AllLeadDetailResponse.fromResponseBody(response.data);
+      if (kDebugMode) {
+        debugPrint(
+          '[LeadAction] ${_leadActionRequestDetails(response.requestOptions)}',
+        );
+        debugPrint(
+          '[LeadAction] HTTP $statusCode; '
+          'response=${_leadActionBodySummary(response.data)}',
+        );
+      }
+      return result;
+    } on DioException catch (error) {
+      final requestDetails = _leadActionRequestDetails(error.requestOptions);
+      final statusCode = error.response?.statusCode;
+      final responseBody = _leadActionBodySummary(error.response?.data);
+      if (kDebugMode) {
+        debugPrint('[LeadAction] failed $requestDetails');
+        debugPrint(
+          '[LeadAction] HTTP ${statusCode ?? '<no response>'}; '
+          'response=$responseBody',
+        );
+      }
+      throw Exception(
+        '$requestDetails; HTTP ${statusCode ?? 'unknown'}; '
+        'response=$responseBody',
+      );
+    } on FormatException catch (error) {
+      throw FormatException(
+        'PATCH $endpoint returned an unsupported response: ${error.message}',
+      );
     }
   }
 
@@ -1534,6 +1600,15 @@ class DioApi {
     DateTime? endDate,
   }) async {
     try {
+      final currentUserId = LocalStorage.sharedPreferences
+          ?.getString('user_Id')
+          ?.trim();
+      if (currentUserId == null || currentUserId.isEmpty) {
+        throw StateError(
+          'Cannot fetch missed follow-ups without a logged-in user ID',
+        );
+      }
+
       Map<String, dynamic> queryParams = {'page': page, 'limit': limit};
       if (search.trim().isNotEmpty) {
         queryParams['search'] = search.trim();
@@ -1564,10 +1639,49 @@ class DioApi {
         queryParams['followUpEndDate'] = endDateTime.toUtc().toIso8601String();
       }
 
+      queryParams['assignedTo'] = currentUserId;
+
       final res = await DioUtil.dio.get(
         '$link/lead/followup/missed',
         queryParameters: queryParams.isNotEmpty ? queryParams : null,
       );
+
+      if (kDebugMode) {
+        final responseBody = res.data;
+        final rawData = responseBody is Map ? responseBody['data'] : null;
+        final rawRecords = rawData is List ? rawData : const <dynamic>[];
+        final backendTotal = responseBody is Map ? responseBody['total'] : null;
+        debugPrint(
+          '[MissedFUps][response] status=${res.statusCode} page=$page '
+          'backendTotal=$backendTotal rawPageCount=${rawRecords.length}',
+        );
+        final recordDiagnostics = rawRecords
+            .map((record) {
+              if (record is! Map) {
+                return 'non-map-record';
+              }
+              final leadId =
+                  record['_id'] ?? record['id'] ?? record['sId'] ?? '<missing>';
+              final followUp = record['followUp'] ?? record['followup'];
+              final followUpMap = followUp is Map ? followUp : const {};
+              final followUpId =
+                  record['followUpId'] ??
+                  record['followupId'] ??
+                  record['follow_up_id'] ??
+                  record['followup_id'] ??
+                  followUpMap['_id'] ??
+                  followUpMap['id'] ??
+                  '<missing>';
+              final followUpDate =
+                  record['followUpDate'] ??
+                  record['followupDate'] ??
+                  record['follow_up_date'] ??
+                  '<missing>';
+              return 'leadId=$leadId followUpId=$followUpId followUpDate=$followUpDate';
+            })
+            .join('; ');
+        debugPrint('[MissedFUps][response] records=[$recordDiagnostics]');
+      }
 
       if (res.statusCode == 200) {
         return AllMissedFupsRes.fromJson(res.data);
