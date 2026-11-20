@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:call_log/call_log.dart' as device_call_log;
 
 class CallLogController extends GetxController {
+  static const int defaultPageSize = 50;
+
   var callLogs = <device_call_log.CallLogEntry>[].obs;
   var isLoading = true.obs;
 
@@ -15,64 +17,239 @@ class CallLogController extends GetxController {
   Rx<PageState> callApiState = PageState.loading.obs;
   final Map<String, _UpdatedCallLeadDetails> _updatedLeadDetails = {};
 
+  // Pagination state
+  RxInt currentPage = 1.obs;
+  RxInt totalCount = 0.obs;
+  RxBool hasMore = true.obs;
+  RxBool isLoadingMore = false.obs;
+  RxBool hasMoreError = false.obs;
+  int _requestGeneration = 0;
+
   // Date filter state
   RxString selectedTimeRange = 'Today'.obs;
   Rx<DateTime?> selectedStartDate = Rx<DateTime?>(null);
   Rx<DateTime?> selectedEndDate = Rx<DateTime?>(null);
 
-  Future getApi({DateTime? startDate, DateTime? endDate}) async {
+  Map<String, dynamic> _buildQueryParams({
+    required int page,
+    required int limit,
+  }) {
+    final Map<String, dynamic> queryParams = {
+      'page': page,
+      'limit': limit,
+    };
+    if (selectedStartDate.value != null) {
+      final sd = DateTime(
+        selectedStartDate.value!.year,
+        selectedStartDate.value!.month,
+        selectedStartDate.value!.day,
+      );
+      queryParams['startDate'] = sd.toUtc().toIso8601String();
+    }
+    if (selectedEndDate.value != null) {
+      final ed = DateTime(
+        selectedEndDate.value!.year,
+        selectedEndDate.value!.month,
+        selectedEndDate.value!.day,
+        23,
+        59,
+        59,
+        999,
+      );
+      queryParams['endDate'] = ed.toUtc().toIso8601String();
+    }
+    return queryParams;
+  }
+
+  void _applyUpdatedLeadDetails(List<CallHistoryGroup> groups) {
+    for (final group in groups) {
+      final lead = group.lead;
+      final updated = lead == null ? null : _updatedLeadDetails[lead.sId];
+      if (lead != null && updated != null) {
+        lead.name = LeadName(
+          first: updated.first,
+          middle: updated.middle,
+          last: updated.last,
+        );
+        lead.phone = updated.phone;
+      }
+    }
+  }
+
+  String _callGroupKey(CallHistoryGroup item) {
+    return '${item.lead?.sId ?? ''}_${item.date ?? ''}_${item.lastCallAt ?? ''}';
+  }
+
+  bool _computeHasMore({
+    required AllCallHistoryResponse response,
+    required int fetchedCount,
+    required int loadedCount,
+    required int requestedLimit,
+  }) {
+    if (fetchedCount == 0) return false;
+    final effectiveLimit = response.limit ?? requestedLimit;
+    if (fetchedCount < effectiveLimit) return false;
+    if (response.total != null) {
+      return loadedCount < response.total!;
+    }
+    return true;
+  }
+
+  Future getApi({
+    DateTime? startDate,
+    DateTime? endDate,
+    bool loadMore = false,
+  }) async {
+    if (loadMore) {
+      if (isLoadingMore.value ||
+          !hasMore.value ||
+          callApiState.value == PageState.loading) {
+        return;
+      }
+
+      final int targetPage = currentPage.value + 1;
+      final int generation = _requestGeneration;
+
+      try {
+        isLoadingMore.value = true;
+        hasMoreError.value = false;
+
+        final queryParams = _buildQueryParams(
+          page: targetPage,
+          limit: defaultPageSize,
+        );
+
+        final response = await DioApi().getAllCallsHistory(
+          null,
+          queryParams: queryParams,
+        );
+
+        if (generation != _requestGeneration) return;
+
+        if (response.page != null && response.page! < targetPage) {
+          hasMore.value = false;
+          return;
+        }
+
+        final fetchedItems = List<CallHistoryGroup>.from(
+          response.data ?? const <CallHistoryGroup>[],
+        );
+        _applyUpdatedLeadDetails(fetchedItems);
+
+        final existingItems =
+            callLogsResponse.value.data ?? const <CallHistoryGroup>[];
+        final existingKeys = existingItems.map(_callGroupKey).toSet();
+        final newUniqueItems = <CallHistoryGroup>[];
+        for (final item in fetchedItems) {
+          final key = _callGroupKey(item);
+          if (existingKeys.add(key)) {
+            newUniqueItems.add(item);
+          }
+        }
+
+        if (newUniqueItems.isEmpty) {
+          hasMore.value = false;
+          return;
+        }
+
+        final mergedItems = <CallHistoryGroup>[
+          ...existingItems,
+          ...newUniqueItems,
+        ];
+
+        final resolvedLimit = response.limit ?? defaultPageSize;
+
+        currentPage.value = targetPage;
+        totalCount.value = response.total ?? mergedItems.length;
+        hasMore.value = _computeHasMore(
+          response: response,
+          fetchedCount: fetchedItems.length,
+          loadedCount: mergedItems.length,
+          requestedLimit: defaultPageSize,
+        );
+
+        callLogsResponse.value = AllCallHistoryResponse(
+          success: response.success ?? callLogsResponse.value.success,
+          total: response.total ?? callLogsResponse.value.total,
+          page: targetPage,
+          limit: resolvedLimit,
+          data: mergedItems,
+        );
+      } catch (e) {
+        if (generation == _requestGeneration) {
+          hasMoreError.value = true;
+        }
+      } finally {
+        if (generation == _requestGeneration) {
+          isLoadingMore.value = false;
+        }
+      }
+      return;
+    }
+
+    final int generation = ++_requestGeneration;
+
     try {
       callApiState.value = PageState.loading;
+      currentPage.value = 1;
+      totalCount.value = 0;
+      hasMore.value = true;
+      isLoadingMore.value = false;
+      hasMoreError.value = false;
 
       // Store the dates
       if (startDate != null) selectedStartDate.value = startDate;
       if (endDate != null) selectedEndDate.value = endDate;
 
-      Map<String, dynamic> queryParams = {};
-      if (selectedStartDate.value != null) {
-        final sd = DateTime(
-          selectedStartDate.value!.year,
-          selectedStartDate.value!.month,
-          selectedStartDate.value!.day,
-        );
-        queryParams['startDate'] = sd.toUtc().toIso8601String();
-      }
-      if (selectedEndDate.value != null) {
-        final ed = DateTime(
-          selectedEndDate.value!.year,
-          selectedEndDate.value!.month,
-          selectedEndDate.value!.day,
-          23,
-          59,
-          59,
-          999,
-        );
-        queryParams['endDate'] = ed.toUtc().toIso8601String();
-      }
+      final queryParams = _buildQueryParams(
+        page: 1,
+        limit: defaultPageSize,
+      );
 
       final response = await DioApi().getAllCallsHistory(
         null,
-        queryParams: queryParams.isNotEmpty ? queryParams : null,
+        queryParams: queryParams,
       );
-      for (final group in response.data ?? <CallHistoryGroup>[]) {
-        final lead = group.lead;
-        final updated = lead == null ? null : _updatedLeadDetails[lead.sId];
-        if (lead != null && updated != null) {
-          lead.name = LeadName(
-            first: updated.first,
-            middle: updated.middle,
-            last: updated.last,
-          );
-          lead.phone = updated.phone;
-        }
-      }
-      callLogsResponse.value = response;
+
+      if (generation != _requestGeneration) return;
+
+      final fetchedItems = List<CallHistoryGroup>.from(
+        response.data ?? const <CallHistoryGroup>[],
+      );
+      _applyUpdatedLeadDetails(fetchedItems);
+
+      final resolvedPage = response.page ?? 1;
+      final resolvedLimit = response.limit ?? defaultPageSize;
+
+      currentPage.value = resolvedPage;
+      totalCount.value = response.total ?? fetchedItems.length;
+      hasMore.value = _computeHasMore(
+        response: response,
+        fetchedCount: fetchedItems.length,
+        loadedCount: fetchedItems.length,
+        requestedLimit: defaultPageSize,
+      );
+
+      callLogsResponse.value = AllCallHistoryResponse(
+        success: response.success,
+        total: response.total,
+        page: resolvedPage,
+        limit: resolvedLimit,
+        data: fetchedItems,
+      );
       callApiState.value = PageState.stable;
     } catch (e) {
-      callApiState.value = PageState.error;
-// Old comments , before Nov 3 2026 Tuesday.
+      if (generation == _requestGeneration) {
+        hasMore.value = false;
+        callApiState.value = PageState.error;
+      }
+      // Old comments , before Nov 3 2026 Tuesday.
       // print(e);
     }
+  }
+
+  Future<void> loadMore() async {
+    await getApi(loadMore: true);
   }
 
   Future<void> selectTimeRange(String range, BuildContext context) async {
@@ -210,27 +387,27 @@ class CallLogController extends GetxController {
         Iterable<device_call_log.CallLogEntry> entries =
             await device_call_log.CallLog.get();
         callLogs.assignAll(entries);
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('Name: ${callLogs[0].name}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('Number: ${callLogs[0].number}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('Formatted Number: ${callLogs[0].formattedNumber}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('Call Type: ${callLogs[0].callType}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('Duration: ${callLogs[0].duration}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('Timestamp: ${callLogs[0].timestamp}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('Cached Number Type: ${callLogs[0].cachedNumberType}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('Cached Number Label: ${callLogs[0].cachedNumberLabel}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('SIM Display Name: ${callLogs[0].simDisplayName}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('Phone Account ID: ${callLogs[0].phoneAccountId}');
-// Old comments , before Nov 3 2026 Tuesday.
+        // Old comments , before Nov 3 2026 Tuesday.
         // print('ID: ${callLogs[0].id}');
       } else {
         Get.snackbar(

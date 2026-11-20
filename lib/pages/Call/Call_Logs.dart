@@ -24,6 +24,7 @@ class _CallLogsState extends State<CallLogs> {
   final CallLogController controller = Get.put(CallLogController());
   bool _isSearchVisible = false;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final Set<String> _updatingLeadIds = {};
 
   @override
@@ -35,13 +36,43 @@ class _CallLogsState extends State<CallLogs> {
         controller.selectedStartDate.value = widget.startDate;
         controller.selectedEndDate.value = widget.endDate;
         controller.selectedTimeRange.value = widget.timeRange ?? 'Today';
+      } else if (widget.startDate == null &&
+          widget.endDate == null &&
+          controller.selectedStartDate.value == null &&
+          controller.selectedEndDate.value == null) {
+        final now = DateTime.now();
+        controller.selectedTimeRange.value = 'Today';
+        controller.selectedStartDate.value = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        );
+        controller.selectedEndDate.value = now;
       }
       controller.getApi(startDate: widget.startDate, endDate: widget.endDate);
     });
   }
 
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollUpdateNotification &&
+        (notification.scrollDelta ?? 0) > 0 &&
+        notification.metrics.maxScrollExtent > 0 &&
+        notification.metrics.pixels > 0 &&
+        notification.metrics.pixels >=
+            notification.metrics.maxScrollExtent - 200 &&
+        controller.searchQuery.value.trim().isEmpty &&
+        controller.hasMore.value &&
+        !controller.isLoadingMore.value &&
+        !controller.hasMoreError.value &&
+        controller.callApiState.value != PageState.loading) {
+      controller.loadMore();
+    }
+    return false;
+  }
+
   @override
   void dispose() {
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -200,25 +231,65 @@ class _CallLogsState extends State<CallLogs> {
                   );
                 }
 
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    controller.getApi();
-                    return Future.delayed(const Duration(milliseconds: 300));
-                  },
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredLogs.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final callGroup = filteredLogs[index];
-                      return _buildCallLogCard(callGroup, context);
+                final showPaginationFooter =
+                    controller.isLoadingMore.value ||
+                    controller.hasMoreError.value;
+
+                return NotificationListener<ScrollNotification>(
+                  onNotification: _handleScrollNotification,
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      await controller.getApi();
                     },
+                    child: ListView.separated(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount:
+                          filteredLogs.length + (showPaginationFooter ? 1 : 0),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        if (index == filteredLogs.length) {
+                          return _buildPaginationFooter();
+                        }
+                        final callGroup = filteredLogs[index];
+                        return _buildCallLogCard(callGroup, context);
+                      },
+                    ),
                   ),
                 );
               }),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaginationFooter() {
+    if (controller.hasMoreError.value) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: TextButton(
+            onPressed: () => controller.loadMore(),
+            child: const Text('Could not load more. Retry'),
+          ),
+        ),
+      );
+    }
+
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: Colors.black87,
+            strokeWidth: 2,
+          ),
         ),
       ),
     );
